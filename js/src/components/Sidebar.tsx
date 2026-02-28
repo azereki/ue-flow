@@ -73,7 +73,7 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph }) => 
 
       {/* Variables */}
       {variables.length > 0 && (
-        <Section title="VARIABLES" count={variables.length}>
+        <Section title="VARIABLES" count={variables.length} defaultOpen={variables.length <= 20}>
           {variables.map((v) => (
             <div key={v.name} className="ueflow-sidebar-item">
               <span className={`ueflow-sidebar-icon type-${(v.type || 'object').toLowerCase()}`} />

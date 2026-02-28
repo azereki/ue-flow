@@ -1,0 +1,2 @@
+[      16ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://localhost:8765/BP_HuskyElementReceiver.html:0
+[      38ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://localhost:8765/favicon.ico:0

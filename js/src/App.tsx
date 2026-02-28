@@ -36,7 +36,7 @@ function SingleGraphView({ graphJSON }: { graphJSON: UEGraphJSON }) {
   const [edges, , onEdgesChange] = useEdgesState(initial.edges);
 
   return (
-    <div style={{ width: '100%', height: '100%' }}>
+    <div style={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -45,7 +45,8 @@ function SingleGraphView({ graphJSON }: { graphJSON: UEGraphJSON }) {
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView
-        minZoom={0.1}
+        fitViewOptions={{ padding: 0.2, maxZoom: 1.5 }}
+        minZoom={0.05}
         maxZoom={4}
         proOptions={{ hideAttribution: true }}
       >
