@@ -1,9 +1,8 @@
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
-import type { UEGraphJSON } from './types/ue-graph';
+import type { UEGraphJSON, UEMultiGraphJSON } from './types/ue-graph';
 
 function loadGraphJSON(): UEGraphJSON | null {
-  // Production: read from embedded <script type="application/json" id="ue-flow-data">
   const dataEl = document.getElementById('ue-flow-data');
   if (dataEl?.textContent) {
     try {
@@ -15,8 +14,24 @@ function loadGraphJSON(): UEGraphJSON | null {
   return null;
 }
 
-const graph = loadGraphJSON();
+function loadMultiGraphJSON(): UEMultiGraphJSON | null {
+  const dataEl = document.getElementById('ue-flow-multi-data');
+  if (dataEl?.textContent) {
+    try {
+      return JSON.parse(dataEl.textContent);
+    } catch {
+      console.error('Failed to parse ue-flow multi-graph JSON');
+    }
+  }
+  return null;
+}
+
+const multiGraph = loadMultiGraphJSON();
+const singleGraph = loadGraphJSON();
+
 const container = document.getElementById('ue-flow-root');
 if (container) {
-  createRoot(container).render(<App graphJSON={graph} />);
+  createRoot(container).render(
+    <App graphJSON={singleGraph} multiGraphJSON={multiGraph} />
+  );
 }

@@ -311,3 +311,218 @@
 .ueflow-toolbar-btn--secondary:hover {
   opacity: 1;
 }
+
+/* ===== Multi-Graph Layout ===== */
+
+.ueflow-multi-layout {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+}
+
+.ueflow-multi-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ueflow-graph-container {
+  flex: 1;
+  position: relative;
+}
+
+.ueflow-empty-graph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--uf-text-muted);
+  font-size: 14px;
+}
+
+/* ===== Tab Bar ===== */
+
+.ueflow-tab-bar {
+  display: flex;
+  align-items: center;
+  background: #111118;
+  border-bottom: 1px solid var(--uf-surface-border);
+  height: 32px;
+  overflow-x: auto;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+.ueflow-tab-bar::-webkit-scrollbar { height: 3px; }
+.ueflow-tab-bar::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+
+.ueflow-tab {
+  padding: 4px 12px;
+  font-size: 11px;
+  font-family: var(--uf-font-body);
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  white-space: nowrap;
+  color: #888;
+  background: transparent;
+  transition: all 0.15s;
+  margin-right: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ueflow-tab:hover { background: #1a1d27; color: #ccc; }
+
+.ueflow-tab--active {
+  background: var(--uf-bg);
+  color: var(--uf-accent);
+  border-color: var(--uf-surface-border);
+  border-bottom-color: var(--uf-bg);
+  margin-bottom: -1px;
+}
+
+.ueflow-tab-name { }
+
+.ueflow-tab-count {
+  font-size: 9px;
+  color: #555;
+  font-family: var(--uf-font-mono);
+}
+
+.ueflow-tab--active .ueflow-tab-count { color: #6a7abf; }
+
+/* ===== Breadcrumbs ===== */
+
+.ueflow-breadcrumbs {
+  padding: 4px 12px;
+  background: #0c0d14;
+  font-size: 11px;
+  color: #555;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.ueflow-breadcrumb-link {
+  color: #6a8abf;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.ueflow-breadcrumb-link:hover { text-decoration: underline; }
+
+.ueflow-breadcrumb-sep {
+  margin: 0 4px;
+  color: #444;
+}
+
+.ueflow-breadcrumb-current { color: var(--uf-text-muted); }
+
+/* ===== Sidebar ===== */
+
+.ueflow-sidebar {
+  width: 220px;
+  min-width: 220px;
+  background: #0e0f18;
+  border-right: 1px solid var(--uf-surface-border);
+  overflow-y: auto;
+  font-size: 11px;
+  font-family: var(--uf-font-body);
+  flex-shrink: 0;
+}
+
+.ueflow-sidebar::-webkit-scrollbar { width: 5px; }
+.ueflow-sidebar::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+.ueflow-sidebar-section { border-bottom: 1px solid rgba(255, 255, 255, 0.04); }
+
+.ueflow-sidebar-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  background: #0a0b12;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #666;
+}
+
+.ueflow-sidebar-section-header:hover { background: #121320; }
+
+.ueflow-sidebar-section-count {
+  font-size: 9px;
+  color: #444;
+  margin-left: auto;
+}
+
+.ueflow-sidebar-arrow {
+  font-size: 8px;
+  transition: transform 0.2s;
+}
+
+.ueflow-sidebar-arrow.collapsed { transform: rotate(-90deg); }
+
+.ueflow-sidebar-section-body { padding: 2px 0; }
+
+.ueflow-sidebar-item {
+  display: flex;
+  align-items: center;
+  padding: 3px 10px 3px 16px;
+  cursor: default;
+  transition: background 0.1s;
+  gap: 6px;
+}
+
+.ueflow-sidebar-item--clickable { cursor: pointer; }
+.ueflow-sidebar-item:hover { background: rgba(255, 255, 255, 0.03); }
+
+.ueflow-sidebar-icon {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.ueflow-sidebar-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--uf-text-muted);
+}
+
+.ueflow-sidebar-item--clickable .ueflow-sidebar-name { color: var(--uf-text); }
+
+.ueflow-sidebar-type {
+  color: #555;
+  font-size: 10px;
+  font-family: var(--uf-font-mono);
+}
+
+.ueflow-sidebar-badge {
+  font-size: 8px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #666;
+}
+
+/* Type color indicators */
+.type-event { background: #cc6600; }
+.type-function { background: #6666cc; }
+.type-bool { background: #8b0000; }
+.type-float, .type-real { background: #00cc00; }
+.type-int { background: #00cccc; }
+.type-string { background: #cc00cc; }
+.type-object { background: #0066cc; }
+.type-struct { background: #000088; }
+.type-name { background: #7744aa; }
+.type-delegate { background: #cc3333; }
+.type-enum { background: #886644; }

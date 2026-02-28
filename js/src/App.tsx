@@ -6,8 +6,6 @@ import {
   MiniMap,
   useNodesState,
   useEdgesState,
-  type OnNodesChange,
-  type OnEdgesChange,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './theme/ue-flow.css';
@@ -16,7 +14,10 @@ import { BlueprintNode } from './nodes/BlueprintNode';
 import { BlueprintEdge } from './edges/BlueprintEdge';
 import { CommentNode } from './nodes/CommentNode';
 import { ExportToolbar } from './components/ExportToolbar';
-import type { UEGraphJSON } from './types/ue-graph';
+import { TabBar } from './components/TabBar';
+import { Breadcrumbs, type BreadcrumbItem } from './components/Breadcrumbs';
+import { Sidebar } from './components/Sidebar';
+import type { UEGraphJSON, UEMultiGraphJSON } from './types/ue-graph';
 
 const nodeTypes = {
   blueprintNode: BlueprintNode,
@@ -26,19 +27,16 @@ const edgeTypes = { blueprintEdge: BlueprintEdge };
 
 interface AppProps {
   graphJSON: UEGraphJSON | null;
+  multiGraphJSON?: UEMultiGraphJSON | null;
 }
 
-export function App({ graphJSON }: AppProps) {
-  const initial = useMemo(
-    () => graphJSON ? graphJsonToFlow(graphJSON) : { nodes: [], edges: [] },
-    [graphJSON],
-  );
-
-  const [nodes, setNodes, onNodesChange] = useNodesState(initial.nodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initial.edges);
+function SingleGraphView({ graphJSON }: { graphJSON: UEGraphJSON }) {
+  const initial = useMemo(() => graphJsonToFlow(graphJSON), [graphJSON]);
+  const [nodes, , onNodesChange] = useNodesState(initial.nodes);
+  const [edges, , onEdgesChange] = useEdgesState(initial.edges);
 
   return (
-    <div style={{ width: '100vw', height: '100vh' }}>
+    <div style={{ width: '100%', height: '100%' }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -53,12 +51,87 @@ export function App({ graphJSON }: AppProps) {
       >
         <Background color="#1a1d27" gap={20} size={1} />
         <Controls />
-        <MiniMap
-          nodeColor={() => '#2a2d37'}
-          maskColor="rgba(0, 0, 0, 0.7)"
-        />
+        <MiniMap nodeColor={() => '#2a2d37'} maskColor="rgba(0, 0, 0, 0.7)" />
       </ReactFlow>
       <ExportToolbar nodes={nodes} edges={edges} />
+    </div>
+  );
+}
+
+function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
+  const graphNames = useMemo(() => Object.keys(multiGraph.graphs), [multiGraph]);
+  const [activeGraph, setActiveGraph] = useState(graphNames[0] ?? '');
+  const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([
+    { label: graphNames[0] ?? 'Graph', graphName: graphNames[0] ?? '' },
+  ]);
+
+  const currentGraphJSON = multiGraph.graphs[activeGraph] ?? null;
+
+  const handleSelectGraph = useCallback((name: string) => {
+    setActiveGraph(name);
+    setBreadcrumbs([{ label: name, graphName: name }]);
+  }, []);
+
+  const handleNavigateToGraph = useCallback((name: string) => {
+    // Find the graph name with fuzzy matching
+    const exact = graphNames.find((g) => g === name);
+    const fuzzy = exact ?? graphNames.find((g) => g.toLowerCase() === name.toLowerCase());
+    if (fuzzy) {
+      setActiveGraph(fuzzy);
+      setBreadcrumbs((prev) => [...prev, { label: fuzzy, graphName: fuzzy }]);
+    }
+  }, [graphNames]);
+
+  const handleBreadcrumbNavigate = useCallback((index: number) => {
+    const item = breadcrumbs[index];
+    if (item) {
+      setActiveGraph(item.graphName);
+      setBreadcrumbs((prev) => prev.slice(0, index + 1));
+    }
+  }, [breadcrumbs]);
+
+  return (
+    <div className="ueflow-multi-layout">
+      <Sidebar multiGraph={multiGraph} onNavigateToGraph={handleNavigateToGraph} />
+      <div className="ueflow-multi-main">
+        <TabBar
+          graphNames={graphNames}
+          activeGraph={activeGraph}
+          onSelectGraph={handleSelectGraph}
+          comparison={multiGraph.comparison}
+        />
+        <Breadcrumbs items={breadcrumbs} onNavigate={handleBreadcrumbNavigate} />
+        <div className="ueflow-graph-container">
+          {currentGraphJSON ? (
+            <SingleGraphView key={activeGraph} graphJSON={currentGraphJSON} />
+          ) : (
+            <div className="ueflow-empty-graph">No graph selected</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function App({ graphJSON, multiGraphJSON }: AppProps) {
+  // Multi-graph mode takes precedence
+  if (multiGraphJSON && Object.keys(multiGraphJSON.graphs).length > 0) {
+    return <MultiGraphView multiGraph={multiGraphJSON} />;
+  }
+
+  // Single-graph mode
+  if (graphJSON) {
+    return (
+      <div style={{ width: '100vw', height: '100vh' }}>
+        <SingleGraphView graphJSON={graphJSON} />
+      </div>
+    );
+  }
+
+  // Empty state
+  return (
+    <div style={{ width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f1117', color: '#71717a' }}>
+      No graph data loaded
     </div>
   );
 }
