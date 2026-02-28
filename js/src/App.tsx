@@ -35,18 +35,25 @@ interface AppProps {
   multiGraphJSON?: UEMultiGraphJSON | null;
 }
 
-function FitViewOnMount() {
+function FitViewOnMount({ focusNodeTitle, nodes }: { focusNodeTitle?: string | null; nodes: Array<{ id: string; data: any }> }) {
   const { fitView } = useReactFlow();
   useEffect(() => {
     const id = requestAnimationFrame(() => {
+      if (focusNodeTitle) {
+        const target = nodes.find((n) => n.data?.title === focusNodeTitle);
+        if (target) {
+          fitView({ nodes: [{ id: target.id }], padding: 0.5, maxZoom: 1.0 });
+          return;
+        }
+      }
       fitView({ padding: 0.15, maxZoom: 1.2 });
     });
     return () => cancelAnimationFrame(id);
-  }, [fitView]);
+  }, [fitView, focusNodeTitle, nodes]);
   return null;
 }
 
-function SingleGraphView({ graphJSON }: { graphJSON: UEGraphJSON }) {
+function SingleGraphView({ graphJSON, focusNodeTitle }: { graphJSON: UEGraphJSON; focusNodeTitle?: string | null }) {
   const initial = useMemo(() => graphJsonToFlow(graphJSON), [graphJSON]);
   const [nodes, , onNodesChange] = useNodesState(initial.nodes);
   const [edges, , onEdgesChange] = useEdgesState(initial.edges);
@@ -68,7 +75,7 @@ function SingleGraphView({ graphJSON }: { graphJSON: UEGraphJSON }) {
         maxZoom={4}
         proOptions={{ hideAttribution: true }}
       >
-        <FitViewOnMount />
+        <FitViewOnMount focusNodeTitle={focusNodeTitle} nodes={nodes} />
         <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.03)" gap={20} />
         <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.06)" gap={100} />
         <Controls />
@@ -94,12 +101,15 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
     setBreadcrumbs([{ label: name, graphName: name }]);
   }, []);
 
-  const handleNavigateToGraph = useCallback((name: string) => {
+  const [focusNodeTitle, setFocusNodeTitle] = useState<string | null>(null);
+
+  const handleNavigateToGraph = useCallback((name: string, focusTitle?: string) => {
     const exact = graphNames.find((g) => g === name);
     const fuzzy = exact ?? graphNames.find((g) => g.toLowerCase() === name.toLowerCase());
     if (fuzzy) {
       setActiveGraph(fuzzy);
-      setBreadcrumbs((prev) => [...prev, { label: fuzzy, graphName: fuzzy }]);
+      setBreadcrumbs([{ label: fuzzy, graphName: fuzzy }]);
+      setFocusNodeTitle(focusTitle ?? null);
     }
   }, [graphNames]);
 
@@ -159,7 +169,7 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
           <Breadcrumbs items={breadcrumbs} onNavigate={handleBreadcrumbNavigate} />
           <div className="ueflow-graph-container">
             {currentGraphJSON ? (
-              <SingleGraphView key={activeGraph} graphJSON={currentGraphJSON} />
+              <SingleGraphView key={`${activeGraph}:${focusNodeTitle ?? ''}`} graphJSON={currentGraphJSON} focusNodeTitle={focusNodeTitle} />
             ) : (
               <div className="ueflow-empty-graph">No graph selected</div>
             )}

@@ -4,7 +4,7 @@ import type { DetailsItem } from './DetailsPanel';
 
 interface SidebarProps {
   multiGraph: UEMultiGraphJSON;
-  onNavigateToGraph: (graphName: string) => void;
+  onNavigateToGraph: (graphName: string, focusTitle?: string) => void;
   onShowDetails?: (item: DetailsItem) => void;
 }
 
@@ -121,7 +121,7 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
                 className="uf-sidebar-item uf-sidebar-item--clickable"
                 title={params || undefined}
                 onClick={() => {
-                  onNavigateToGraph('EventGraph');
+                  onNavigateToGraph('EventGraph', evt.name);
                   const rawParams = (evt.params || evt.inputs || []);
                   const parsed = rawParams.map(toParamObj).filter((p: any) => p.type !== 'Exec');
                   onShowDetails?.({ kind: 'event', name: evt.name, params: parsed });
