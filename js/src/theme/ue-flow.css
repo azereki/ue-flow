@@ -27,7 +27,7 @@
   font-family: var(--uf-font-body);
   font-size: 12px;
   color: #e0e0e8;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .ueflow-node-header {
@@ -37,6 +37,7 @@
   padding: 5px 10px;
   background: color-mix(in srgb, var(--header-accent, #3a5a8c) 55%, #1a1d2a);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 5px 5px 0 0;
   font-weight: 600;
   font-size: 11px;
   letter-spacing: 0.02em;
@@ -120,11 +121,34 @@
 }
 
 .ueflow-handle--exec {
+  border-color: transparent !important;
+  background: transparent !important;
   border-radius: 0 !important;
-  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-  transform: none;
   width: 10px !important;
   height: 10px !important;
+}
+
+.ueflow-handle--exec.ueflow-handle--connected {
+  background: transparent !important;
+  box-shadow: none;
+}
+
+/* Right-pointing arrow: all exec pins point in flow direction (→), centered on node edge */
+.ueflow-handle--exec::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  transform: translate(-50%, -50%);
+  clip-path: path('M 0 2.4 Q 0 0 2.4 0 L 8.4 3.6 Q 12 6 8.4 8.4 L 2.4 12 Q 0 12 0 9.6 Z');
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.ueflow-handle--exec.ueflow-handle--connected::after {
+  background: #fff;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8));
 }
 
 /* Viewer mode: handles are not connectable */

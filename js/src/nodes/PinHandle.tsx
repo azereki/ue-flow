@@ -3,6 +3,29 @@ import { useCallback, type FC } from 'react';
 import type { UEPin } from '../types/ue-graph';
 import { PIN_COLORS, isExecPin } from '../types/pin-types';
 
+function pinTooltip(pin: UEPin): string {
+  const parts: string[] = [];
+  const name = pin.friendlyName || pin.name;
+  if (name) parts.push(name);
+
+  if (pin.category === 'exec') {
+    parts.push('Exec');
+  } else {
+    let typeStr: string = pin.category;
+    if (pin.subCategoryObject) typeStr = pin.subCategoryObject;
+    else if (pin.subCategory) typeStr = pin.subCategory;
+    if (pin.containerType) typeStr = `${pin.containerType}<${typeStr}>`;
+    parts.push(typeStr);
+  }
+
+  if (pin.isReference) parts.push('(by ref)');
+  if (pin.isConst) parts.push('(const)');
+  if (pin.defaultValue) parts.push(`Default: ${pin.defaultValue}`);
+  if (pin.description) parts.push(pin.description);
+
+  return parts.join(' \u2014 ');
+}
+
 interface PinHandleProps {
   pin: UEPin;
 }
@@ -22,7 +45,7 @@ export const PinHandle: FC<PinHandleProps> = ({ pin }) => {
   const label = pin.friendlyName || pin.name;
 
   return (
-    <div className={`ueflow-pin ueflow-pin--${pin.direction}`}>
+    <div className={`ueflow-pin ueflow-pin--${pin.direction}`} title={pinTooltip(pin)}>
       <Handle
         type={type}
         position={isInput ? Position.Left : Position.Right}
@@ -31,7 +54,7 @@ export const PinHandle: FC<PinHandleProps> = ({ pin }) => {
         style={{ '--pin-color': color } as React.CSSProperties}
         isConnectable={false}
       />
-      {!isExec && <span className="ueflow-pin-label">{label}</span>}
+      {label && <span className="ueflow-pin-label">{label}</span>}
     </div>
   );
 };
