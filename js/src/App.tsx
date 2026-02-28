@@ -60,6 +60,10 @@ function SingleGraphView({ graphJSON }: { graphJSON: UEGraphJSON }) {
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
+        colorMode="dark"
+        onlyRenderVisibleElements
+        elevateNodesOnSelect
+        nodesConnectable={false}
         minZoom={0.05}
         maxZoom={4}
         proOptions={{ hideAttribution: true }}
