@@ -35,21 +35,23 @@ interface AppProps {
   multiGraphJSON?: UEMultiGraphJSON | null;
 }
 
-function FitViewOnMount({ focusNodeTitle, nodes }: { focusNodeTitle?: string | null; nodes: Array<{ id: string; data: any }> }) {
-  const { fitView } = useReactFlow();
+function FitViewOnMount({ focusNode }: { focusNode?: { x: number; y: number; w: number; h: number } }) {
+  const { fitView, setCenter } = useReactFlow();
   useEffect(() => {
     const id = requestAnimationFrame(() => {
-      if (focusNodeTitle) {
-        const target = nodes.find((n) => n.data?.title === focusNodeTitle);
-        if (target) {
-          fitView({ nodes: [{ id: target.id }], padding: 0.5, maxZoom: 1.0 });
-          return;
-        }
+      if (focusNode) {
+        setCenter(
+          focusNode.x + focusNode.w / 2,
+          focusNode.y + focusNode.h / 2,
+          { zoom: 1.0 },
+        );
+      } else {
+        fitView({ padding: 0.15, maxZoom: 1.2 });
       }
-      fitView({ padding: 0.15, maxZoom: 1.2 });
     });
     return () => cancelAnimationFrame(id);
-  }, [fitView, focusNodeTitle, nodes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run once on mount only
   return null;
 }
 
@@ -57,6 +59,24 @@ function SingleGraphView({ graphJSON, focusNodeTitle }: { graphJSON: UEGraphJSON
   const initial = useMemo(() => graphJsonToFlow(graphJSON), [graphJSON]);
   const [nodes, , onNodesChange] = useNodesState(initial.nodes);
   const [edges, , onEdgesChange] = useEdgesState(initial.edges);
+
+  // Resolve focus title to node position using stable initial data
+  // Handles mismatches: sidebar has "BeginPlay", graph has "Event ReceiveBeginPlay"
+  const focusNode = useMemo(() => {
+    if (!focusNodeTitle) return undefined;
+    const q = focusNodeTitle.toLowerCase();
+    const target = initial.nodes.find((n) => {
+      const title = ((n.data as any)?.title ?? '').toLowerCase();
+      return title === q || title.includes(q) || title.replace('event ', '').replace('receive', '') === q;
+    });
+    if (!target) return undefined;
+    return {
+      x: target.position.x,
+      y: target.position.y,
+      w: (target as any).initialWidth ?? 200,
+      h: (target as any).initialHeight ?? 100,
+    };
+  }, [focusNodeTitle, initial.nodes]);
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }}>
@@ -75,7 +95,7 @@ function SingleGraphView({ graphJSON, focusNodeTitle }: { graphJSON: UEGraphJSON
         maxZoom={4}
         proOptions={{ hideAttribution: true }}
       >
-        <FitViewOnMount focusNodeTitle={focusNodeTitle} nodes={nodes} />
+        <FitViewOnMount focusNode={focusNode} />
         <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.03)" gap={20} />
         <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.06)" gap={100} />
         <Controls />
