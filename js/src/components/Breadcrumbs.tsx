@@ -11,8 +11,6 @@ interface BreadcrumbsProps {
 }
 
 export const Breadcrumbs: FC<BreadcrumbsProps> = ({ items, onNavigate }) => {
-  if (items.length <= 1) return null;
-
   return (
     <div className="ueflow-breadcrumbs">
       {items.map((item, i) => (

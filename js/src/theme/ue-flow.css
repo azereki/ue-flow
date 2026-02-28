@@ -316,12 +316,72 @@
   opacity: 1;
 }
 
+/* ===== App Shell ===== */
+
+.ueflow-app-shell {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ===== TopBar ===== */
+
+.ueflow-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 36px;
+  padding: 0 16px;
+  background: #0d0d1a;
+  border-bottom: 1px solid #2a2a4a;
+  flex-shrink: 0;
+  font-family: var(--uf-font-body);
+  font-size: 12px;
+}
+
+.ueflow-topbar-title {
+  color: #8ab4f8;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ueflow-topbar-stats {
+  color: #71717a;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* ===== StatusBar ===== */
+
+.ueflow-statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 24px;
+  padding: 0 16px;
+  background: #0d0d1a;
+  border-top: 1px solid #2a2a4a;
+  flex-shrink: 0;
+  font-family: var(--uf-font-body);
+  font-size: 10px;
+  color: #71717a;
+}
+
+.ueflow-statusbar-left,
+.ueflow-statusbar-right {
+  white-space: nowrap;
+}
+
 /* ===== Multi-Graph Layout ===== */
 
 .ueflow-multi-layout {
   display: flex;
-  width: 100vw;
-  height: 100vh;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -434,10 +494,10 @@
 /* ===== Sidebar ===== */
 
 .uf-sidebar {
-  width: 220px;
-  min-width: 220px;
+  width: 240px;
+  min-width: 240px;
   height: 100%;
-  background: #0e0f18;
+  background: #111122;
   border-right: 1px solid var(--uf-surface-border);
   overflow-y: auto;
   overflow-x: hidden;

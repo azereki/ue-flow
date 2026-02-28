@@ -18,6 +18,8 @@ import { ExportToolbar } from './components/ExportToolbar';
 import { TabBar } from './components/TabBar';
 import { Breadcrumbs, type BreadcrumbItem } from './components/Breadcrumbs';
 import { Sidebar } from './components/Sidebar';
+import { TopBar } from './components/TopBar';
+import { StatusBar } from './components/StatusBar';
 import type { UEGraphJSON, UEMultiGraphJSON } from './types/ue-graph';
 
 const nodeTypes = {
@@ -69,6 +71,7 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
   ]);
 
   const currentGraphJSON = multiGraph.graphs[activeGraph] ?? null;
+  const nodeCount = currentGraphJSON?.nodes?.length ?? 0;
 
   const handleSelectGraph = useCallback((name: string) => {
     setActiveGraph(name);
@@ -76,7 +79,6 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
   }, []);
 
   const handleNavigateToGraph = useCallback((name: string) => {
-    // Find the graph name with fuzzy matching
     const exact = graphNames.find((g) => g === name);
     const fuzzy = exact ?? graphNames.find((g) => g.toLowerCase() === name.toLowerCase());
     if (fuzzy) {
@@ -93,25 +95,43 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
     }
   }, [breadcrumbs]);
 
+  const title = multiGraph.metadata?.blueprintName || multiGraph.metadata?.assetPath || 'Blueprint';
+
   return (
-    <div className="ueflow-multi-layout">
-      <Sidebar multiGraph={multiGraph} onNavigateToGraph={handleNavigateToGraph} />
-      <div className="ueflow-multi-main">
-        <TabBar
-          graphNames={graphNames}
-          activeGraph={activeGraph}
-          onSelectGraph={handleSelectGraph}
-          comparison={multiGraph.comparison}
-        />
-        <Breadcrumbs items={breadcrumbs} onNavigate={handleBreadcrumbNavigate} />
-        <div className="ueflow-graph-container">
-          {currentGraphJSON ? (
-            <SingleGraphView key={activeGraph} graphJSON={currentGraphJSON} />
-          ) : (
-            <div className="ueflow-empty-graph">No graph selected</div>
-          )}
+    <div className="ueflow-app-shell">
+      <TopBar
+        title={title}
+        graphCount={graphNames.length}
+        functionCount={multiGraph.functions?.length ?? 0}
+        variableCount={multiGraph.variables?.length ?? 0}
+      />
+      <div className="ueflow-multi-layout">
+        <Sidebar multiGraph={multiGraph} onNavigateToGraph={handleNavigateToGraph} />
+        <div className="ueflow-multi-main">
+          <TabBar
+            graphNames={graphNames}
+            activeGraph={activeGraph}
+            onSelectGraph={handleSelectGraph}
+            comparison={multiGraph.comparison}
+          />
+          <Breadcrumbs items={breadcrumbs} onNavigate={handleBreadcrumbNavigate} />
+          <div className="ueflow-graph-container">
+            {currentGraphJSON ? (
+              <SingleGraphView key={activeGraph} graphJSON={currentGraphJSON} />
+            ) : (
+              <div className="ueflow-empty-graph">No graph selected</div>
+            )}
+          </div>
         </div>
       </div>
+      <StatusBar
+        activeGraph={activeGraph}
+        nodeCount={nodeCount}
+        variableCount={multiGraph.variables?.length ?? 0}
+        functionCount={multiGraph.functions?.length ?? 0}
+        graphCount={graphNames.length}
+        comparison={multiGraph.comparison as any}
+      />
     </div>
   );
 }
