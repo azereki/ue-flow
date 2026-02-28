@@ -8,10 +8,10 @@ interface NodeHeaderProps {
 
 // More saturated colors for better visibility against dark background
 const TYPE_COLORS: Record<string, string> = {
-  event: '#b22020',
-  call_function: '#2070b0',
-  function: '#2070b0',
-  branch: '#8a8a20',
+  event: '#B40000',
+  call_function: '#1060A8',
+  function: '#1060A8',
+  branch: '#404040',
   variable_get: '#208050',
   variable_set: '#208050',
   macro: '#8020a0',
@@ -19,11 +19,11 @@ const TYPE_COLORS: Record<string, string> = {
   cast: '#30a060',
   switch: '#8a8a20',
   select: '#8a8a20',
-  function_entry: '#b02020',
+  function_entry: '#B40000',
   function_result: '#20a040',
   tunnel: '#5a5a7a',
   reroute: '#4a4a5a',
-  make_array: '#2070b0',
+  make_array: '#1060A8',
 };
 
 export const NodeHeader: FC<NodeHeaderProps> = ({ title, ueType }) => {

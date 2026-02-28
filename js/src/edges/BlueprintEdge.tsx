@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { BaseEdge, getBezierPath, type EdgeProps } from '@xyflow/react';
+import { BaseEdge, getSmoothStepPath, type EdgeProps } from '@xyflow/react';
 import { PIN_COLORS, isExecPin, type PinCategory } from '../types/pin-types';
 
 export const BlueprintEdge = memo((props: EdgeProps) => {
@@ -8,7 +8,7 @@ export const BlueprintEdge = memo((props: EdgeProps) => {
   const color = PIN_COLORS[category] ?? '#808080';
   const isExec = isExecPin(category);
 
-  const [edgePath] = getBezierPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition });
+  const [edgePath] = getSmoothStepPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, borderRadius: 16 });
 
   return (
     <BaseEdge
@@ -16,8 +16,9 @@ export const BlueprintEdge = memo((props: EdgeProps) => {
       path={edgePath}
       style={{
         stroke: color,
-        strokeWidth: isExec ? 3 : 2,
-        strokeOpacity: isExec ? 0.9 : 0.6,
+        strokeWidth: isExec ? 4 : 2.5,
+        strokeOpacity: 1.0,
+        filter: `drop-shadow(0 0 3px ${color})`,
       }}
     />
   );

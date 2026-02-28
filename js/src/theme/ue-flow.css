@@ -26,7 +26,7 @@
 
 .ueflow-node-header {
   padding: 5px 10px;
-  background: color-mix(in srgb, var(--header-accent, #3a5a8c) 30%, #1a1d2a);
+  background: color-mix(in srgb, var(--header-accent, #3a5a8c) 55%, #1a1d2a);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   font-weight: 600;
   font-size: 11px;
@@ -104,10 +104,15 @@
 }
 
 .ueflow-handle--exec {
-  border-radius: 2px !important;
-  transform: rotate(45deg);
-  width: 8px !important;
-  height: 8px !important;
+  border-radius: 0 !important;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  transform: none;
+  width: 10px !important;
+  height: 10px !important;
+}
+
+.ueflow-handle--connected {
+  box-shadow: 0 0 4px var(--pin-color);
 }
 
 /* ===== React Flow Overrides (Blueprint Noir) ===== */
@@ -149,8 +154,8 @@
 
 /* Selection glow */
 .react-flow__node.selected .ueflow-node {
-  border-color: var(--uf-accent);
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3), 0 2px 8px rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 200, 0, 0.9);
+  box-shadow: 0 0 0 2px rgba(255, 200, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 /* Edge hover */

@@ -5,24 +5,24 @@ export type PinCategory =
   | 'softclass' | 'softobject' | 'wildcard';
 
 export const PIN_COLORS: Record<PinCategory, string> = {
-  exec:       '#b8b8b8',
-  bool:       '#8b1a1a',
-  real:       '#5b8c3e',
-  float:      '#5b8c3e',
-  int:        '#1c9e8e',
+  exec:       '#FFFFFF',
+  bool:       '#8b0000',
+  real:       '#00B400',
+  float:      '#00B400',
+  int:        '#00CBCB',
   byte:       '#006060',
-  string:     '#c44dba',
+  string:     '#FF00FF',
   name:       '#8b6cc4',
   text:       '#c44d7e',
-  object:     '#3a6ec4',
+  object:     '#1296C8',
   class:      '#6a1ec4',
   struct:     '#1a5c8c',
   enum:       '#006060',
   interface:  '#c4b43a',
   delegate:   '#c4443a',
   softclass:  '#6a1ec4',
-  softobject: '#3a6ec4',
-  wildcard:   '#808080',
+  softobject: '#1296C8',
+  wildcard:   '#AAAAAA',
 };
 
 export function isExecPin(category: PinCategory): boolean {

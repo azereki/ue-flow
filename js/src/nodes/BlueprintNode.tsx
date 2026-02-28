@@ -18,7 +18,7 @@ export const BlueprintNode = memo(({ data }: NodeProps) => {
         <div className="ueflow-pins-column ueflow-pins--input">
           {inputPins.map((pin) => (
             <div key={pin.id} className="ueflow-pin-row">
-              <PinHandle pin={pin} isConnected={false} />
+              <PinHandle pin={pin} />
               {!isExecPin(pin.category) && pin.defaultValue && (
                 <PinValueEditor pin={pin} />
               )}
@@ -27,7 +27,7 @@ export const BlueprintNode = memo(({ data }: NodeProps) => {
         </div>
         <div className="ueflow-pins-column ueflow-pins--output">
           {outputPins.map((pin) => (
-            <PinHandle key={pin.id} pin={pin} isConnected={false} />
+            <PinHandle key={pin.id} pin={pin} />
           ))}
         </div>
       </div>

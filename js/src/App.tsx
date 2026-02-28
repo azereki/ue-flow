@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import {
   ReactFlow,
   Background,
+  BackgroundVariant,
   Controls,
   MiniMap,
   useNodesState,
@@ -50,7 +51,8 @@ function SingleGraphView({ graphJSON }: { graphJSON: UEGraphJSON }) {
         maxZoom={4}
         proOptions={{ hideAttribution: true }}
       >
-        <Background color="#1a1d27" gap={20} size={1} />
+        <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.03)" gap={20} />
+        <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.06)" gap={100} />
         <Controls />
         <MiniMap nodeColor={() => '#2a2d37'} maskColor="rgba(0, 0, 0, 0.7)" />
       </ReactFlow>
