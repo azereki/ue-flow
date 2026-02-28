@@ -6,6 +6,12 @@
   --uf-text: #d4d4d8;
   --uf-text-muted: #71717a;
   --uf-accent: #6366f1;
+  --uf-node-bg: #1e2130;
+  --uf-node-border: #3a3d4a;
+  --uf-chrome-bg: #0d0d1a;
+  --uf-chrome-border: #2a2a4a;
+  --uf-panel-bg: #111122;
+  --uf-tab-bg: #111118;
   --uf-font-body: 'Inter', system-ui, -apple-system, sans-serif;
   --uf-font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
 }
@@ -13,8 +19,8 @@
 /* ===== Node Styling ===== */
 
 .ueflow-node {
-  background: #1e2130;
-  border: 1px solid #3a3d4a;
+  background: var(--uf-node-bg);
+  border: 1px solid var(--uf-node-border);
   border-radius: 6px;
   min-width: 160px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
@@ -392,8 +398,8 @@
   justify-content: space-between;
   height: 36px;
   padding: 0 16px;
-  background: #0d0d1a;
-  border-bottom: 1px solid #2a2a4a;
+  background: var(--uf-chrome-bg);
+  border-bottom: 1px solid var(--uf-chrome-border);
   flex-shrink: 0;
   font-family: var(--uf-font-body);
   font-size: 12px;
@@ -421,8 +427,8 @@
   justify-content: space-between;
   height: 24px;
   padding: 0 16px;
-  background: #0d0d1a;
-  border-top: 1px solid #2a2a4a;
+  background: var(--uf-chrome-bg);
+  border-top: 1px solid var(--uf-chrome-border);
   flex-shrink: 0;
   font-family: var(--uf-font-body);
   font-size: 10px;
@@ -473,7 +479,7 @@
 .ueflow-tab-bar {
   display: flex;
   align-items: center;
-  background: #111118;
+  background: var(--uf-tab-bg);
   border-bottom: 1px solid var(--uf-surface-border);
   height: 32px;
   overflow-x: auto;
@@ -512,7 +518,6 @@
   margin-bottom: -1px;
 }
 
-.ueflow-tab-name { }
 
 .ueflow-tab-count {
   font-size: 9px;
@@ -558,7 +563,7 @@
 .uf-sidebar {
   width: 100%;
   height: 100%;
-  background: #111122;
+  background: var(--uf-panel-bg);
   border-right: 1px solid var(--uf-surface-border);
   overflow-y: auto;
   overflow-x: hidden;
@@ -768,7 +773,7 @@
   width: 300px;
   min-width: 300px;
   height: 100%;
-  background: #111122;
+  background: var(--uf-panel-bg);
   border-left: 1px solid var(--uf-surface-border);
   overflow-y: auto;
   font-family: var(--uf-font-body);

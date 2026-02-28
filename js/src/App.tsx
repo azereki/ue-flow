@@ -40,7 +40,10 @@ interface AppProps {
 
 function FitViewOnMount({ focusNode }: { focusNode?: { x: number; y: number; w: number; h: number } }) {
   const { fitView, setCenter } = useReactFlow();
+  const ranRef = useRef(false);
   useEffect(() => {
+    if (ranRef.current) return;
+    ranRef.current = true;
     const id = requestAnimationFrame(() => {
       if (focusNode) {
         setCenter(
@@ -53,8 +56,7 @@ function FitViewOnMount({ focusNode }: { focusNode?: { x: number; y: number; w: 
       }
     });
     return () => cancelAnimationFrame(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run once on mount only
+  }, [focusNode, fitView, setCenter]);
   return null;
 }
 

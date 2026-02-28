@@ -11,13 +11,15 @@ export const TabBar: FC<TabBarProps> = ({ graphNames, activeGraph, onSelectGraph
   if (graphNames.length <= 1) return null;
 
   return (
-    <div className="ueflow-tab-bar">
+    <div className="ueflow-tab-bar" role="tablist">
       {graphNames.map((name) => {
         const isActive = name === activeGraph;
         const comp = comparison?.[name];
         return (
           <button
             key={name}
+            role="tab"
+            aria-selected={isActive}
             className={`ueflow-tab ${isActive ? 'ueflow-tab--active' : ''}`}
             onClick={() => onSelectGraph(name)}
           >

@@ -24,7 +24,7 @@ export const Breadcrumbs: FC<BreadcrumbsProps> = ({ items, onNavigate }) => {
               {item.label}
             </button>
           ) : (
-            <span className="ueflow-breadcrumb-current">{item.label}</span>
+            <span className="ueflow-breadcrumb-current" aria-current="page">{item.label}</span>
           )}
         </span>
       ))}

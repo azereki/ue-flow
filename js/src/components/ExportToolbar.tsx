@@ -50,27 +50,25 @@ function generateContext(nodes: Node[], edges: Edge[]): string {
     for (const entry of entryNodes) {
       const data = entry.data as FlowNodeData;
       lines.push(`  ${data.title}`);
-      // Trace chain
-      let current = entry.id;
+      // BFS to follow all branches
+      const queue = [entry.id];
       const visited = new Set<string>();
-      while (current && !visited.has(current)) {
+      while (queue.length > 0) {
+        const current = queue.shift()!;
+        if (visited.has(current)) continue;
         visited.add(current);
-        const next = execEdges.find(e => e.source === current);
-        if (next) {
+        const nextEdges = execEdges.filter(e => e.source === current);
+        for (const next of nextEdges) {
           const targetNode = nodes.find(n => n.id === next.target);
-          if (targetNode) {
+          if (targetNode && !visited.has(next.target)) {
             const td = targetNode.data as FlowNodeData;
             const args = td.pins
               ?.filter(p => p.direction === 'input' && p.defaultValue && !isExecPin(p.category))
               .map(p => `${p.friendlyName || p.name}="${p.defaultValue}"`)
               .join(', ');
             lines.push(`    -> ${td.title}${args ? `(${args})` : ''}`);
-            current = next.target;
-          } else {
-            break;
+            queue.push(next.target);
           }
-        } else {
-          break;
         }
       }
     }
@@ -125,20 +123,22 @@ function generateMarkdown(nodes: Node[], edges: Edge[]): string {
     lines.push('|-------|------|-------|');
     for (const entry of entryNodes) {
       const data = entry.data as FlowNodeData;
-      // Trace chain
+      // BFS to collect all reachable nodes
       const chain: string[] = [];
-      let current = entry.id;
+      const queue = [entry.id];
       const visited = new Set<string>();
-      while (current && !visited.has(current)) {
+      while (queue.length > 0) {
+        const current = queue.shift()!;
+        if (visited.has(current)) continue;
         visited.add(current);
-        const next = execEdges.find(e => e.source === current);
-        if (next) {
+        const nextEdges = execEdges.filter(e => e.source === current);
+        for (const next of nextEdges) {
           const targetNode = nodes.find(n => n.id === next.target);
-          if (targetNode) {
+          if (targetNode && !visited.has(next.target)) {
             chain.push((targetNode.data as FlowNodeData).title);
-            current = next.target;
-          } else break;
-        } else break;
+            queue.push(next.target);
+          }
+        }
       }
       const flow = chain.slice(0, 3).join(' -> ') + (chain.length > 3 ? ' -> ...' : '');
       lines.push(`| ${data.title} | ${flow} | ${chain.length + 1} |`);

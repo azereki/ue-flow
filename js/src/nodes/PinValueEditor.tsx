@@ -1,10 +1,10 @@
 import { useState, useCallback, useEffect, type FC } from 'react';
 import type { UEPin } from '../types/ue-graph';
 import type { PinCategory } from '../types/pin-types';
+import type React from 'react';
 
 interface PinValueEditorProps {
   pin: UEPin;
-  onValueChange?: (pinId: string, newValue: string) => void;
 }
 
 function editorForCategory(
@@ -75,12 +75,9 @@ function editorForCategory(
                 step={0.1}
                 placeholder={axis}
                 onChange={(e) => {
-                  const parts = value.match(/^\(X=([\d.-]+),Y=([\d.-]+),Z=([\d.-]+)\)$/i);
-                  if (parts) {
-                    const vals = [parts[1], parts[2], parts[3]];
-                    vals[i] = e.target.value;
-                    onChange(`(X=${vals[0]},Y=${vals[1]},Z=${vals[2]})`);
-                  }
+                  const vals = [vectorMatch[1], vectorMatch[2], vectorMatch[3]];
+                  vals[i] = e.target.value;
+                  onChange(`(X=${vals[0]},Y=${vals[1]},Z=${vals[2]})`);
                 }}
                 className="ueflow-editor-number ueflow-editor-vector-input"
               />
@@ -138,7 +135,7 @@ function editorForCategory(
   }
 }
 
-export const PinValueEditor: FC<PinValueEditorProps> = ({ pin, onValueChange }) => {
+export const PinValueEditor: FC<PinValueEditorProps> = ({ pin }) => {
   const [value, setValue] = useState(pin.defaultValue);
 
   // Sync local state when the pin prop changes (e.g., graph switch)
@@ -148,8 +145,7 @@ export const PinValueEditor: FC<PinValueEditorProps> = ({ pin, onValueChange }) 
 
   const handleChange = useCallback((newValue: string) => {
     setValue(newValue);
-    onValueChange?.(pin.id, newValue);
-  }, [pin.id, onValueChange]);
+  }, []);
 
   if (!pin.defaultValue && !value) return null;
 

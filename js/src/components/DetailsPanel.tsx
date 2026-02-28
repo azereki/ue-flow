@@ -139,7 +139,7 @@ export const DetailsPanel: FC<DetailsPanelProps> = ({ item, onClose }) => {
     <div className="uf-details-panel">
       <div className="uf-details-header">
         <span className="uf-details-title">{item.name}</span>
-        <button className="uf-details-close" onClick={onClose}>&times;</button>
+        <button className="uf-details-close" onClick={onClose} aria-label="Close details">&times;</button>
       </div>
       <div className="uf-details-badge">{item.kind}</div>
       <div className="uf-details-content">
