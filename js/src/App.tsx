@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   ReactFlow,
   Background,
@@ -7,6 +7,7 @@ import {
   MiniMap,
   useNodesState,
   useEdgesState,
+  useReactFlow,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './theme/ue-flow.css';
@@ -33,6 +34,17 @@ interface AppProps {
   multiGraphJSON?: UEMultiGraphJSON | null;
 }
 
+function FitViewOnMount() {
+  const { fitView } = useReactFlow();
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      fitView({ padding: 0.15, maxZoom: 1.2 });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [fitView]);
+  return null;
+}
+
 function SingleGraphView({ graphJSON }: { graphJSON: UEGraphJSON }) {
   const initial = useMemo(() => graphJsonToFlow(graphJSON), [graphJSON]);
   const [nodes, , onNodesChange] = useNodesState(initial.nodes);
@@ -47,12 +59,11 @@ function SingleGraphView({ graphJSON }: { graphJSON: UEGraphJSON }) {
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
-        fitView
-        fitViewOptions={{ padding: 0.2, maxZoom: 1.5 }}
         minZoom={0.05}
         maxZoom={4}
         proOptions={{ hideAttribution: true }}
       >
+        <FitViewOnMount />
         <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.03)" gap={20} />
         <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.06)" gap={100} />
         <Controls />
