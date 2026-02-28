@@ -6,7 +6,7 @@ interface StatusBarProps {
   variableCount: number;
   functionCount: number;
   graphCount: number;
-  comparison?: { reductionPercent?: number } | null;
+  comparison?: Record<string, { before: number; after: number }>;
 }
 
 export const StatusBar: FC<StatusBarProps> = ({
@@ -17,6 +17,16 @@ export const StatusBar: FC<StatusBarProps> = ({
   graphCount,
   comparison,
 }) => {
+  // Compute overall reduction if comparison data exists
+  const reductionPercent = comparison ? (() => {
+    const entries = Object.values(comparison);
+    if (entries.length === 0) return null;
+    const totalBefore = entries.reduce((sum, e) => sum + e.before, 0);
+    const totalAfter = entries.reduce((sum, e) => sum + e.after, 0);
+    if (totalBefore === 0) return null;
+    return ((totalBefore - totalAfter) / totalBefore) * 100;
+  })() : null;
+
   return (
     <div className="ueflow-statusbar">
       <span className="ueflow-statusbar-left">
@@ -24,8 +34,8 @@ export const StatusBar: FC<StatusBarProps> = ({
       </span>
       <span className="ueflow-statusbar-right">
         Variables: {variableCount} | Functions: {functionCount} | Graphs: {graphCount}
-        {comparison?.reductionPercent != null && (
-          <> | Reduction: {comparison.reductionPercent.toFixed(1)}%</>
+        {reductionPercent != null && (
+          <> | Reduction: {reductionPercent.toFixed(1)}%</>
         )}
       </span>
     </div>

@@ -50,11 +50,14 @@ export interface UEGraphJSON {
   summary?: string;
 }
 
+/** A param entry can be a "name: Type" string or a {name, type} object. */
+export type SidebarParam = string | { name: string; type: string };
+
 export interface UEMultiGraphJSON {
-  metadata: { title: string };
+  metadata: { title: string; blueprintName?: string; assetPath?: string };
   graphs: Record<string, UEGraphJSON>;
-  events: Array<{ name: string; params?: string[] }>;
-  functions: Array<{ name: string; category?: string; params?: string[]; returns?: string[] }>;
+  events: Array<{ name: string; params?: SidebarParam[]; inputs?: SidebarParam[] }>;
+  functions: Array<{ name: string; category?: string; params?: SidebarParam[]; returns?: SidebarParam[]; inputs?: SidebarParam[]; outputs?: SidebarParam[] }>;
   variables: Array<{ name: string; type: string; category?: string; default?: string; replicated?: boolean }>;
   structs: Array<{ name: string; fields: Array<{ name: string; type: string; default?: string }> }>;
   delegates: Array<{ name: string; signature?: string }>;

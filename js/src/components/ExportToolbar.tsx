@@ -16,9 +16,12 @@ async function copyToClipboard(text: string) {
     const textarea = document.createElement('textarea');
     textarea.value = text;
     document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textarea);
+    try {
+      textarea.select();
+      document.execCommand('copy');
+    } finally {
+      document.body.removeChild(textarea);
+    }
   }
 }
 
@@ -31,7 +34,7 @@ function generateContext(nodes: Node[], edges: Edge[]): string {
   lines.push('');
 
   // Execution flow
-  const execEdges = edges.filter(e => (e.data as any)?.category === 'exec');
+  const execEdges = edges.filter(e => (e.data as { category?: string })?.category === 'exec');
   const targetNodes = new Set(execEdges.map(e => e.target));
 
   // Find entry points (nodes with exec output but not targets of exec edges)
@@ -107,7 +110,7 @@ function generateMarkdown(nodes: Node[], edges: Edge[]): string {
   lines.push('### Blueprint Graph');
   lines.push('');
 
-  const execEdges = edges.filter(e => (e.data as any)?.category === 'exec');
+  const execEdges = edges.filter(e => (e.data as { category?: string })?.category === 'exec');
   const targetNodes = new Set(execEdges.map(e => e.target));
 
   const entryNodes = nodes.filter(n => {

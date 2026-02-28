@@ -1,4 +1,4 @@
-import { memo, useState, useCallback } from 'react';
+import { memo } from 'react';
 import type { NodeProps } from '@xyflow/react';
 import { NodeResizer } from '@xyflow/react';
 
@@ -22,8 +22,6 @@ function parseCommentColor(commentColor: string): { r: number; g: number; b: num
 
 export const CommentNode = memo(({ data, selected }: NodeProps) => {
   const { title, properties } = data as unknown as CommentNodeData;
-  const [isEditing, setIsEditing] = useState(false);
-  const [editTitle, setEditTitle] = useState(title);
 
   const commentColor = (properties?.CommentColor as string) ?? '';
   const parsed = parseCommentColor(commentColor);
@@ -33,21 +31,6 @@ export const CommentNode = memo(({ data, selected }: NodeProps) => {
   const borderColor = parsed
     ? `rgba(${parsed.r}, ${parsed.g}, ${parsed.b}, 0.35)`
     : 'rgba(255, 255, 255, 0.1)';
-
-  const handleDoubleClick = useCallback(() => {
-    setIsEditing(true);
-  }, []);
-
-  const handleBlur = useCallback(() => {
-    setIsEditing(false);
-  }, []);
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      setIsEditing(false);
-    }
-    e.stopPropagation();
-  }, []);
 
   return (
     <>
@@ -62,20 +45,8 @@ export const CommentNode = memo(({ data, selected }: NodeProps) => {
         <div
           className="ueflow-comment-header"
           style={{ background: headerBg }}
-          onDoubleClick={handleDoubleClick}
         >
-          {isEditing ? (
-            <input
-              className="ueflow-comment-title-input"
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              onBlur={handleBlur}
-              onKeyDown={handleKeyDown}
-              autoFocus
-            />
-          ) : (
-            <span className="ueflow-comment-title">{editTitle || title}</span>
-          )}
+          <span className="ueflow-comment-title">{title}</span>
         </div>
         <div className="ueflow-comment-body" />
       </div>

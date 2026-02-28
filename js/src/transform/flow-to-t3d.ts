@@ -9,58 +9,6 @@ import type { Node, Edge } from '@xyflow/react';
 import type { FlowNodeData } from './json-to-flow';
 import type { UEPin } from '../types/ue-graph';
 
-function serializePin(pin: UEPin): string {
-  const parts: string[] = [
-    `PinId=${pin.id}`,
-    `PinName="${pin.name}"`,
-  ];
-
-  if (pin.friendlyName) {
-    parts.push(`PinFriendlyName="${pin.friendlyName}"`);
-  }
-
-  if (pin.direction === 'output') {
-    parts.push('Direction="EGPD_Output"');
-  }
-
-  parts.push(`PinType.PinCategory="${pin.category}"`);
-  parts.push(`PinType.PinSubCategory="${pin.subCategory}"`);
-
-  if (pin.subCategoryObject) {
-    parts.push(`PinType.PinSubCategoryObject=${pin.subCategoryObject}`);
-  } else {
-    parts.push('PinType.PinSubCategoryObject=None');
-  }
-
-  parts.push(
-    'PinType.PinSubCategoryMemberReference=()',
-    'PinType.PinValueType=()',
-    `PinType.ContainerType=${pin.containerType || 'None'}`,
-    `PinType.bIsReference=${pin.isReference}`,
-    `PinType.bIsConst=${pin.isConst}`,
-    `PinType.bIsWeakPointer=${pin.isWeak}`,
-    'PinType.bIsUObjectWrapper=False',
-    'PinType.bSerializeAsSinglePrecisionFloat=False',
-  );
-
-  if (pin.defaultValue) {
-    parts.push(`DefaultValue="${pin.defaultValue}"`);
-  }
-
-  // LinkedTo is rebuilt from edges (see buildLinkedTo)
-  // It will be injected by the caller
-
-  parts.push('PersistentGuid=00000000000000000000000000000000');
-  parts.push(`bHidden=${pin.hidden ? 'True' : 'False'}`);
-  parts.push('bNotConnectable=False');
-  parts.push('bDefaultValueIsReadOnly=False');
-  parts.push('bDefaultValueIsIgnored=False');
-  parts.push(`bAdvancedView=${pin.advancedView ? 'True' : 'False'}`);
-  parts.push('bOrphanedPin=False,');
-
-  return '   CustomProperties Pin (' + parts.join(',') + ')';
-}
-
 function serializePinWithLinks(
   pin: UEPin,
   linkedTo: Array<{ nodeName: string; pinId: string }>,
@@ -129,7 +77,6 @@ interface PinLinkInfo {
  */
 function buildLinkedToMap(
   edges: Edge[],
-  nodes: Node[],
 ): Map<string, PinLinkInfo[]> {
   const map = new Map<string, PinLinkInfo[]>();
 
@@ -158,7 +105,7 @@ function buildLinkedToMap(
  * Convert React Flow nodes and edges back to UE T3D paste text.
  */
 export function flowToT3D(nodes: Node[], edges: Edge[]): string {
-  const linkedToMap = buildLinkedToMap(edges, nodes);
+  const linkedToMap = buildLinkedToMap(edges);
   const blocks: string[] = [];
 
   for (const node of nodes) {

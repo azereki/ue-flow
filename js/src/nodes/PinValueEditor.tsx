@@ -1,4 +1,4 @@
-import { useState, useCallback, type FC } from 'react';
+import { useState, useCallback, useEffect, type FC } from 'react';
 import type { UEPin } from '../types/ue-graph';
 import type { PinCategory } from '../types/pin-types';
 
@@ -140,6 +140,11 @@ function editorForCategory(
 
 export const PinValueEditor: FC<PinValueEditorProps> = ({ pin, onValueChange }) => {
   const [value, setValue] = useState(pin.defaultValue);
+
+  // Sync local state when the pin prop changes (e.g., graph switch)
+  useEffect(() => {
+    setValue(pin.defaultValue);
+  }, [pin.id, pin.defaultValue]);
 
   const handleChange = useCallback((newValue: string) => {
     setValue(newValue);

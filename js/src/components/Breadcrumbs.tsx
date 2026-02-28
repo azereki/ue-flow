@@ -14,15 +14,15 @@ export const Breadcrumbs: FC<BreadcrumbsProps> = ({ items, onNavigate }) => {
   return (
     <div className="ueflow-breadcrumbs">
       {items.map((item, i) => (
-        <span key={i}>
+        <span key={item.graphName}>
           {i > 0 && <span className="ueflow-breadcrumb-sep">&rsaquo;</span>}
           {i < items.length - 1 ? (
-            <a
+            <button
               className="ueflow-breadcrumb-link"
               onClick={() => onNavigate(i)}
             >
               {item.label}
-            </a>
+            </button>
           ) : (
             <span className="ueflow-breadcrumb-current">{item.label}</span>
           )}

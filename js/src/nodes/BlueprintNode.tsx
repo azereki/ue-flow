@@ -10,7 +10,7 @@ import { isExecPin, PIN_COLORS } from '../types/pin-types';
 const zoomSelector = (s: { transform: [number, number, number] }) => s.transform[2];
 
 export const BlueprintNode = memo(({ data }: NodeProps) => {
-  const { title, ueType, category, pins } = data as unknown as FlowNodeData;
+  const { title, ueType, pins } = data as unknown as FlowNodeData;
   const zoom = useStore(zoomSelector);
 
   // Reroute nodes: minimal 16px dot
@@ -33,7 +33,7 @@ export const BlueprintNode = memo(({ data }: NodeProps) => {
 
   return (
     <div className="ueflow-node" data-ue-type={ueType}>
-      <NodeHeader title={title} ueType={ueType} category={category} />
+      <NodeHeader title={title} ueType={ueType} />
       {showPinBody && (
         <div className="ueflow-node-body">
           <div className="ueflow-pins-column ueflow-pins--input">

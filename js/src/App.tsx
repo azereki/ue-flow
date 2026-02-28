@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   ReactFlow,
   Background,
@@ -24,6 +24,7 @@ import { TopBar } from './components/TopBar';
 import { StatusBar } from './components/StatusBar';
 import { DetailsPanel, type DetailsItem } from './components/DetailsPanel';
 import type { UEGraphJSON, UEMultiGraphJSON } from './types/ue-graph';
+import type { FlowNodeData } from './transform/json-to-flow';
 
 const nodeTypes = {
   blueprintNode: BlueprintNode,
@@ -74,15 +75,15 @@ function SingleGraphView({ graphJSON, focusNodeTitle }: { graphJSON: UEGraphJSON
     if (!focusNodeTitle) return undefined;
     const q = focusNodeTitle.toLowerCase();
     const target = initial.nodes.find((n) => {
-      const title = ((n.data as any)?.title ?? '').toLowerCase();
+      const title = ((n.data as FlowNodeData).title ?? '').toLowerCase();
       return title === q || title.includes(q) || title.replace('event ', '').replace('receive', '') === q;
     });
     if (!target) return undefined;
     return {
       x: target.position.x,
       y: target.position.y,
-      w: (target as any).initialWidth ?? 200,
-      h: (target as any).initialHeight ?? 100,
+      w: target.initialWidth ?? 200,
+      h: target.initialHeight ?? 100,
     };
   }, [focusNodeTitle, initial.nodes]);
 
@@ -108,7 +109,7 @@ function SingleGraphView({ graphJSON, focusNodeTitle }: { graphJSON: UEGraphJSON
         <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.06)" gap={100} />
         <Controls />
         <MiniMap nodeColor={(node) => {
-          const t = (node.data as any)?.ueType ?? '';
+          const t = (node.data as FlowNodeData)?.ueType ?? '';
           if (t === 'event' || t === 'function_entry') return '#B40000';
           if (t === 'call_function' || t === 'function') return '#1060A8';
           if (t === 'branch') return '#404040';
@@ -162,6 +163,8 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
 
   const [detailsItem, setDetailsItem] = useState<DetailsItem | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState(240);
+  const sidebarWidthRef = useRef(sidebarWidth);
+  useEffect(() => { sidebarWidthRef.current = sidebarWidth; }, [sidebarWidth]);
 
   const handleShowDetails = useCallback((item: DetailsItem) => {
     setDetailsItem(item);
@@ -170,7 +173,7 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
   const handleSidebarResize = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     const startX = e.clientX;
-    const startWidth = sidebarWidth;
+    const startWidth = sidebarWidthRef.current;
     const onMove = (me: MouseEvent) => {
       const newWidth = Math.min(400, Math.max(160, startWidth + me.clientX - startX));
       setSidebarWidth(newWidth);
@@ -181,7 +184,7 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
     };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
-  }, [sidebarWidth]);
+  }, []);
 
   const title = multiGraph.metadata?.title || multiGraph.metadata?.blueprintName || multiGraph.metadata?.assetPath || 'Blueprint';
 
@@ -224,7 +227,7 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
         variableCount={multiGraph.variables?.length ?? 0}
         functionCount={multiGraph.functions?.length ?? 0}
         graphCount={graphNames.length}
-        comparison={multiGraph.comparison as any}
+        comparison={multiGraph.comparison}
       />
     </div>
   );

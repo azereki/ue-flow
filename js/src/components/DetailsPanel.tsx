@@ -31,10 +31,10 @@ const CollapsibleSection: FC<{ title: string; defaultOpen?: boolean; children: R
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="uf-details-section">
-      <div className="uf-details-section-header" onClick={() => setOpen(!open)}>
+      <button className="uf-details-section-header" aria-expanded={open} onClick={() => setOpen(!open)}>
         <span className={`uf-details-section-arrow ${open ? '' : 'uf-collapsed'}`}>&#9660;</span>
         <span>{title}</span>
-      </div>
+      </button>
       {open && <div className="uf-details-section-body">{children}</div>}
     </div>
   );

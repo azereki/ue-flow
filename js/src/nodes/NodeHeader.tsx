@@ -3,7 +3,6 @@ import type { FC } from 'react';
 interface NodeHeaderProps {
   title: string;
   ueType: string;
-  category?: string;
 }
 
 // More saturated colors for better visibility against dark background

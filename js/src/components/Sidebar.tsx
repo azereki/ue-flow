@@ -1,5 +1,5 @@
 import { useState, type FC } from 'react';
-import type { UEMultiGraphJSON } from '../types/ue-graph';
+import type { UEMultiGraphJSON, SidebarParam } from '../types/ue-graph';
 import type { DetailsItem } from './DetailsPanel';
 
 interface SidebarProps {
@@ -19,24 +19,42 @@ const Section: FC<SectionProps> = ({ title, count, defaultOpen = true, children 
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="uf-sidebar-section">
-      <div className="uf-section-header" onClick={() => setOpen(!open)}>
+      <button className="uf-section-header" aria-expanded={open} onClick={() => setOpen(!open)}>
         <span className="uf-section-title">{title}</span>
         <span className="uf-section-count">{count}</span>
         <span className={`uf-section-arrow ${open ? '' : 'uf-collapsed'}`}>&#9660;</span>
-      </div>
+      </button>
       {open && <div className="uf-section-body">{children}</div>}
     </div>
   );
 };
 
-function formatSignature(fn: any): string {
+type SidebarEvent = UEMultiGraphJSON['events'][number];
+type SidebarFunction = UEMultiGraphJSON['functions'][number];
+type SidebarVariable = UEMultiGraphJSON['variables'][number];
+type SidebarStruct = UEMultiGraphJSON['structs'][number];
+type SidebarDelegate = UEMultiGraphJSON['delegates'][number];
+
+/** Parse a param that may be a "name: Type" string or an {name, type} object. */
+function toParamObj(p: SidebarParam): { name: string; type: string } {
+  if (typeof p === 'string') {
+    const idx = p.indexOf(':');
+    if (idx >= 0) return { name: p.slice(0, idx).trim(), type: p.slice(idx + 1).trim() };
+    return { name: p, type: '' };
+  }
+  return { name: p.name ?? '', type: p.type ?? '' };
+}
+
+function formatSignature(fn: SidebarFunction): string {
   const inputs = (fn.inputs || fn.params || [])
-    .filter((p: any) => p.type !== 'Exec' && p.name !== 'then' && p.name !== 'execute')
-    .map((p: any) => `${p.name}: ${shortType(p.type)}`)
+    .map(toParamObj)
+    .filter((p) => p.type !== 'Exec' && p.name !== 'then' && p.name !== 'execute')
+    .map((p) => `${p.name}: ${shortType(p.type)}`)
     .join(', ');
   const outputs = (fn.outputs || fn.returns || [])
-    .filter((p: any) => p.type !== 'Exec' && p.name !== 'then' && p.name !== 'execute')
-    .map((p: any) => `${p.name}: ${shortType(p.type)}`)
+    .map(toParamObj)
+    .filter((p) => p.type !== 'Exec' && p.name !== 'then' && p.name !== 'execute')
+    .map((p) => `${p.name}: ${shortType(p.type)}`)
     .join(', ');
   if (outputs) return `${inputs} -> ${outputs}`;
   if (inputs) return inputs;
@@ -54,16 +72,6 @@ function shortType(t: string): string {
     .replace(' Component', 'Comp');
 }
 
-/** Parse a param that may be a string "name: Type" or an object {name, type}. */
-function toParamObj(p: any): { name: string; type: string } {
-  if (typeof p === 'string') {
-    const idx = p.indexOf(':');
-    if (idx >= 0) return { name: p.slice(0, idx).trim(), type: p.slice(idx + 1).trim() };
-    return { name: p, type: '' };
-  }
-  return { name: p.name ?? '', type: p.type ?? '' };
-}
-
 function eventColorClass(name: string): string {
   const n = name.toLowerCase();
   if (n.startsWith('server_')) return 'uf-evt--server';
@@ -73,8 +81,8 @@ function eventColorClass(name: string): string {
   return '';
 }
 
-function groupByCategory(items: any[]): Map<string, any[]> {
-  const groups = new Map<string, any[]>();
+function groupByCategory<T extends { category?: string }>(items: T[]): Map<string, T[]> {
+  const groups = new Map<string, T[]>();
   for (const item of items) {
     const cat = item.category || 'Other';
     if (!groups.has(cat)) groups.set(cat, []);
@@ -83,20 +91,34 @@ function groupByCategory(items: any[]): Map<string, any[]> {
   return groups;
 }
 
+/** Find which graph contains a node matching the given event name. */
+function findGraphForEvent(graphs: Record<string, { nodes: Array<{ title: string }> }>, eventName: string): string {
+  const q = eventName.toLowerCase();
+  for (const [graphName, graph] of Object.entries(graphs)) {
+    if (graph.nodes.some(n => {
+      const t = n.title.toLowerCase();
+      return t === q || t.includes(q);
+    })) {
+      return graphName;
+    }
+  }
+  return 'EventGraph';
+}
+
 export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onShowDetails }) => {
   const [search, setSearch] = useState('');
-  const { events, functions, variables, structs, delegates, dataTables } = multiGraph;
-  const graphNames = Object.keys(multiGraph.graphs);
+  const { events, functions, variables, structs, delegates, dataTables, graphs } = multiGraph;
+  const graphNames = Object.keys(graphs);
   const dtKeys = Object.keys(dataTables || {});
 
   const q = search.toLowerCase();
   const matchName = (name: string) => !q || name.toLowerCase().includes(q);
 
-  const eventNodes = (events?.length > 0 ? events : []).filter((e: any) => matchName(e.name));
-  const filteredFunctions = functions.filter((f: any) => matchName(f.name));
-  const filteredVariables = variables.filter((v: any) => matchName(v.name));
-  const filteredStructs = structs.filter((s: any) => matchName(s.name));
-  const filteredDelegates = delegates.filter((d: any) => matchName(d.name));
+  const eventNodes = (events?.length > 0 ? events : []).filter((e: SidebarEvent) => matchName(e.name));
+  const filteredFunctions = functions.filter((f: SidebarFunction) => matchName(f.name));
+  const filteredVariables = variables.filter((v: SidebarVariable) => matchName(v.name));
+  const filteredStructs = structs.filter((s: SidebarStruct) => matchName(s.name));
+  const filteredDelegates = delegates.filter((d: SidebarDelegate) => matchName(d.name));
   const filteredDtKeys = dtKeys.filter((k) => matchName(k));
 
   const funcGroups = groupByCategory(filteredFunctions);
@@ -113,16 +135,17 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
           onChange={(e) => setSearch(e.target.value)}
         />
         {search && (
-          <button className="uf-search-clear" onClick={() => setSearch('')}>&times;</button>
+          <button className="uf-search-clear" onClick={() => setSearch('')} aria-label="Clear search">&times;</button>
         )}
       </div>
       {/* Events */}
       {eventNodes.length > 0 && (
         <Section title="EVENTS" count={eventNodes.length}>
-          {eventNodes.map((evt: any) => {
+          {eventNodes.map((evt: SidebarEvent) => {
             const params = (evt.params || evt.inputs || [])
-              .filter((p: any) => p.type !== 'Exec' && p.name !== 'then')
-              .map((p: any) => `${p.name}: ${shortType(p.type || '')}`)
+              .map(toParamObj)
+              .filter((p) => p.type !== 'Exec' && p.name !== 'then')
+              .map((p) => `${p.name}: ${shortType(p.type || '')}`)
               .join(', ');
             const evtClass = eventColorClass(evt.name);
             return (
@@ -131,9 +154,10 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
                 className={`uf-sidebar-item uf-sidebar-item--clickable ${evtClass}`}
                 title={params || undefined}
                 onClick={() => {
-                  onNavigateToGraph('EventGraph', evt.name);
+                  const graphName = findGraphForEvent(graphs, evt.name);
+                  onNavigateToGraph(graphName, evt.name);
                   const rawParams = (evt.params || evt.inputs || []);
-                  const parsed = rawParams.map(toParamObj).filter((p: any) => p.type !== 'Exec');
+                  const parsed = rawParams.map(toParamObj).filter((p) => p.type !== 'Exec');
                   onShowDetails?.({ kind: 'event', name: evt.name, params: parsed });
                 }}
               >
@@ -151,7 +175,7 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
           {Array.from(funcGroups.entries()).map(([category, fns]) => (
             <div key={category}>
               <div className="uf-category-label">{category}</div>
-              {fns.map((fn: any) => {
+              {fns.map((fn: SidebarFunction) => {
                 const hasGraph = graphNames.includes(fn.name);
                 const sig = formatSignature(fn);
                 return (
@@ -161,8 +185,8 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
                     title={sig}
                     onClick={() => {
                       if (hasGraph) onNavigateToGraph(fn.name);
-                      const inputs = (fn.inputs || fn.params || []).map(toParamObj).filter((p: any) => p.type !== 'Exec');
-                      const outputs = (fn.outputs || fn.returns || []).map(toParamObj).filter((p: any) => p.type !== 'Exec');
+                      const inputs = (fn.inputs || fn.params || []).map(toParamObj).filter((p) => p.type !== 'Exec');
+                      const outputs = (fn.outputs || fn.returns || []).map(toParamObj).filter((p) => p.type !== 'Exec');
                       onShowDetails?.({ kind: 'function', name: fn.name, category: fn.category, inputs, outputs });
                     }}
                   >
@@ -182,7 +206,7 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
           {Array.from(varGroups.entries()).map(([category, vars]) => (
             <div key={category}>
               {varGroups.size > 1 && <div className="uf-category-label">{category}</div>}
-              {vars.map((v: any) => {
+              {vars.map((v: SidebarVariable) => {
                 const typeStr = shortType(v.type || '');
                 return (
                   <div key={v.name} className="uf-sidebar-item uf-sidebar-item--clickable" title={v.type} onClick={() => onShowDetails?.({ kind: 'variable', name: v.name, type: v.type, category: v.category, default: v.default, replication: v.replicated ? 'Replicated' : undefined })}>
@@ -201,7 +225,7 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
       {/* Structs */}
       {filteredStructs.length > 0 && (
         <Section title="STRUCTS" count={filteredStructs.length} defaultOpen={true}>
-          {filteredStructs.map((s: any) => {
+          {filteredStructs.map((s: SidebarStruct) => {
             const fieldCount = s.fields?.length ?? 0;
             return (
               <div key={s.name} className="uf-sidebar-item uf-sidebar-item--clickable" title={`${fieldCount} fields`} onClick={() => onShowDetails?.({ kind: 'struct', name: s.name, fields: s.fields || [] })}>
@@ -217,7 +241,7 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
       {/* Delegates */}
       {filteredDelegates.length > 0 && (
         <Section title="DELEGATES" count={filteredDelegates.length} defaultOpen={true}>
-          {filteredDelegates.map((d: any) => (
+          {filteredDelegates.map((d: SidebarDelegate) => (
             <div key={d.name} className="uf-sidebar-item" title={d.signature || ''}>
               <span className="uf-icon uf-icon--delegate">D</span>
               <span className="uf-item-name">{d.name}</span>
@@ -230,7 +254,7 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
       {filteredDtKeys.length > 0 && (
         <Section title="DATA TABLES" count={filteredDtKeys.length} defaultOpen={true}>
           {filteredDtKeys.map((name) => {
-            const dt = (dataTables as any)[name];
+            const dt = dataTables[name];
             const rowCount = dt?.sampleRows?.length ?? 0;
             return (
               <div key={name} className="uf-sidebar-item" title={`${rowCount} rows`}>

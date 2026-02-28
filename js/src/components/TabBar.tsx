@@ -1,4 +1,4 @@
-import { useCallback, type FC } from 'react';
+import type { FC } from 'react';
 
 interface TabBarProps {
   graphNames: string[];
