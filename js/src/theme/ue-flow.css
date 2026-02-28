@@ -1,0 +1,165 @@
+:root {
+  --uf-bg: #0f1117;
+  --uf-surface: #1a1d27;
+  --uf-surface-border: #2a2d37;
+  --uf-surface-hover: #252830;
+  --uf-text: #d4d4d8;
+  --uf-text-muted: #71717a;
+  --uf-accent: #6366f1;
+  --uf-font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --uf-font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+/* ===== Node Styling ===== */
+
+.ueflow-node {
+  background: var(--uf-surface);
+  border: 1px solid var(--uf-surface-border);
+  border-radius: 6px;
+  min-width: 180px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  font-family: var(--uf-font-body);
+  font-size: 12px;
+  color: var(--uf-text);
+  overflow: hidden;
+}
+
+.ueflow-node-header {
+  padding: 6px 10px;
+  background: color-mix(in srgb, var(--header-accent, #3a4a5c) 15%, var(--uf-surface));
+  border-bottom: 1px solid var(--uf-surface-border);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.ueflow-node-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ueflow-node-body {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  gap: 16px;
+}
+
+/* ===== Pin Styling ===== */
+
+.ueflow-pins-column {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ueflow-pin {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  font-size: 11px;
+  position: relative;
+}
+
+.ueflow-pin--input {
+  flex-direction: row;
+}
+
+.ueflow-pin--output {
+  flex-direction: row-reverse;
+}
+
+.ueflow-pin-label {
+  color: var(--uf-text-muted);
+  font-family: var(--uf-font-mono);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.ueflow-pin-value {
+  color: var(--uf-text);
+  font-family: var(--uf-font-mono);
+  font-size: 10px;
+  opacity: 0.7;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== Handle (Pin Dot) Styling ===== */
+
+.ueflow-handle {
+  width: 10px !important;
+  height: 10px !important;
+  border: 2px solid var(--pin-color, #808080) !important;
+  background: transparent !important;
+  border-radius: 50% !important;
+}
+
+.ueflow-handle--connected {
+  background: var(--pin-color, #808080) !important;
+}
+
+.ueflow-handle--exec {
+  border-radius: 2px !important;
+  transform: rotate(45deg);
+  width: 8px !important;
+  height: 8px !important;
+}
+
+/* ===== React Flow Overrides (Blueprint Noir) ===== */
+
+.react-flow {
+  background: var(--uf-bg) !important;
+}
+
+.react-flow__background {
+  opacity: 0.3;
+}
+
+.react-flow__minimap {
+  background: #0a0c12 !important;
+  border: 1px solid var(--uf-surface-border) !important;
+  border-radius: 4px !important;
+}
+
+.react-flow__controls {
+  border: 1px solid var(--uf-surface-border) !important;
+  border-radius: 4px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+.react-flow__controls-button {
+  background: var(--uf-surface) !important;
+  color: var(--uf-text) !important;
+  border-color: var(--uf-surface-border) !important;
+  fill: var(--uf-text) !important;
+}
+
+.react-flow__controls-button:hover {
+  background: var(--uf-surface-hover) !important;
+}
+
+.react-flow__controls-button svg {
+  fill: var(--uf-text) !important;
+}
+
+/* Selection glow */
+.react-flow__node.selected .ueflow-node {
+  border-color: var(--uf-accent);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3), 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Edge hover */
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke-opacity: 1 !important;
+}
+
+/* Attribution hide for self-contained */
+.react-flow__attribution {
+  display: none !important;
+}
