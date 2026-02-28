@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ue-flow"
+version = "0.1.0"
+description = "Open-source UE Blueprint rendering suite"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+png = ["playwright"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["ue_flow"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
