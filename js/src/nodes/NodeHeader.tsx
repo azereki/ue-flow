@@ -26,13 +26,25 @@ const TYPE_COLORS: Record<string, string> = {
   make_array: '#1060A8',
 };
 
+const TYPE_ICONS: Record<string, string> = {
+  event: '\u25C6',
+  function_entry: '\u25C6',
+  function: 'f',
+  call_function: 'f',
+  branch: 'B',
+  macro: 'M',
+  cast: 'C',
+};
+
 export const NodeHeader: FC<NodeHeaderProps> = ({ title, ueType }) => {
   const color = TYPE_COLORS[ueType] ?? '#3060a0';
+  const icon = TYPE_ICONS[ueType];
   return (
     <div
       className="ueflow-node-header"
       style={{ '--header-accent': color } as React.CSSProperties}
     >
+      {icon && <span className="ueflow-node-icon">{icon}</span>}
       <span className="ueflow-node-title">{title}</span>
     </div>
   );
