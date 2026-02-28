@@ -2,7 +2,9 @@ import { memo } from 'react';
 import type { NodeProps } from '@xyflow/react';
 import { NodeHeader } from './NodeHeader';
 import { PinHandle } from './PinHandle';
+import { PinValueEditor } from './PinValueEditor';
 import type { FlowNodeData } from '../transform/json-to-flow';
+import { isExecPin } from '../types/pin-types';
 
 export const BlueprintNode = memo(({ data }: NodeProps) => {
   const { title, ueType, category, pins } = data as unknown as FlowNodeData;
@@ -15,7 +17,12 @@ export const BlueprintNode = memo(({ data }: NodeProps) => {
       <div className="ueflow-node-body">
         <div className="ueflow-pins-column ueflow-pins--input">
           {inputPins.map((pin) => (
-            <PinHandle key={pin.id} pin={pin} isConnected={false} />
+            <div key={pin.id} className="ueflow-pin-row">
+              <PinHandle pin={pin} isConnected={false} />
+              {!isExecPin(pin.category) && pin.defaultValue && (
+                <PinValueEditor pin={pin} />
+              )}
+            </div>
           ))}
         </div>
         <div className="ueflow-pins-column ueflow-pins--output">
