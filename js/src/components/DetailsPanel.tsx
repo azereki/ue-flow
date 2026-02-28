@@ -12,7 +12,8 @@ interface DetailsPanelProps {
   onClose: () => void;
 }
 
-function typeColor(type: string): string {
+function typeColor(type: string | undefined): string {
+  if (!type) return PIN_COLORS.wildcard;
   const t = type.toLowerCase();
   if (t.includes('bool')) return PIN_COLORS.bool;
   if (t.includes('float') || t.includes('real') || t.includes('double')) return PIN_COLORS.float;

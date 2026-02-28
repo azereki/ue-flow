@@ -54,6 +54,16 @@ function shortType(t: string): string {
     .replace(' Component', 'Comp');
 }
 
+/** Parse a param that may be a string "name: Type" or an object {name, type}. */
+function toParamObj(p: any): { name: string; type: string } {
+  if (typeof p === 'string') {
+    const idx = p.indexOf(':');
+    if (idx >= 0) return { name: p.slice(0, idx).trim(), type: p.slice(idx + 1).trim() };
+    return { name: p, type: '' };
+  }
+  return { name: p.name ?? '', type: p.type ?? '' };
+}
+
 function groupByCategory(items: any[]): Map<string, any[]> {
   const groups = new Map<string, any[]>();
   for (const item of items) {
@@ -112,7 +122,9 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
                 title={params || undefined}
                 onClick={() => {
                   onNavigateToGraph('EventGraph');
-                  onShowDetails?.({ kind: 'event', name: evt.name, params: (evt.params || evt.inputs || []).filter((p: any) => p.type !== 'Exec') });
+                  const rawParams = (evt.params || evt.inputs || []);
+                  const parsed = rawParams.map(toParamObj).filter((p: any) => p.type !== 'Exec');
+                  onShowDetails?.({ kind: 'event', name: evt.name, params: parsed });
                 }}
               >
                 <span className="uf-icon uf-icon--event">E</span>
@@ -139,7 +151,9 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
                     title={sig}
                     onClick={() => {
                       if (hasGraph) onNavigateToGraph(fn.name);
-                      onShowDetails?.({ kind: 'function', name: fn.name, category: fn.category, inputs: fn.inputs || fn.params, outputs: fn.outputs || fn.returns });
+                      const inputs = (fn.inputs || fn.params || []).map(toParamObj).filter((p: any) => p.type !== 'Exec');
+                      const outputs = (fn.outputs || fn.returns || []).map(toParamObj).filter((p: any) => p.type !== 'Exec');
+                      onShowDetails?.({ kind: 'function', name: fn.name, category: fn.category, inputs, outputs });
                     }}
                   >
                     <span className="uf-icon uf-icon--function">f</span>
