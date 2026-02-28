@@ -1,4 +1,4 @@
-import { useCallback, type FC } from 'react';
+import { useState, useCallback, type FC } from 'react';
 import type { Node, Edge } from '@xyflow/react';
 import { flowToT3D } from '../transform/flow-to-t3d';
 import type { FlowNodeData } from '../transform/json-to-flow';
@@ -163,8 +163,10 @@ export const ExportToolbar: FC<ExportToolbarProps> = ({ nodes, edges }) => {
     a.href = url;
     a.download = 'blueprint.txt';
     a.click();
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }, [nodes, edges]);
+
+  const [pushStatus, setPushStatus] = useState<'idle' | 'sent' | 'failed'>('idle');
 
   const handlePushToEditor = useCallback(async () => {
     const t3d = flowToT3D(nodes, edges);
@@ -174,9 +176,12 @@ export const ExportToolbar: FC<ExportToolbarProps> = ({ nodes, edges }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ paste_text: t3d }),
       });
+      setPushStatus('sent');
     } catch (err) {
       console.error('Push to editor failed:', err);
+      setPushStatus('failed');
     }
+    setTimeout(() => setPushStatus('idle'), 2000);
   }, [nodes, edges]);
 
   const handleCopyJSON = useCallback(async () => {
@@ -203,7 +208,7 @@ export const ExportToolbar: FC<ExportToolbarProps> = ({ nodes, edges }) => {
         Download
       </button>
       <button className="ueflow-toolbar-btn" onClick={handlePushToEditor} title="Push to UE Editor via bridge">
-        Push to Editor
+        {pushStatus === 'sent' ? 'Sent!' : pushStatus === 'failed' ? 'Failed' : 'Push to Editor'}
       </button>
       <button className="ueflow-toolbar-btn" onClick={handleCopyContext} title="Copy LLM context summary">
         Copy as Context

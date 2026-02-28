@@ -1,5 +1,5 @@
 import { Handle, Position, useStore } from '@xyflow/react';
-import { useMemo, type FC } from 'react';
+import { useCallback, type FC } from 'react';
 import type { UEPin } from '../types/ue-graph';
 import { PIN_COLORS, isExecPin } from '../types/pin-types';
 
@@ -7,15 +7,15 @@ interface PinHandleProps {
   pin: UEPin;
 }
 
-const edgesSelector = (s: { edges: Array<{ sourceHandle?: string | null; targetHandle?: string | null }> }) => s.edges;
-
 export const PinHandle: FC<PinHandleProps> = ({ pin }) => {
   const isInput = pin.direction === 'input';
   const type = isInput ? 'target' : 'source';
-  const edges = useStore(edgesSelector);
-  const isConnected = useMemo(
-    () => edges.some((e) => (isInput ? e.targetHandle : e.sourceHandle) === pin.id),
-    [edges, pin.id, isInput],
+  const isConnected = useStore(
+    useCallback(
+      (s: { edges: Array<{ sourceHandle?: string | null; targetHandle?: string | null }> }) =>
+        s.edges.some((e) => (isInput ? e.targetHandle : e.sourceHandle) === pin.id),
+      [pin.id, isInput],
+    ),
   );
   const color = PIN_COLORS[pin.category] ?? '#808080';
   const isExec = isExecPin(pin.category);
@@ -29,10 +29,9 @@ export const PinHandle: FC<PinHandleProps> = ({ pin }) => {
         id={pin.id}
         className={`ueflow-handle ${isExec ? 'ueflow-handle--exec' : 'ueflow-handle--data'} ${isConnected ? 'ueflow-handle--connected' : ''}`}
         style={{ '--pin-color': color } as React.CSSProperties}
+        isConnectable={false}
       />
-      <span className="ueflow-pin-label" style={isExec ? { color } : undefined}>
-        {isExec ? '' : label}
-      </span>
+      {!isExec && <span className="ueflow-pin-label">{label}</span>}
     </div>
   );
 };

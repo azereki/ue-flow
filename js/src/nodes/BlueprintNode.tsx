@@ -6,8 +6,7 @@ import { PinHandle } from './PinHandle';
 import { PinValueEditor } from './PinValueEditor';
 import type { FlowNodeData } from '../transform/json-to-flow';
 import { isExecPin, PIN_COLORS } from '../types/pin-types';
-
-const zoomSelector = (s: { transform: [number, number, number] }) => s.transform[2];
+import { zoomSelector } from '../utils/selectors';
 
 export const BlueprintNode = memo(({ data }: NodeProps) => {
   const { title, ueType, pins } = data as unknown as FlowNodeData;

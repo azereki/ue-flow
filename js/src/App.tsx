@@ -25,6 +25,7 @@ import { StatusBar } from './components/StatusBar';
 import { DetailsPanel, type DetailsItem } from './components/DetailsPanel';
 import type { UEGraphJSON, UEMultiGraphJSON } from './types/ue-graph';
 import type { FlowNodeData } from './transform/json-to-flow';
+import { zoomSelector } from './utils/selectors';
 
 const nodeTypes = {
   blueprintNode: BlueprintNode,
@@ -56,8 +57,6 @@ function FitViewOnMount({ focusNode }: { focusNode?: { x: number; y: number; w: 
   }, []); // Run once on mount only
   return null;
 }
-
-const zoomSelector = (s: { transform: [number, number, number] }) => s.transform[2];
 
 function ZoomIndicator() {
   const zoom = useStore(zoomSelector);
@@ -128,10 +127,11 @@ function SingleGraphView({ graphJSON, focusNodeTitle }: { graphJSON: UEGraphJSON
 
 function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
   const graphNames = useMemo(() => Object.keys(multiGraph.graphs), [multiGraph]);
-  const [activeGraph, setActiveGraph] = useState(graphNames[0] ?? '');
-  const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([
-    { label: graphNames[0] ?? 'Graph', graphName: graphNames[0] ?? '' },
-  ]);
+  const firstGraph = graphNames[0] ?? '';
+  const [activeGraph, setActiveGraph] = useState(firstGraph);
+  const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>(
+    firstGraph ? [{ label: firstGraph, graphName: firstGraph }] : [],
+  );
 
   const currentGraphJSON = multiGraph.graphs[activeGraph] ?? null;
   const nodeCount = currentGraphJSON?.nodes?.length ?? 0;

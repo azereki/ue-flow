@@ -110,6 +110,7 @@
 
 .ueflow-handle--connected {
   background: var(--pin-color, #808080) !important;
+  box-shadow: 0 0 4px var(--pin-color);
 }
 
 .ueflow-handle--exec {
@@ -120,8 +121,10 @@
   height: 10px !important;
 }
 
-.ueflow-handle--connected {
-  box-shadow: 0 0 4px var(--pin-color);
+/* Viewer mode: handles are not connectable */
+.ueflow-handle {
+  cursor: default !important;
+  pointer-events: none !important;
 }
 
 /* ===== React Flow Overrides (Blueprint Noir) ===== */

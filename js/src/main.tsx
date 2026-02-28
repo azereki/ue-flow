@@ -34,4 +34,6 @@ if (container) {
   createRoot(container).render(
     <App graphJSON={singleGraph} multiGraphJSON={multiGraph} />
   );
+} else {
+  console.error('ue-flow: #ue-flow-root element not found');
 }

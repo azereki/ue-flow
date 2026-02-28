@@ -13,27 +13,37 @@ export interface FlowNodeData {
   [key: string]: unknown;
 }
 
+// Layout constants for node size estimation.
+// These must stay in sync with CSS: .ueflow-node-header height and .ueflow-pin min-height.
+const NODE_HEADER_HEIGHT = 30;
+const PIN_ROW_HEIGHT = 22;
+const NODE_BODY_PADDING = 12;
+const MIN_NODE_WIDTH = 160;
+const CHAR_WIDTH_PX = 7;
+const LABEL_PADDING = 60;
+const REROUTE_SIZE = 16;
+const DEFAULT_COMMENT_WIDTH = 400;
+const DEFAULT_COMMENT_HEIGHT = 200;
+
 function estimateNodeSize(ueNode: UEGraphJSON['nodes'][0]): { width: number; height: number } {
   if (ueNode.type === 'comment') {
-    const w = Number(ueNode.properties?.NodeWidth) || 400;
-    const h = Number(ueNode.properties?.NodeHeight) || 200;
+    const w = Number(ueNode.properties?.NodeWidth) || DEFAULT_COMMENT_WIDTH;
+    const h = Number(ueNode.properties?.NodeHeight) || DEFAULT_COMMENT_HEIGHT;
     return { width: w, height: h };
   }
   if (ueNode.type === 'reroute') {
-    return { width: 16, height: 16 };
+    return { width: REROUTE_SIZE, height: REROUTE_SIZE };
   }
   const visiblePins = ueNode.pins.filter((p) => !p.hidden);
   const inputCount = visiblePins.filter((p) => p.direction === 'input').length;
   const outputCount = visiblePins.filter((p) => p.direction === 'output').length;
   const pinRows = Math.max(inputCount, outputCount);
-  const headerHeight = 30;
-  const pinRowHeight = 22;
-  const height = headerHeight + pinRows * pinRowHeight + 12;
+  const height = NODE_HEADER_HEIGHT + pinRows * PIN_ROW_HEIGHT + NODE_BODY_PADDING;
   const maxLabelLen = Math.max(
     ueNode.title.length,
     ...visiblePins.map((p) => (p.friendlyName || p.name).length),
   );
-  const width = Math.max(160, maxLabelLen * 7 + 60);
+  const width = Math.max(MIN_NODE_WIDTH, maxLabelLen * CHAR_WIDTH_PX + LABEL_PADDING);
   return { width, height };
 }
 
