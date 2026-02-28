@@ -52,7 +52,7 @@ function FitViewOnMount({ focusNode }: { focusNode?: { x: number; y: number; w: 
           { zoom: 1.0 },
         );
       } else {
-        fitView({ padding: 0.15, minZoom: 0.5, maxZoom: 1.2 });
+        fitView({ padding: 0.15, minZoom: 0.5, maxZoom: 1.5 });
       }
     });
     return () => cancelAnimationFrame(id);
@@ -67,7 +67,7 @@ function ZoomIndicator() {
 
 function SingleGraphView({ graphJSON, focusNodeTitle }: { graphJSON: UEGraphJSON; focusNodeTitle?: string | null }) {
   const initial = useMemo(() => graphJsonToFlow(graphJSON), [graphJSON]);
-  const [nodes, , onNodesChange] = useNodesState(initial.nodes);
+  const [nodes, setNodes, onNodesChange] = useNodesState(initial.nodes);
   const [edges, , onEdgesChange] = useEdgesState(initial.edges);
 
   // Resolve focus title to node position using stable initial data
@@ -88,6 +88,49 @@ function SingleGraphView({ graphJSON, focusNodeTitle }: { graphJSON: UEGraphJSON
     };
   }, [focusNodeTitle, initial.nodes]);
 
+  // Comment group-drag: when a comment node is dragged, move all enclosed nodes with it.
+  const dragContext = useRef<{ childIds: Set<string>; lastPos: { x: number; y: number } } | null>(null);
+
+  const handleNodeDragStart = useCallback((_: React.MouseEvent, node: { id: string; position: { x: number; y: number }; data: Record<string, unknown>; initialWidth?: number; initialHeight?: number }) => {
+    if ((node.data as FlowNodeData).ueType !== 'comment') return;
+    const cx = node.position.x;
+    const cy = node.position.y;
+    const cw = node.initialWidth ?? 400;
+    const ch = node.initialHeight ?? 200;
+    const childIds = new Set<string>();
+    for (const n of nodes) {
+      if (n.id === node.id || (n.data as FlowNodeData).ueType === 'comment') continue;
+      const nw = n.initialWidth ?? 160;
+      const nh = n.initialHeight ?? 42;
+      const ncx = n.position.x + nw / 2;
+      const ncy = n.position.y + nh / 2;
+      if (ncx >= cx && ncx <= cx + cw && ncy >= cy && ncy <= cy + ch) {
+        childIds.add(n.id);
+      }
+    }
+    dragContext.current = { childIds, lastPos: { x: cx, y: cy } };
+  }, [nodes]);
+
+  const handleNodeDrag = useCallback((_: React.MouseEvent, node: { id: string; position: { x: number; y: number }; data: Record<string, unknown> }) => {
+    const ctx = dragContext.current;
+    if (!ctx || (node.data as FlowNodeData).ueType !== 'comment' || ctx.childIds.size === 0) return;
+    const dx = node.position.x - ctx.lastPos.x;
+    const dy = node.position.y - ctx.lastPos.y;
+    if (dx === 0 && dy === 0) return;
+    ctx.lastPos = { x: node.position.x, y: node.position.y };
+    setNodes((prev) =>
+      prev.map((n) =>
+        ctx.childIds.has(n.id)
+          ? { ...n, position: { x: n.position.x + dx, y: n.position.y + dy } }
+          : n,
+      ),
+    );
+  }, [setNodes]);
+
+  const handleNodeDragStop = useCallback(() => {
+    dragContext.current = null;
+  }, []);
+
   return (
     <div style={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }}>
       <ReactFlow
@@ -95,6 +138,9 @@ function SingleGraphView({ graphJSON, focusNodeTitle }: { graphJSON: UEGraphJSON
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onNodeDragStart={handleNodeDragStart}
+        onNodeDrag={handleNodeDrag}
+        onNodeDragStop={handleNodeDragStop}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         colorMode="dark"
@@ -127,9 +173,25 @@ function SingleGraphView({ graphJSON, focusNodeTitle }: { graphJSON: UEGraphJSON
   );
 }
 
+function useViewportScale(referenceWidth = 1440): number {
+  const [scale, setScale] = useState(() =>
+    Math.max(0.75, Math.min(1.5, window.innerWidth / referenceWidth)),
+  );
+  useEffect(() => {
+    const onResize = () => {
+      setScale(Math.max(0.75, Math.min(1.5, window.innerWidth / referenceWidth)));
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [referenceWidth]);
+  return scale;
+}
+
 function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
   const graphNames = useMemo(() => Object.keys(multiGraph.graphs), [multiGraph]);
   const firstGraph = graphNames[0] ?? '';
+  const DEFAULT_TAB = firstGraph;
+  const [openTabs, setOpenTabs] = useState<string[]>([firstGraph]);
   const [activeGraph, setActiveGraph] = useState(firstGraph);
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>(
     firstGraph ? [{ label: firstGraph, graphName: firstGraph }] : [],
@@ -137,6 +199,28 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
 
   const currentGraphJSON = multiGraph.graphs[activeGraph] ?? null;
   const nodeCount = currentGraphJSON?.nodes?.length ?? 0;
+
+  const openTab = useCallback((name: string) => {
+    setOpenTabs(prev => prev.includes(name) ? prev : [...prev, name]);
+    setActiveGraph(name);
+  }, []);
+
+  const closeTab = useCallback((name: string) => {
+    if (name === DEFAULT_TAB) return;
+    setOpenTabs(prev => {
+      const next = prev.filter(t => t !== name);
+      setActiveGraph(current => {
+        if (current === name) {
+          const closedIndex = prev.indexOf(name);
+          const fallback = next[Math.min(closedIndex, next.length - 1)] ?? DEFAULT_TAB;
+          setBreadcrumbs([{ label: fallback, graphName: fallback }]);
+          return fallback;
+        }
+        return current;
+      });
+      return next;
+    });
+  }, [DEFAULT_TAB]);
 
   const handleSelectGraph = useCallback((name: string) => {
     setActiveGraph(name);
@@ -149,11 +233,11 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
     const exact = graphNames.find((g) => g === name);
     const fuzzy = exact ?? graphNames.find((g) => g.toLowerCase() === name.toLowerCase());
     if (fuzzy) {
-      setActiveGraph(fuzzy);
+      openTab(fuzzy);
       setBreadcrumbs([{ label: fuzzy, graphName: fuzzy }]);
       setFocusNodeTitle(focusTitle ?? null);
     }
-  }, [graphNames]);
+  }, [graphNames, openTab]);
 
   const handleBreadcrumbNavigate = useCallback((index: number) => {
     const item = breadcrumbs[index];
@@ -189,9 +273,10 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
   }, []);
 
   const title = multiGraph.metadata?.title || multiGraph.metadata?.blueprintName || multiGraph.metadata?.assetPath || 'Blueprint';
+  const scale = useViewportScale();
 
   return (
-    <div className="ueflow-app-shell">
+    <div className="ueflow-app-shell" style={{ '--uf-scale': scale } as React.CSSProperties}>
       <TopBar
         title={title}
         graphCount={graphNames.length}
@@ -205,9 +290,11 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
         <div className="uf-sidebar-resize" onMouseDown={handleSidebarResize} />
         <div className="ueflow-multi-main">
           <TabBar
-            graphNames={graphNames}
+            openTabs={openTabs}
             activeGraph={activeGraph}
             onSelectGraph={handleSelectGraph}
+            onCloseTab={closeTab}
+            pinnedTab={DEFAULT_TAB}
             comparison={multiGraph.comparison}
           />
           <Breadcrumbs items={breadcrumbs} onNavigate={handleBreadcrumbNavigate} />

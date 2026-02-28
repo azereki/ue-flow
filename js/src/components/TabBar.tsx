@@ -1,19 +1,20 @@
 import type { FC } from 'react';
 
 interface TabBarProps {
-  graphNames: string[];
+  openTabs: string[];
   activeGraph: string;
   onSelectGraph: (name: string) => void;
+  onCloseTab: (name: string) => void;
+  pinnedTab: string;
   comparison?: Record<string, { before: number; after: number }>;
 }
 
-export const TabBar: FC<TabBarProps> = ({ graphNames, activeGraph, onSelectGraph, comparison }) => {
-  if (graphNames.length <= 1) return null;
-
+export const TabBar: FC<TabBarProps> = ({ openTabs, activeGraph, onSelectGraph, onCloseTab, pinnedTab, comparison }) => {
   return (
     <div className="ueflow-tab-bar" role="tablist">
-      {graphNames.map((name) => {
+      {openTabs.map((name) => {
         const isActive = name === activeGraph;
+        const isPinned = name === pinnedTab;
         const comp = comparison?.[name];
         return (
           <button
@@ -27,6 +28,16 @@ export const TabBar: FC<TabBarProps> = ({ graphNames, activeGraph, onSelectGraph
             {comp && (
               <span className="ueflow-tab-count">
                 {comp.after ?? '?'}
+              </span>
+            )}
+            {!isPinned && (
+              <span
+                className="ueflow-tab-close"
+                role="button"
+                aria-label={`Close ${name}`}
+                onClick={(e) => { e.stopPropagation(); onCloseTab(name); }}
+              >
+                ×
               </span>
             )}
           </button>

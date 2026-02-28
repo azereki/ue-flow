@@ -28,6 +28,9 @@ export const CommentNode = memo(({ data, selected }: NodeProps) => {
   const headerBg = parsed
     ? `rgba(${parsed.r}, ${parsed.g}, ${parsed.b}, 0.85)`
     : 'rgba(255, 255, 255, 0.15)';
+  const bodyBg = parsed
+    ? `rgba(${parsed.r}, ${parsed.g}, ${parsed.b}, 0.08)`
+    : 'rgba(255, 255, 255, 0.03)';
   const borderColor = parsed
     ? `rgba(${parsed.r}, ${parsed.g}, ${parsed.b}, 0.35)`
     : 'rgba(255, 255, 255, 0.1)';
@@ -48,7 +51,7 @@ export const CommentNode = memo(({ data, selected }: NodeProps) => {
         >
           <span className="ueflow-comment-title">{title}</span>
         </div>
-        <div className="ueflow-comment-body" />
+        <div className="ueflow-comment-body" style={{ background: bodyBg }} />
       </div>
     </>
   );

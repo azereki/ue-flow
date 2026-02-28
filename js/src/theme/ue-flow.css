@@ -294,6 +294,7 @@
 .ueflow-comment-body {
   flex: 1;
   pointer-events: none;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .ueflow-comment-title {
@@ -385,8 +386,8 @@
 .ueflow-app-shell {
   display: flex;
   flex-direction: column;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
 }
 
@@ -403,6 +404,7 @@
   flex-shrink: 0;
   font-family: var(--uf-font-body);
   font-size: 12px;
+  zoom: var(--uf-scale, 1);
 }
 
 .ueflow-topbar-title {
@@ -433,6 +435,7 @@
   font-family: var(--uf-font-body);
   font-size: 10px;
   color: #71717a;
+  zoom: var(--uf-scale, 1);
 }
 
 .ueflow-statusbar-left,
@@ -485,6 +488,7 @@
   overflow-x: auto;
   padding: 0 4px;
   flex-shrink: 0;
+  zoom: var(--uf-scale, 1);
 }
 
 .ueflow-tab-bar::-webkit-scrollbar { height: 3px; }
@@ -527,6 +531,35 @@
 
 .ueflow-tab--active .ueflow-tab-count { color: #6a7abf; }
 
+.ueflow-tab-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  font-size: 14px;
+  line-height: 1;
+  color: #555;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.ueflow-tab-close:hover {
+  color: #e44;
+  background: rgba(255, 50, 50, 0.1);
+}
+
+.ueflow-tab--active .ueflow-tab-close {
+  color: #777;
+}
+
+.ueflow-tab--active .ueflow-tab-close:hover {
+  color: #e44;
+  background: rgba(255, 50, 50, 0.15);
+}
+
 /* ===== Breadcrumbs ===== */
 
 .ueflow-breadcrumbs {
@@ -537,6 +570,7 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   height: 24px;
   flex-shrink: 0;
+  zoom: var(--uf-scale, 1);
 }
 
 .ueflow-breadcrumb-link {
@@ -570,6 +604,7 @@
   font-size: 11px;
   font-family: var(--uf-font-body);
   flex-shrink: 0;
+  zoom: var(--uf-scale, 1);
 }
 
 .uf-sidebar::-webkit-scrollbar { width: 5px; }
@@ -779,6 +814,7 @@
   font-family: var(--uf-font-body);
   font-size: 11px;
   flex-shrink: 0;
+  zoom: var(--uf-scale, 1);
 }
 
 .uf-details-panel::-webkit-scrollbar { width: 5px; }
