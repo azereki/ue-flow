@@ -108,10 +108,27 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
   }, [breadcrumbs]);
 
   const [detailsItem, setDetailsItem] = useState<DetailsItem | null>(null);
+  const [sidebarWidth, setSidebarWidth] = useState(240);
 
   const handleShowDetails = useCallback((item: DetailsItem) => {
     setDetailsItem(item);
   }, []);
+
+  const handleSidebarResize = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = sidebarWidth;
+    const onMove = (me: MouseEvent) => {
+      const newWidth = Math.min(400, Math.max(160, startWidth + me.clientX - startX));
+      setSidebarWidth(newWidth);
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, [sidebarWidth]);
 
   const title = multiGraph.metadata?.blueprintName || multiGraph.metadata?.assetPath || 'Blueprint';
 
@@ -124,7 +141,10 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
         variableCount={multiGraph.variables?.length ?? 0}
       />
       <div className="ueflow-multi-layout">
-        <Sidebar multiGraph={multiGraph} onNavigateToGraph={handleNavigateToGraph} onShowDetails={handleShowDetails} />
+        <div style={{ width: sidebarWidth, minWidth: sidebarWidth, flexShrink: 0 }}>
+          <Sidebar multiGraph={multiGraph} onNavigateToGraph={handleNavigateToGraph} onShowDetails={handleShowDetails} />
+        </div>
+        <div className="uf-sidebar-resize" onMouseDown={handleSidebarResize} />
         <div className="ueflow-multi-main">
           <TabBar
             graphNames={graphNames}

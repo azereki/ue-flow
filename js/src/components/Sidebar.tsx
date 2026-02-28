@@ -65,21 +65,38 @@ function groupByCategory(items: any[]): Map<string, any[]> {
 }
 
 export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onShowDetails }) => {
+  const [search, setSearch] = useState('');
   const { events, functions, variables, structs, delegates, dataTables } = multiGraph;
   const graphNames = Object.keys(multiGraph.graphs);
   const dtKeys = Object.keys(dataTables || {});
 
-  // Separate events from EventGraph nodes (nodes with type "event" or class containing "Event")
-  const eventNodes = events?.length > 0 ? events : [];
+  const q = search.toLowerCase();
+  const matchName = (name: string) => !q || name.toLowerCase().includes(q);
 
-  // Group functions by category
-  const funcGroups = groupByCategory(functions);
+  const eventNodes = (events?.length > 0 ? events : []).filter((e: any) => matchName(e.name));
+  const filteredFunctions = functions.filter((f: any) => matchName(f.name));
+  const filteredVariables = variables.filter((v: any) => matchName(v.name));
+  const filteredStructs = structs.filter((s: any) => matchName(s.name));
+  const filteredDelegates = delegates.filter((d: any) => matchName(d.name));
+  const filteredDtKeys = dtKeys.filter((k) => matchName(k));
 
-  // Group variables by category
-  const varGroups = groupByCategory(variables);
+  const funcGroups = groupByCategory(filteredFunctions);
+  const varGroups = groupByCategory(filteredVariables);
 
   return (
     <div className="uf-sidebar">
+      <div className="uf-sidebar-search">
+        <input
+          className="uf-search-input"
+          type="text"
+          placeholder="Search..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        {search && (
+          <button className="uf-search-clear" onClick={() => setSearch('')}>&times;</button>
+        )}
+      </div>
       {/* Events */}
       {eventNodes.length > 0 && (
         <Section title="EVENTS" count={eventNodes.length}>
@@ -107,8 +124,8 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
       )}
 
       {/* Functions */}
-      {functions.length > 0 && (
-        <Section title="FUNCTIONS" count={functions.length}>
+      {filteredFunctions.length > 0 && (
+        <Section title="FUNCTIONS" count={filteredFunctions.length}>
           {Array.from(funcGroups.entries()).map(([category, fns]) => (
             <div key={category}>
               <div className="uf-category-label">{category}</div>
@@ -136,8 +153,8 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
       )}
 
       {/* Variables */}
-      {variables.length > 0 && (
-        <Section title="VARIABLES" count={variables.length} defaultOpen={variables.length <= 30}>
+      {filteredVariables.length > 0 && (
+        <Section title="VARIABLES" count={filteredVariables.length} defaultOpen={filteredVariables.length <= 30}>
           {Array.from(varGroups.entries()).map(([category, vars]) => (
             <div key={category}>
               {varGroups.size > 1 && <div className="uf-category-label">{category}</div>}
@@ -158,9 +175,9 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
       )}
 
       {/* Structs */}
-      {structs.length > 0 && (
-        <Section title="STRUCTS" count={structs.length} defaultOpen={true}>
-          {structs.map((s: any) => {
+      {filteredStructs.length > 0 && (
+        <Section title="STRUCTS" count={filteredStructs.length} defaultOpen={true}>
+          {filteredStructs.map((s: any) => {
             const fieldCount = s.fields?.length ?? 0;
             return (
               <div key={s.name} className="uf-sidebar-item uf-sidebar-item--clickable" title={`${fieldCount} fields`} onClick={() => onShowDetails?.({ kind: 'struct', name: s.name, fields: s.fields || [] })}>
@@ -174,9 +191,9 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
       )}
 
       {/* Delegates */}
-      {delegates.length > 0 && (
-        <Section title="DELEGATES" count={delegates.length} defaultOpen={true}>
-          {delegates.map((d: any) => (
+      {filteredDelegates.length > 0 && (
+        <Section title="DELEGATES" count={filteredDelegates.length} defaultOpen={true}>
+          {filteredDelegates.map((d: any) => (
             <div key={d.name} className="uf-sidebar-item" title={d.signature || ''}>
               <span className="uf-icon uf-icon--delegate">D</span>
               <span className="uf-item-name">{d.name}</span>
@@ -186,9 +203,9 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
       )}
 
       {/* Data Tables */}
-      {dtKeys.length > 0 && (
-        <Section title="DATA TABLES" count={dtKeys.length} defaultOpen={true}>
-          {dtKeys.map((name) => {
+      {filteredDtKeys.length > 0 && (
+        <Section title="DATA TABLES" count={filteredDtKeys.length} defaultOpen={true}>
+          {filteredDtKeys.map((name) => {
             const dt = (dataTables as any)[name];
             const rowCount = dt?.sampleRows?.length ?? 0;
             return (
