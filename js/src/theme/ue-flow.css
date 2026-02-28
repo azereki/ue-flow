@@ -177,6 +177,33 @@
   display: none !important;
 }
 
+/* BLUEPRINT watermark */
+.ueflow-watermark {
+  position: absolute;
+  bottom: 60px;
+  right: 20px;
+  font-size: 72px;
+  font-weight: 900;
+  letter-spacing: 8px;
+  color: rgba(255, 255, 255, 0.03);
+  pointer-events: none;
+  user-select: none;
+  font-family: var(--uf-font-body);
+  z-index: 1;
+}
+
+/* Zoom level indicator */
+.ueflow-zoom-indicator {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 11px;
+  font-family: var(--uf-font-mono);
+  color: #555;
+  pointer-events: none;
+  z-index: 5;
+}
+
 /* ===== Pin Row (with editor) ===== */
 
 .ueflow-pin-row {
@@ -247,10 +274,10 @@
 }
 
 .ueflow-comment-header {
-  height: 30px;
+  height: 40px;
   display: flex;
   align-items: center;
-  padding: 0 12px;
+  padding: 0 16px;
   border-radius: 4px 4px 0 0;
   pointer-events: all;
 }
@@ -262,12 +289,14 @@
 
 .ueflow-comment-title {
   color: #ffffff;
-  font-size: 14px;
+  font-size: 24px;
   font-weight: 700;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .ueflow-comment-title-input {
@@ -686,6 +715,16 @@
 }
 
 .uf-icon--event { background: #cc6600; }
+
+/* Event type color coding */
+.uf-evt--server .uf-item-name { color: #ff6666; }
+.uf-evt--client .uf-item-name { color: #66cc66; }
+.uf-evt--multicast .uf-item-name { color: #cc66ff; }
+.uf-evt--replicated .uf-item-name { color: #66cccc; }
+.uf-icon--server { background: #cc3333; }
+.uf-icon--client { background: #33aa33; }
+.uf-icon--multicast { background: #9933cc; }
+.uf-icon--replicated { background: #339999; }
 .uf-icon--function { background: #5566cc; }
 .uf-icon--struct { background: #1a1a88; color: #88aaff; }
 .uf-icon--delegate { background: #cc3333; }

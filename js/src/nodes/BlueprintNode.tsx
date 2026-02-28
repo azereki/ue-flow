@@ -29,7 +29,7 @@ export const BlueprintNode = memo(({ data }: NodeProps) => {
   const inputPins = pins.filter((p) => p.direction === 'input' && !p.hidden);
   const outputPins = pins.filter((p) => p.direction === 'output' && !p.hidden);
 
-  const showPinBody = zoom >= 0.4;
+  const showPinBody = zoom >= 0.15;
 
   return (
     <div className="ueflow-node" data-ue-type={ueType}>

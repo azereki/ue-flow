@@ -64,6 +64,15 @@ function toParamObj(p: any): { name: string; type: string } {
   return { name: p.name ?? '', type: p.type ?? '' };
 }
 
+function eventColorClass(name: string): string {
+  const n = name.toLowerCase();
+  if (n.startsWith('server_')) return 'uf-evt--server';
+  if (n.startsWith('client_')) return 'uf-evt--client';
+  if (n.startsWith('multicast_')) return 'uf-evt--multicast';
+  if (n.startsWith('onrep_')) return 'uf-evt--replicated';
+  return '';
+}
+
 function groupByCategory(items: any[]): Map<string, any[]> {
   const groups = new Map<string, any[]>();
   for (const item of items) {
@@ -115,10 +124,11 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
               .filter((p: any) => p.type !== 'Exec' && p.name !== 'then')
               .map((p: any) => `${p.name}: ${shortType(p.type || '')}`)
               .join(', ');
+            const evtClass = eventColorClass(evt.name);
             return (
               <div
                 key={evt.name}
-                className="uf-sidebar-item uf-sidebar-item--clickable"
+                className={`uf-sidebar-item uf-sidebar-item--clickable ${evtClass}`}
                 title={params || undefined}
                 onClick={() => {
                   onNavigateToGraph('EventGraph', evt.name);
@@ -127,7 +137,7 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
                   onShowDetails?.({ kind: 'event', name: evt.name, params: parsed });
                 }}
               >
-                <span className="uf-icon uf-icon--event">E</span>
+                <span className={`uf-icon uf-icon--event ${evtClass ? 'uf-icon--' + evtClass.replace('uf-evt--', '') : ''}`}>E</span>
                 <span className="uf-item-name">{evt.name}</span>
               </div>
             );

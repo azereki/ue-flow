@@ -8,6 +8,7 @@ import {
   useNodesState,
   useEdgesState,
   useReactFlow,
+  useStore,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './theme/ue-flow.css';
@@ -46,13 +47,20 @@ function FitViewOnMount({ focusNode }: { focusNode?: { x: number; y: number; w: 
           { zoom: 1.0 },
         );
       } else {
-        fitView({ padding: 0.15, maxZoom: 1.2 });
+        fitView({ padding: 0.15, minZoom: 0.5, maxZoom: 1.2 });
       }
     });
     return () => cancelAnimationFrame(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run once on mount only
   return null;
+}
+
+const zoomSelector = (s: { transform: [number, number, number] }) => s.transform[2];
+
+function ZoomIndicator() {
+  const zoom = useStore(zoomSelector);
+  return <div className="ueflow-zoom-indicator">Zoom {Math.round(zoom * 100)}%</div>;
 }
 
 function SingleGraphView({ graphJSON, focusNodeTitle }: { graphJSON: UEGraphJSON; focusNodeTitle?: string | null }) {
@@ -99,8 +107,19 @@ function SingleGraphView({ graphJSON, focusNodeTitle }: { graphJSON: UEGraphJSON
         <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.03)" gap={20} />
         <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.06)" gap={100} />
         <Controls />
-        <MiniMap nodeColor={() => '#2a2d37'} maskColor="rgba(0, 0, 0, 0.7)" />
+        <MiniMap nodeColor={(node) => {
+          const t = (node.data as any)?.ueType ?? '';
+          if (t === 'event' || t === 'function_entry') return '#B40000';
+          if (t === 'call_function' || t === 'function') return '#1060A8';
+          if (t === 'branch') return '#404040';
+          if (t === 'variable_get' || t === 'variable_set') return '#208050';
+          if (t === 'comment') return '#4a4a5a';
+          if (t === 'macro') return '#8020a0';
+          return '#2a2d37';
+        }} maskColor="rgba(0, 0, 0, 0.7)" />
+        <ZoomIndicator />
       </ReactFlow>
+      <div className="ueflow-watermark">BLUEPRINT</div>
       <ExportToolbar nodes={nodes} edges={edges} />
     </div>
   );
@@ -164,7 +183,7 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
     document.addEventListener('mouseup', onUp);
   }, [sidebarWidth]);
 
-  const title = multiGraph.metadata?.blueprintName || multiGraph.metadata?.assetPath || 'Blueprint';
+  const title = multiGraph.metadata?.title || multiGraph.metadata?.blueprintName || multiGraph.metadata?.assetPath || 'Blueprint';
 
   return (
     <div className="ueflow-app-shell">

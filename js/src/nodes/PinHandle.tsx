@@ -1,5 +1,5 @@
-import { Handle, Position, useHandleConnections } from '@xyflow/react';
-import type { FC } from 'react';
+import { Handle, Position, useStore } from '@xyflow/react';
+import { useMemo, type FC } from 'react';
 import type { UEPin } from '../types/ue-graph';
 import { PIN_COLORS, isExecPin } from '../types/pin-types';
 
@@ -7,11 +7,16 @@ interface PinHandleProps {
   pin: UEPin;
 }
 
+const edgesSelector = (s: { edges: Array<{ sourceHandle?: string | null; targetHandle?: string | null }> }) => s.edges;
+
 export const PinHandle: FC<PinHandleProps> = ({ pin }) => {
   const isInput = pin.direction === 'input';
   const type = isInput ? 'target' : 'source';
-  const connections = useHandleConnections({ type, id: pin.id });
-  const isConnected = connections.length > 0;
+  const edges = useStore(edgesSelector);
+  const isConnected = useMemo(
+    () => edges.some((e) => (isInput ? e.targetHandle : e.sourceHandle) === pin.id),
+    [edges, pin.id, isInput],
+  );
   const color = PIN_COLORS[pin.category] ?? '#808080';
   const isExec = isExecPin(pin.category);
   const label = pin.friendlyName || pin.name;
