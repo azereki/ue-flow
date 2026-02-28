@@ -27,6 +27,16 @@ coverage/
 htmlcov/
 .coverage
 
+# Screenshots / debug artifacts
+*.png
+!examples/*.png
+
+# Playwright MCP temp
+.playwright-mcp/
+
+# Firecrawl research
+.firecrawl/
+
 # Environment
 .env
 .venv
