@@ -6,27 +6,28 @@ interface NodeHeaderProps {
   category?: string;
 }
 
+// More saturated colors for better visibility against dark background
 const TYPE_COLORS: Record<string, string> = {
-  event: '#8b1a1a',
-  call_function: '#1a5c8c',
-  function: '#1a5c8c',
-  branch: '#5c5c1a',
-  variable_get: '#1a5c3a',
-  variable_set: '#1a5c3a',
-  macro: '#5c1a5c',
-  comment: '#3a3a3a',
-  cast: '#2a6e4a',
-  switch: '#5c5c1a',
-  select: '#5c5c1a',
-  function_entry: '#8b1a1a',
-  function_result: '#1a5c3a',
-  tunnel: '#4a4a5c',
-  reroute: '#3a3a3a',
-  make_array: '#1a5c8c',
+  event: '#b22020',
+  call_function: '#2070b0',
+  function: '#2070b0',
+  branch: '#8a8a20',
+  variable_get: '#208050',
+  variable_set: '#208050',
+  macro: '#8020a0',
+  comment: '#4a4a5a',
+  cast: '#30a060',
+  switch: '#8a8a20',
+  select: '#8a8a20',
+  function_entry: '#b02020',
+  function_result: '#20a040',
+  tunnel: '#5a5a7a',
+  reroute: '#4a4a5a',
+  make_array: '#2070b0',
 };
 
 export const NodeHeader: FC<NodeHeaderProps> = ({ title, ueType }) => {
-  const color = TYPE_COLORS[ueType] ?? '#3a4a5c';
+  const color = TYPE_COLORS[ueType] ?? '#3060a0';
   return (
     <div
       className="ueflow-node-header"
