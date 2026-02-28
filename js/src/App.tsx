@@ -21,6 +21,7 @@ import { Breadcrumbs, type BreadcrumbItem } from './components/Breadcrumbs';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { StatusBar } from './components/StatusBar';
+import { DetailsPanel, type DetailsItem } from './components/DetailsPanel';
 import type { UEGraphJSON, UEMultiGraphJSON } from './types/ue-graph';
 
 const nodeTypes = {
@@ -106,6 +107,12 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
     }
   }, [breadcrumbs]);
 
+  const [detailsItem, setDetailsItem] = useState<DetailsItem | null>(null);
+
+  const handleShowDetails = useCallback((item: DetailsItem) => {
+    setDetailsItem(item);
+  }, []);
+
   const title = multiGraph.metadata?.blueprintName || multiGraph.metadata?.assetPath || 'Blueprint';
 
   return (
@@ -117,7 +124,7 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
         variableCount={multiGraph.variables?.length ?? 0}
       />
       <div className="ueflow-multi-layout">
-        <Sidebar multiGraph={multiGraph} onNavigateToGraph={handleNavigateToGraph} />
+        <Sidebar multiGraph={multiGraph} onNavigateToGraph={handleNavigateToGraph} onShowDetails={handleShowDetails} />
         <div className="ueflow-multi-main">
           <TabBar
             graphNames={graphNames}
@@ -134,6 +141,9 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
             )}
           </div>
         </div>
+        {detailsItem && (
+          <DetailsPanel item={detailsItem} onClose={() => setDetailsItem(null)} />
+        )}
       </div>
       <StatusBar
         activeGraph={activeGraph}

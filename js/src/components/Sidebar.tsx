@@ -1,9 +1,11 @@
 import { useState, type FC } from 'react';
 import type { UEMultiGraphJSON } from '../types/ue-graph';
+import type { DetailsItem } from './DetailsPanel';
 
 interface SidebarProps {
   multiGraph: UEMultiGraphJSON;
   onNavigateToGraph: (graphName: string) => void;
+  onShowDetails?: (item: DetailsItem) => void;
 }
 
 interface SectionProps {
@@ -62,7 +64,7 @@ function groupByCategory(items: any[]): Map<string, any[]> {
   return groups;
 }
 
-export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph }) => {
+export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onShowDetails }) => {
   const { events, functions, variables, structs, delegates, dataTables } = multiGraph;
   const graphNames = Object.keys(multiGraph.graphs);
   const dtKeys = Object.keys(dataTables || {});
@@ -91,7 +93,10 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph }) => 
                 key={evt.name}
                 className="uf-sidebar-item uf-sidebar-item--clickable"
                 title={params || undefined}
-                onClick={() => onNavigateToGraph('EventGraph')}
+                onClick={() => {
+                  onNavigateToGraph('EventGraph');
+                  onShowDetails?.({ kind: 'event', name: evt.name, params: (evt.params || evt.inputs || []).filter((p: any) => p.type !== 'Exec') });
+                }}
               >
                 <span className="uf-icon uf-icon--event">E</span>
                 <span className="uf-item-name">{evt.name}</span>
@@ -115,7 +120,10 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph }) => 
                     key={fn.name}
                     className={`uf-sidebar-item ${hasGraph ? 'uf-sidebar-item--clickable' : ''}`}
                     title={sig}
-                    onClick={() => hasGraph && onNavigateToGraph(fn.name)}
+                    onClick={() => {
+                      if (hasGraph) onNavigateToGraph(fn.name);
+                      onShowDetails?.({ kind: 'function', name: fn.name, category: fn.category, inputs: fn.inputs || fn.params, outputs: fn.outputs || fn.returns });
+                    }}
                   >
                     <span className="uf-icon uf-icon--function">f</span>
                     <span className="uf-item-name">{fn.name}</span>
@@ -136,7 +144,7 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph }) => 
               {vars.map((v: any) => {
                 const typeStr = shortType(v.type || '');
                 return (
-                  <div key={v.name} className="uf-sidebar-item" title={v.type}>
+                  <div key={v.name} className="uf-sidebar-item uf-sidebar-item--clickable" title={v.type} onClick={() => onShowDetails?.({ kind: 'variable', name: v.name, type: v.type, category: v.category, default: v.default, replication: v.replicated ? 'Replicated' : undefined })}>
                     <span className={`uf-icon uf-icon--type-${typeClass(v.type)}`} />
                     <span className="uf-item-name">{v.name}</span>
                     <span className="uf-item-type">{typeStr}</span>
@@ -155,7 +163,7 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph }) => 
           {structs.map((s: any) => {
             const fieldCount = s.fields?.length ?? 0;
             return (
-              <div key={s.name} className="uf-sidebar-item" title={`${fieldCount} fields`}>
+              <div key={s.name} className="uf-sidebar-item uf-sidebar-item--clickable" title={`${fieldCount} fields`} onClick={() => onShowDetails?.({ kind: 'struct', name: s.name, fields: s.fields || [] })}>
                 <span className="uf-icon uf-icon--struct">S</span>
                 <span className="uf-item-name">{s.name}</span>
                 <span className="uf-item-type">{fieldCount}f</span>
