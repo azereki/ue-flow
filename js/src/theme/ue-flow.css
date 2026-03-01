@@ -170,7 +170,7 @@
   color: #aab;
   font-family: var(--uf-font-mono);
   font-size: 10px;
-  max-width: 100px;
+  max-width: 140px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -237,6 +237,18 @@
       rgba(15, 17, 23, 1) 100%) !important;
 }
 
+/* Canvas noise overlay — subtle procedural texture */
+.react-flow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: var(--uf-noise);
+  opacity: 0.03;
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+  z-index: 0;
+}
+
 .react-flow__background {
   opacity: 0.45;
 }
@@ -270,10 +282,31 @@
   fill: var(--uf-text) !important;
 }
 
-/* Selection glow */
+/* Selection glow — UE5 gold highlight */
 .react-flow__node.selected .ueflow-node {
-  border-color: rgba(99, 102, 241, 0.9);
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3), 0 2px 8px rgba(0, 0, 0, 0.3);
+  border-color: rgba(241, 176, 0, 0.9);
+  box-shadow: 0 0 0 2px rgba(241, 176, 0, 0.25),
+              0 0 12px rgba(241, 176, 0, 0.15),
+              0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.react-flow__node.selected .ueflow-comment-node {
+  border-color: rgba(241, 176, 0, 0.7);
+}
+
+/* Variable Get/Set: rounded pill shape (matches UE SGraphNodeK2Var) */
+.ueflow-node[data-ue-type="variable_get"],
+.ueflow-node[data-ue-type="variable_set"] {
+  border-radius: 15px;
+  min-width: 130px;
+}
+.ueflow-node[data-ue-type="variable_get"] .ueflow-node-header,
+.ueflow-node[data-ue-type="variable_set"] .ueflow-node-header {
+  border-radius: 15px 15px 0 0;
+}
+.ueflow-node[data-ue-type="variable_get"]::after,
+.ueflow-node[data-ue-type="variable_set"]::after {
+  border-radius: 15px 0 0 15px;
 }
 
 /* Edge hover */
@@ -336,9 +369,11 @@
   font-family: var(--uf-font-mono);
   font-size: 10px;
   padding: 2px 4px;
-  width: 80px;
   outline: none;
 }
+
+.ueflow-editor-text { width: 120px; }
+.ueflow-editor-number { width: 80px; }
 
 .ueflow-editor-text:focus,
 .ueflow-editor-number:focus {
@@ -780,7 +815,7 @@
   box-shadow: inset 0 1px 0 var(--uf-subtle-border);
   overflow-y: auto;
   overflow-x: hidden;
-  font-size: 11px;
+  font-size: 10px;
   font-family: var(--uf-font-body);
   flex-shrink: 0;
   zoom: var(--uf-scale, 1);
@@ -853,7 +888,7 @@
   background: var(--uf-section-bg);
   border: none;
   width: 100%;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.6px;
@@ -886,7 +921,7 @@
 /* Category labels within sections */
 .ueflow-category-label {
   padding: 4px 10px 2px 12px;
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.4px;
@@ -898,11 +933,11 @@
 .ueflow-sidebar-item {
   display: flex;
   align-items: center;
-  padding: 3px 10px 3px 18px;
+  padding: 2px 10px 2px 16px;
   cursor: default;
   transition: background var(--uf-transition);
-  gap: 5px;
-  min-height: 20px;
+  gap: 4px;
+  min-height: 18px;
   background: none;
   border: none;
   width: 100%;
@@ -920,7 +955,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   color: #9aa;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .ueflow-sidebar-item--clickable .ueflow-item-name { color: var(--uf-text-link); }
@@ -928,7 +963,7 @@
 
 .ueflow-item-type {
   color: #8a8a94;
-  font-size: 10px;
+  font-size: 9px;
   font-family: var(--uf-font-mono);
   white-space: nowrap;
   max-width: 90px;
@@ -938,14 +973,14 @@
 
 /* Icons */
 .ueflow-icon {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border-radius: 2px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 700;
   color: #fff;
 }
@@ -988,14 +1023,50 @@
   margin-left: 2px;
 }
 
+.ueflow-badge-rep--repnotify { background: #2a2a3a; color: #8a8aff; }
+.ueflow-badge-rep--server { background: #3a2a2a; color: #ff6666; }
+.ueflow-badge-rep--client { background: #2a3a2a; color: #66cc66; }
+.ueflow-badge-rep--multicast { background: #2a2a3a; color: #cc66ff; }
+
+/* Component & Macro icons */
+.ueflow-icon--component { background: #446688; }
+.ueflow-icon--macro { background: #8020a0; }
+
+/* ===== Container Type Pin Handles ===== */
+
+.ueflow-handle--container-array {
+  border-radius: 1px !important;
+  width: 8px !important;
+  height: 8px !important;
+  transform: translate(-50%, -50%) rotate(45deg) !important;
+}
+
+.ueflow-handle--container-set {
+  border-radius: 1px !important;
+  width: 8px !important;
+  height: 8px !important;
+  border-width: 3px !important;
+  transform: translate(-50%, -50%) rotate(45deg) !important;
+}
+
+.ueflow-handle--container-map {
+  border-radius: 2px !important;
+  width: 12px !important;
+  height: 8px !important;
+}
+
 /* ===== Details Panel ===== */
 
 .ueflow-details-panel {
   width: 300px;
   min-width: 300px;
   height: 100%;
-  background: var(--uf-chrome-bg);
-  border-left: 1px solid var(--uf-subtle-border);
+  background-color: rgba(13, 13, 26, 0.85);
+  background-image: var(--uf-noise);
+  background-blend-mode: soft-light;
+  backdrop-filter: blur(12px) saturate(130%);
+  -webkit-backdrop-filter: blur(12px) saturate(130%);
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: inset 0 1px 0 var(--uf-subtle-border);
   overflow-y: auto;
   font-family: var(--uf-font-body);
@@ -1012,7 +1083,9 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 12px;
-  background: var(--uf-section-bg);
+  background: rgba(10, 11, 20, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--uf-section-border);
 }
 
@@ -1172,6 +1245,267 @@
   font-size: 10px;
 }
 
+/* ===== Table View (DataTable / Struct tabs) ===== */
+
+.ueflow-table-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--uf-bg);
+  font-family: var(--uf-font-body);
+}
+
+.ueflow-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--uf-surface-border);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--uf-text);
+}
+
+.ueflow-table-header-count {
+  font-size: 11px;
+  color: var(--uf-text-muted);
+  font-weight: 400;
+}
+
+.ueflow-table-scroll {
+  flex: 1;
+  overflow: auto;
+  padding: 8px 16px;
+}
+
+.ueflow-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--uf-font-mono);
+  font-size: 11px;
+}
+
+.ueflow-table th {
+  position: sticky;
+  top: 0;
+  background: var(--uf-surface);
+  color: var(--uf-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 6px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--uf-surface-border);
+}
+
+.ueflow-table td {
+  padding: 5px 10px;
+  color: var(--uf-text-secondary);
+  border-bottom: 1px solid var(--uf-subtle-border);
+}
+
+.ueflow-table tr:hover td {
+  background: var(--uf-surface-hover);
+}
+
+.ueflow-table-type-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* ===== Details Panel Search ===== */
+
+.ueflow-details-search {
+  position: relative;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--uf-section-border);
+}
+
+.ueflow-details-search-input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  color: var(--uf-text);
+  font-family: var(--uf-font-body);
+  font-size: 11px;
+  padding: 4px 24px 4px 8px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.ueflow-details-search-input:focus {
+  border-color: #4a4a8a;
+}
+
+.ueflow-details-search-clear {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #909090;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.ueflow-details-search-clear:hover { color: #aaa; }
+
+/* ===== Editable Field Components ===== */
+
+.ueflow-field-row {
+  display: flex;
+  align-items: center;
+  padding: 3px 12px;
+  gap: 8px;
+  min-height: 24px;
+}
+
+.ueflow-field-row--vector {
+  flex-wrap: wrap;
+}
+
+.ueflow-field-label {
+  color: #909090;
+  font-size: 10px;
+  min-width: 90px;
+  flex-shrink: 0;
+}
+
+.ueflow-field-value {
+  color: var(--uf-text-secondary);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ueflow-field-text,
+.ueflow-field-number {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-left: 2px solid #4a6080;
+  border-radius: 2px;
+  color: var(--uf-text);
+  font-family: var(--uf-font-body);
+  font-size: 10px;
+  padding: 3px 6px;
+  outline: none;
+  flex: 1;
+  min-width: 0;
+}
+
+.ueflow-field-mono {
+  font-family: var(--uf-font-mono);
+}
+
+.ueflow-field-text:focus,
+.ueflow-field-number:focus {
+  border-color: var(--uf-accent);
+  border-left-color: var(--uf-accent);
+}
+
+.ueflow-field-checkbox {
+  accent-color: #4a80c0;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ueflow-field-dropdown {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+  color: var(--uf-text);
+  font-family: var(--uf-font-body);
+  font-size: 10px;
+  padding: 3px 20px 3px 6px;
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+}
+
+.ueflow-field-dropdown:focus {
+  border-color: var(--uf-accent);
+}
+
+.ueflow-field-segmented {
+  display: flex;
+  border: 1px solid var(--uf-surface-border);
+  border-radius: 3px;
+  overflow: hidden;
+  flex: 1;
+}
+
+.ueflow-field-segment {
+  background: rgba(0, 0, 0, 0.2);
+  border: none;
+  border-right: 1px solid var(--uf-surface-border);
+  color: #777;
+  font-family: var(--uf-font-body);
+  font-size: 10px;
+  padding: 3px 8px;
+  cursor: pointer;
+  flex: 1;
+  text-align: center;
+  transition: background var(--uf-transition), color var(--uf-transition);
+}
+
+.ueflow-field-segment:last-child { border-right: none; }
+
+.ueflow-field-segment:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #aaa;
+}
+
+.ueflow-field-segment--active {
+  background: rgba(99, 102, 241, 0.2);
+  color: var(--uf-text);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.ueflow-field-vector {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ueflow-field-vector-input {
+  flex: 1 !important;
+  min-width: 40px !important;
+}
+
+/* Vector axis left-border colors (UE-style X/Y/Z) */
+.ueflow-field-vector--x { border-left-color: #c44 !important; }
+.ueflow-field-vector--y { border-left-color: #4a4 !important; }
+.ueflow-field-vector--z { border-left-color: #48c !important; }
+
+.ueflow-field-array-badge {
+  font-size: 10px;
+  color: #888;
+  font-family: var(--uf-font-mono);
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--uf-surface-border);
+  border-radius: 2px;
+}
+
 /* ===== Focus Indicators (WCAG 2.4.7) ===== */
 
 :focus-visible {
@@ -1234,12 +1568,17 @@
 @media (prefers-reduced-transparency: reduce) {
   .ueflow-export-toolbar,
   .ueflow-comment-header,
-  .react-flow__minimap {
+  .react-flow__minimap,
+  .ueflow-details-panel,
+  .ueflow-details-header {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }
 
   .ueflow-export-toolbar { background-color: rgba(15, 17, 23, 0.95); }
+  .ueflow-details-panel { background-color: rgba(13, 13, 26, 0.95); }
+
+  .react-flow::before { display: none; }
 }
 
 /* ===== Reduced Motion (WCAG 2.3.3) ===== */

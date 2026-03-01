@@ -74,6 +74,58 @@ export function graphJsonToFlow(graph: UEGraphJSON): { nodes: Node[]; edges: Edg
     };
   });
 
+  // Auto-pad comment nodes to encompass their children.
+  // Uses overlap detection (any part of node touches comment) rather than center-based,
+  // so nodes at edges are included. Padding ensures no node overflows the comment border.
+  const commentNodes = nodes.filter((n) => (n.data as FlowNodeData).ueType === 'comment');
+  const regularNodes = nodes.filter((n) => (n.data as FlowNodeData).ueType !== 'comment');
+  const COMMENT_PAD_X = 50;     // horizontal padding from child edge to comment edge
+  const COMMENT_PAD_BOTTOM = 50; // bottom padding
+  const COMMENT_HEADER = 60;     // space above topmost child (includes header height)
+
+  for (const comment of commentNodes) {
+    const cx = comment.position.x;
+    const cy = comment.position.y;
+    const cw = comment.initialWidth ?? DEFAULT_COMMENT_WIDTH;
+    const ch = comment.initialHeight ?? DEFAULT_COMMENT_HEIGHT;
+
+    // Find children that overlap with the original comment bounds (any intersection)
+    const children = regularNodes.filter((n) => {
+      const nw = n.initialWidth ?? MIN_NODE_WIDTH;
+      const nh = n.initialHeight ?? 42;
+      const nx = n.position.x;
+      const ny = n.position.y;
+      // AABB overlap: node rect intersects comment rect
+      return nx + nw > cx && nx < cx + cw && ny + nh > cy && ny < cy + ch;
+    });
+
+    if (children.length === 0) continue;
+
+    // Compute bounding box of all children (full node bounds, not centers)
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const child of children) {
+      const nw = child.initialWidth ?? MIN_NODE_WIDTH;
+      const nh = child.initialHeight ?? 42;
+      minX = Math.min(minX, child.position.x);
+      minY = Math.min(minY, child.position.y);
+      maxX = Math.max(maxX, child.position.x + nw);
+      maxY = Math.max(maxY, child.position.y + nh);
+    }
+
+    // Expand comment bounds to encompass all children + padding (only expand, never shrink)
+    const newX = Math.min(cx, minX - COMMENT_PAD_X);
+    const newY = Math.min(cy, minY - COMMENT_HEADER);
+    const newRight = Math.max(cx + cw, maxX + COMMENT_PAD_X);
+    const newBottom = Math.max(cy + ch, maxY + COMMENT_PAD_BOTTOM);
+    const newW = newRight - newX;
+    const newH = newBottom - newY;
+
+    comment.position = { x: newX, y: newY };
+    comment.initialWidth = newW;
+    comment.initialHeight = newH;
+    comment.style = { ...(comment.style as Record<string, unknown> ?? {}), width: newW, height: newH };
+  }
+
   const edges: Edge[] = graph.edges.map((ueEdge) => ({
     id: ueEdge.id,
     source: ueEdge.source,

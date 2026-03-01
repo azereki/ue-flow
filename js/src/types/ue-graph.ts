@@ -53,14 +53,45 @@ export interface UEGraphJSON {
 /** A param entry can be a "name: Type" string or a {name, type} object. */
 export type SidebarParam = string | { name: string; type: string };
 
+/** A single editable property field in the details panel. */
+export interface PropertyField {
+  value: string | number | boolean | number[];
+  type: 'string' | 'number' | 'bool' | 'vector' | 'enum' | 'segmented' | 'array';
+  options?: string[];
+}
+
 export interface UEMultiGraphJSON {
   metadata: { title: string; blueprintName?: string; assetPath?: string };
   graphs: Record<string, UEGraphJSON>;
-  events: Array<{ name: string; params?: SidebarParam[]; inputs?: SidebarParam[] }>;
-  functions: Array<{ name: string; category?: string; params?: SidebarParam[]; returns?: SidebarParam[]; inputs?: SidebarParam[]; outputs?: SidebarParam[] }>;
-  variables: Array<{ name: string; type: string; category?: string; default?: string; replicated?: boolean }>;
+  events: Array<{
+    name: string;
+    params?: SidebarParam[];
+    inputs?: SidebarParam[];
+    replicates?: 'NotReplicated' | 'Multicast' | 'RunOnServer' | 'RunOnClient';
+    reliable?: boolean;
+    callInEditor?: boolean;
+    accessSpecifier?: 'Public' | 'Protected' | 'Private';
+    keywords?: string;
+  }>;
+  functions: Array<{
+    name: string;
+    category?: string;
+    params?: SidebarParam[];
+    returns?: SidebarParam[];
+    inputs?: SidebarParam[];
+    outputs?: SidebarParam[];
+    pure?: boolean;
+    description?: string;
+    keywords?: string;
+    compactTitle?: string;
+    callInEditor?: boolean;
+    accessSpecifier?: 'Public' | 'Protected' | 'Private';
+  }>;
+  variables: Array<{ name: string; type: string; category?: string; default?: string; replicated?: boolean; replicationMode?: 'Replicated' | 'RepNotify' | 'ServerRPC' | 'ClientRPC' | 'MulticastRPC'; containerType?: 'Array' | 'Set' | 'Map'; innerType?: string; keyType?: string }>;
+  components?: Array<{ name: string; class: string; parent?: string; properties?: Record<string, Record<string, PropertyField>> }>;
+  macros?: Array<{ name: string; category?: string; inputs?: SidebarParam[]; outputs?: SidebarParam[] }>;
   structs: Array<{ name: string; fields: Array<{ name: string; type: string; default?: string }> }>;
-  delegates: Array<{ name: string; signature?: string }>;
-  dataTables: Record<string, { sampleRows?: unknown[] }>;
+  delegates: Array<{ name: string; signature?: string; params?: SidebarParam[] }>;
+  dataTables: Record<string, { sampleRows?: unknown[]; columns?: string[] }>;
   comparison: Record<string, { before: number; after: number }>;
 }

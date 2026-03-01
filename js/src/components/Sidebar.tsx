@@ -7,6 +7,7 @@ interface SidebarProps {
   multiGraph: UEMultiGraphJSON;
   onNavigateToGraph: (graphName: string, focusTitle?: string) => void;
   onShowDetails?: (item: DetailsItem) => void;
+  onOpenSpecialTab?: (name: string, type: 'datatable' | 'struct') => void;
 }
 
 interface SectionProps {
@@ -35,6 +36,24 @@ type SidebarFunction = UEMultiGraphJSON['functions'][number];
 type SidebarVariable = UEMultiGraphJSON['variables'][number];
 type SidebarStruct = UEMultiGraphJSON['structs'][number];
 type SidebarDelegate = UEMultiGraphJSON['delegates'][number];
+type SidebarComponent = NonNullable<UEMultiGraphJSON['components']>[number];
+type SidebarMacro = NonNullable<UEMultiGraphJSON['macros']>[number];
+
+function replicationBadge(v: SidebarVariable): React.ReactNode {
+  if (v.replicationMode) {
+    const modeMap: Record<string, { label: string; cls: string }> = {
+      Replicated: { label: 'R', cls: '' },
+      RepNotify: { label: 'RN', cls: 'ueflow-badge-rep--repnotify' },
+      ServerRPC: { label: 'S', cls: 'ueflow-badge-rep--server' },
+      ClientRPC: { label: 'C', cls: 'ueflow-badge-rep--client' },
+      MulticastRPC: { label: 'MC', cls: 'ueflow-badge-rep--multicast' },
+    };
+    const m = modeMap[v.replicationMode] ?? { label: 'R', cls: '' };
+    return <span className={`ueflow-badge-rep ${m.cls}`}>{m.label}</span>;
+  }
+  if (v.replicated) return <span className="ueflow-badge-rep">R</span>;
+  return null;
+}
 
 /** Parse a param that may be a "name: Type" string or an {name, type} object. */
 function toParamObj(p: SidebarParam): { name: string; type: string } {
@@ -106,9 +125,9 @@ function findGraphForEvent(graphs: Record<string, { nodes: Array<{ title: string
   return 'EventGraph';
 }
 
-export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onShowDetails }) => {
+export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onShowDetails, onOpenSpecialTab }) => {
   const [search, setSearch] = useState('');
-  const { events, functions, variables, structs, delegates, dataTables, graphs } = multiGraph;
+  const { events, functions, variables, structs, delegates, dataTables, graphs, components, macros } = multiGraph;
   const graphNames = Object.keys(graphs);
   const dtKeys = Object.keys(dataTables || {});
 
@@ -132,6 +151,12 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
   const filteredDtKeys = useMemo(() =>
     dtKeys.filter((k) => !q || k.toLowerCase().includes(q)),
     [dtKeys, q]);
+  const filteredComponents = useMemo(() =>
+    (components ?? []).filter((c: SidebarComponent) => !q || c.name.toLowerCase().includes(q)),
+    [components, q]);
+  const filteredMacros = useMemo(() =>
+    (macros ?? []).filter((m: SidebarMacro) => !q || m.name.toLowerCase().includes(q)),
+    [macros, q]);
 
   const funcGroups = useMemo(() => groupByCategory(filteredFunctions), [filteredFunctions]);
   const varGroups = useMemo(() => groupByCategory(filteredVariables), [filteredVariables]);
@@ -171,7 +196,7 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
                   onNavigateToGraph(graphName, evt.name);
                   const rawParams = (evt.params || evt.inputs || []);
                   const parsed = rawParams.map(toParamObj).filter((p) => p.type !== 'Exec');
-                  onShowDetails?.({ kind: 'event', name: evt.name, params: parsed });
+                  onShowDetails?.({ kind: 'event', name: evt.name, params: parsed, replicates: evt.replicates, reliable: evt.reliable, callInEditor: evt.callInEditor, accessSpecifier: evt.accessSpecifier, keywords: evt.keywords });
                 }}
               >
                 <span className={`ueflow-icon ueflow-icon--event ${evtClass ? 'ueflow-icon--' + evtClass.replace('ueflow-evt--', '') : ''}`}>E</span>
@@ -200,7 +225,7 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
                       if (hasGraph) onNavigateToGraph(fn.name);
                       const inputs = (fn.inputs || fn.params || []).map(toParamObj).filter((p) => p.type !== 'Exec');
                       const outputs = (fn.outputs || fn.returns || []).map(toParamObj).filter((p) => p.type !== 'Exec');
-                      onShowDetails?.({ kind: 'function', name: fn.name, category: fn.category, inputs, outputs });
+                      onShowDetails?.({ kind: 'function', name: fn.name, category: fn.category, pure: fn.pure, description: fn.description, keywords: fn.keywords, compactTitle: fn.compactTitle, callInEditor: fn.callInEditor, accessSpecifier: fn.accessSpecifier, inputs, outputs });
                     }}
                   >
                     <span className="ueflow-icon ueflow-icon--function">f</span>
@@ -213,6 +238,30 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
         </Section>
       )}
 
+      {/* Macros */}
+      {filteredMacros.length > 0 && (
+        <Section title="MACROS" count={filteredMacros.length}>
+          {filteredMacros.map((m: SidebarMacro) => {
+            const hasGraph = graphNames.includes(m.name);
+            return (
+              <button
+                key={m.name}
+                className={`ueflow-sidebar-item ${hasGraph ? 'ueflow-sidebar-item--clickable' : 'ueflow-sidebar-item--clickable'}`}
+                onClick={() => {
+                  if (hasGraph) onNavigateToGraph(m.name);
+                  const inputs = (m.inputs ?? []).map(toParamObj).filter((p) => p.type !== 'Exec');
+                  const outputs = (m.outputs ?? []).map(toParamObj).filter((p) => p.type !== 'Exec');
+                  onShowDetails?.({ kind: 'macro', name: m.name, category: m.category, inputs, outputs });
+                }}
+              >
+                <span className="ueflow-icon ueflow-icon--macro">M</span>
+                <span className="ueflow-item-name">{m.name}</span>
+              </button>
+            );
+          })}
+        </Section>
+      )}
+
       {/* Variables */}
       {filteredVariables.length > 0 && (
         <Section title="VARIABLES" count={filteredVariables.length} defaultOpen={filteredVariables.length <= 30}>
@@ -222,16 +271,62 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
               {vars.map((v: SidebarVariable) => {
                 const typeStr = shortType(v.type || '');
                 return (
-                  <button key={v.name} className="ueflow-sidebar-item ueflow-sidebar-item--clickable" title={v.type} onClick={() => onShowDetails?.({ kind: 'variable', name: v.name, type: v.type, category: v.category, default: v.default, replication: v.replicated ? 'Replicated' : undefined })}>
+                  <button key={v.name} className="ueflow-sidebar-item ueflow-sidebar-item--clickable" title={v.type} onClick={() => onShowDetails?.({ kind: 'variable', name: v.name, type: v.type, category: v.category, default: v.default, replication: v.replicationMode ?? (v.replicated ? 'Replicated' : undefined), containerType: v.containerType, innerType: v.innerType, keyType: v.keyType })}>
                     <span className={`ueflow-icon ueflow-icon--type-${typeClass(v.type)}`} />
                     <span className="ueflow-item-name">{v.name}</span>
                     <span className="ueflow-item-type">{typeStr}</span>
-                    {v.replicated && <span className="ueflow-badge-rep">R</span>}
+                    {replicationBadge(v)}
                   </button>
                 );
               })}
             </div>
           ))}
+        </Section>
+      )}
+
+      {/* Components (tree view) */}
+      {filteredComponents.length > 0 && (
+        <Section title="COMPONENTS" count={filteredComponents.length}>
+          {(() => {
+            // Build tree from flat list using parent references
+            const allComponents = components ?? [];
+            const childrenMap = new Map<string, SidebarComponent[]>();
+            const roots: SidebarComponent[] = [];
+            for (const c of allComponents) {
+              if (c.parent) {
+                if (!childrenMap.has(c.parent)) childrenMap.set(c.parent, []);
+                childrenMap.get(c.parent)!.push(c);
+              } else {
+                roots.push(c);
+              }
+            }
+            const filteredSet = new Set(filteredComponents.map((c: SidebarComponent) => c.name));
+            const renderTree = (items: SidebarComponent[], depth: number): React.ReactNode[] => {
+              const result: React.ReactNode[] = [];
+              for (const c of items) {
+                if (filteredSet.has(c.name)) {
+                  result.push(
+                    <button
+                      key={c.name}
+                      className="ueflow-sidebar-item ueflow-sidebar-item--clickable"
+                      style={{ paddingLeft: `${16 + depth * 14}px` }}
+                      title={c.class}
+                      onClick={() => onShowDetails?.({ kind: 'component', name: c.name, componentClass: c.class, parent: c.parent, properties: c.properties })}
+                    >
+                      {depth > 0 && <span style={{ color: '#555', fontSize: 8, marginRight: 2 }}>{'└'}</span>}
+                      <span className="ueflow-icon ueflow-icon--component">C</span>
+                      <span className="ueflow-item-name">{c.name}</span>
+                      <span className="ueflow-item-type">{shortType(c.class)}</span>
+                    </button>
+                  );
+                }
+                const kids = childrenMap.get(c.name);
+                if (kids) result.push(...renderTree(kids, depth + 1));
+              }
+              return result;
+            };
+            return renderTree(roots, 0);
+          })()}
         </Section>
       )}
 
@@ -241,7 +336,10 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
           {filteredStructs.map((s: SidebarStruct) => {
             const fieldCount = s.fields?.length ?? 0;
             return (
-              <button key={s.name} className="ueflow-sidebar-item ueflow-sidebar-item--clickable" title={`${fieldCount} fields`} onClick={() => onShowDetails?.({ kind: 'struct', name: s.name, fields: s.fields || [] })}>
+              <button key={s.name} className="ueflow-sidebar-item ueflow-sidebar-item--clickable" title={`${fieldCount} fields`} onClick={() => {
+                onOpenSpecialTab?.(s.name, 'struct');
+                onShowDetails?.({ kind: 'struct', name: s.name, fields: s.fields || [] });
+              }}>
                 <span className="ueflow-icon ueflow-icon--struct">S</span>
                 <span className="ueflow-item-name">{s.name}</span>
                 <span className="ueflow-item-type">{fieldCount}f</span>
@@ -253,11 +351,17 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
 
       {/* Delegates */}
       {filteredDelegates.length > 0 && (
-        <Section title="DELEGATES" count={filteredDelegates.length} defaultOpen={true}>
+        <Section title="EVENT DISPATCHERS" count={filteredDelegates.length} defaultOpen={true}>
           {filteredDelegates.map((d: SidebarDelegate) => (
-            <button key={d.name} className="ueflow-sidebar-item ueflow-sidebar-item--clickable" title={d.signature || ''} onClick={() => onShowDetails?.({ kind: 'delegate', name: d.name, signature: d.signature })}>
+            <button key={d.name} className="ueflow-sidebar-item ueflow-sidebar-item--clickable" title={d.signature || ''} onClick={() => {
+              const params = d.params ? d.params.map(toParamObj) : undefined;
+              onShowDetails?.({ kind: 'delegate', name: d.name, signature: d.signature, params });
+            }}>
               <span className="ueflow-icon ueflow-icon--delegate">D</span>
               <span className="ueflow-item-name">{d.name}</span>
+              {d.params && d.params.length > 0 && (
+                <span className="ueflow-item-type">{d.params.map(toParamObj).map(p => p.type || p.name).join(', ')}</span>
+              )}
             </button>
           ))}
         </Section>
@@ -271,7 +375,10 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
             const rowCount = dt?.sampleRows?.length ?? 0;
             const columns = dt?.columns as string[] | undefined;
             return (
-              <button key={name} className="ueflow-sidebar-item ueflow-sidebar-item--clickable" title={`${rowCount} rows`} onClick={() => onShowDetails?.({ kind: 'datatable', name, rowCount, columns })}>
+              <button key={name} className="ueflow-sidebar-item ueflow-sidebar-item--clickable" title={`${rowCount} rows`} onClick={() => {
+                onOpenSpecialTab?.(name, 'datatable');
+                onShowDetails?.({ kind: 'datatable', name, rowCount, columns });
+              }}>
                 <span className="ueflow-icon ueflow-icon--table">T</span>
                 <span className="ueflow-item-name">{name}</span>
                 {rowCount > 0 && <span className="ueflow-item-type">{rowCount}r</span>}

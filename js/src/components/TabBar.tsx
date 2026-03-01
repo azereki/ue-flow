@@ -1,4 +1,5 @@
 import type { FC } from 'react';
+import { parseTabName } from '../hooks/useTabNavigation';
 
 interface TabBarProps {
   openTabs: string[];
@@ -9,6 +10,11 @@ interface TabBarProps {
   comparison?: Record<string, { before: number; after: number }>;
 }
 
+const TAB_ICONS: Record<string, string> = {
+  datatable: 'T',
+  struct: 'S',
+};
+
 export const TabBar: FC<TabBarProps> = ({ openTabs, activeGraph, onSelectGraph, onCloseTab, pinnedTab, comparison }) => {
   return (
     <div className="ueflow-tab-bar" role="tablist">
@@ -16,6 +22,8 @@ export const TabBar: FC<TabBarProps> = ({ openTabs, activeGraph, onSelectGraph, 
         const isActive = name === activeGraph;
         const isPinned = name === pinnedTab;
         const comp = comparison?.[name];
+        const tabInfo = parseTabName(name);
+        const icon = TAB_ICONS[tabInfo.type];
         return (
           <button
             key={name}
@@ -24,7 +32,8 @@ export const TabBar: FC<TabBarProps> = ({ openTabs, activeGraph, onSelectGraph, 
             className={`ueflow-tab ${isActive ? 'ueflow-tab--active' : ''}`}
             onClick={() => onSelectGraph(name)}
           >
-            <span className="ueflow-tab-name">{name}</span>
+            {icon && <span className={`ueflow-icon ueflow-icon--${tabInfo.type === 'datatable' ? 'table' : 'struct'}`} style={{ width: 14, height: 14, fontSize: 8 }}>{icon}</span>}
+            <span className="ueflow-tab-name">{tabInfo.name}</span>
             {comp && (
               <span className="ueflow-tab-count">
                 {comp.after ?? '?'}

@@ -1,6 +1,17 @@
 import { useState, useCallback, useMemo } from 'react';
 import type { BreadcrumbItem } from '../components/Breadcrumbs';
 
+export interface SpecialTabInfo {
+  type: 'graph' | 'datatable' | 'struct';
+  name: string;
+}
+
+export function parseTabName(tabName: string): SpecialTabInfo {
+  if (tabName.startsWith('dt:')) return { type: 'datatable', name: tabName.slice(3) };
+  if (tabName.startsWith('struct:')) return { type: 'struct', name: tabName.slice(7) };
+  return { type: 'graph', name: tabName };
+}
+
 export interface TabNavigationState {
   openTabs: string[];
   activeGraph: string;
@@ -14,6 +25,7 @@ export interface TabNavigationActions {
   closeTab: (name: string) => void;
   navigateToGraph: (name: string, focusTitle?: string) => void;
   navigateBreadcrumb: (index: number) => void;
+  openSpecialTab: (name: string, type: 'datatable' | 'struct') => void;
 }
 
 export function useTabNavigation(graphNames: string[]): TabNavigationState & TabNavigationActions {
@@ -73,6 +85,14 @@ export function useTabNavigation(graphNames: string[]): TabNavigationState & Tab
     }
   }, [breadcrumbs]);
 
+  const openSpecialTab = useCallback((name: string, type: 'datatable' | 'struct') => {
+    const prefix = type === 'datatable' ? 'dt:' : 'struct:';
+    const tabName = `${prefix}${name}`;
+    setOpenTabs(prev => prev.includes(tabName) ? prev : [...prev, tabName]);
+    setActiveGraph(tabName);
+    setBreadcrumbs([{ label: name, graphName: tabName }]);
+  }, []);
+
   return useMemo(() => ({
     openTabs,
     activeGraph,
@@ -83,5 +103,6 @@ export function useTabNavigation(graphNames: string[]): TabNavigationState & Tab
     closeTab,
     navigateToGraph,
     navigateBreadcrumb,
-  }), [openTabs, activeGraph, breadcrumbs, focusNodeTitle, pinnedTab, selectGraph, closeTab, navigateToGraph, navigateBreadcrumb]);
+    openSpecialTab,
+  }), [openTabs, activeGraph, breadcrumbs, focusNodeTitle, pinnedTab, selectGraph, closeTab, navigateToGraph, navigateBreadcrumb, openSpecialTab]);
 }

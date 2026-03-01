@@ -149,7 +149,12 @@
             "properties": {
               "name": { "type": "string" },
               "params": { "type": "array", "items": { "$ref": "#/$defs/SidebarParam" } },
-              "inputs": { "type": "array", "items": { "$ref": "#/$defs/SidebarParam" } }
+              "inputs": { "type": "array", "items": { "$ref": "#/$defs/SidebarParam" } },
+              "replicates": { "type": "string", "enum": ["NotReplicated", "Multicast", "RunOnServer", "RunOnClient"] },
+              "reliable": { "type": "boolean" },
+              "callInEditor": { "type": "boolean" },
+              "accessSpecifier": { "type": "string", "enum": ["Public", "Protected", "Private"] },
+              "keywords": { "type": "string" }
             }
           }
         },
@@ -164,7 +169,13 @@
               "params": { "type": "array", "items": { "$ref": "#/$defs/SidebarParam" } },
               "returns": { "type": "array", "items": { "$ref": "#/$defs/SidebarParam" } },
               "inputs": { "type": "array", "items": { "$ref": "#/$defs/SidebarParam" } },
-              "outputs": { "type": "array", "items": { "$ref": "#/$defs/SidebarParam" } }
+              "outputs": { "type": "array", "items": { "$ref": "#/$defs/SidebarParam" } },
+              "pure": { "type": "boolean" },
+              "description": { "type": "string" },
+              "keywords": { "type": "string" },
+              "compactTitle": { "type": "string" },
+              "callInEditor": { "type": "boolean" },
+              "accessSpecifier": { "type": "string", "enum": ["Public", "Protected", "Private"] }
             }
           }
         },
@@ -178,7 +189,52 @@
               "type": { "type": "string" },
               "category": { "type": "string" },
               "default": { "type": "string" },
-              "replicated": { "type": "boolean" }
+              "replicated": { "type": "boolean" },
+              "replicationMode": { "type": "string", "enum": ["Replicated", "RepNotify", "ServerRPC", "ClientRPC", "MulticastRPC"] },
+              "containerType": { "type": "string", "enum": ["Array", "Set", "Map"] },
+              "innerType": { "type": "string" },
+              "keyType": { "type": "string" }
+            }
+          }
+        },
+        "components": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "class"],
+            "properties": {
+              "name": { "type": "string" },
+              "class": { "type": "string" },
+              "parent": { "type": "string" },
+              "properties": {
+                "type": "object",
+                "description": "Categorized component properties for the details panel.",
+                "additionalProperties": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object",
+                    "required": ["value", "type"],
+                    "properties": {
+                      "value": {},
+                      "type": { "type": "string", "enum": ["string", "number", "bool", "vector", "enum", "segmented", "array"] },
+                      "options": { "type": "array", "items": { "type": "string" } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "macros": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "category": { "type": "string" },
+              "inputs": { "type": "array", "items": { "$ref": "#/$defs/SidebarParam" } },
+              "outputs": { "type": "array", "items": { "$ref": "#/$defs/SidebarParam" } }
             }
           }
         },
@@ -211,7 +267,8 @@
             "required": ["name"],
             "properties": {
               "name": { "type": "string" },
-              "signature": { "type": "string" }
+              "signature": { "type": "string" },
+              "params": { "type": "array", "items": { "$ref": "#/$defs/SidebarParam" } }
             }
           }
         },

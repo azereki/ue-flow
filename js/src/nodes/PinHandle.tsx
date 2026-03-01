@@ -42,7 +42,14 @@ export const PinHandle: FC<PinHandleProps> = memo(({ pin }) => {
   );
   const color = PIN_COLORS[pin.category] ?? '#808080';
   const isExec = isExecPin(pin.category);
-  const label = pin.friendlyName || pin.name;
+  const rawLabel = pin.friendlyName || pin.name;
+  const containerClass = pin.containerType ? `ueflow-handle--container-${pin.containerType.toLowerCase()}` : '';
+
+  // Show container type in label: "Array<Float>" style
+  let label = rawLabel;
+  if (pin.containerType && rawLabel) {
+    label = `${rawLabel}`;
+  }
 
   return (
     <div className={`ueflow-pin ueflow-pin--${pin.direction}`} title={pinTooltip(pin)}>
@@ -50,7 +57,7 @@ export const PinHandle: FC<PinHandleProps> = memo(({ pin }) => {
         type={type}
         position={isInput ? Position.Left : Position.Right}
         id={pin.id}
-        className={`ueflow-handle ${isExec ? 'ueflow-handle--exec' : 'ueflow-handle--data'} ${isConnected ? 'ueflow-handle--connected' : ''}`}
+        className={`ueflow-handle ${isExec ? 'ueflow-handle--exec' : 'ueflow-handle--data'} ${isConnected ? 'ueflow-handle--connected' : ''} ${containerClass}`}
         style={{ '--pin-color': color } as React.CSSProperties}
         isConnectable={false}
       />

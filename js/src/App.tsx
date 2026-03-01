@@ -5,6 +5,7 @@ import {
   BackgroundVariant,
   Controls,
   MiniMap,
+  SelectionMode,
   useNodesState,
   useEdgesState,
   useReactFlow,
@@ -27,7 +28,10 @@ import { PinBodyContext } from './contexts/PinBodyContext';
 import type { UEGraphJSON, UEMultiGraphJSON } from './types/ue-graph';
 import type { FlowNodeData } from './transform/json-to-flow';
 import { zoomSelector } from './utils/selectors';
-import { useTabNavigation } from './hooks/useTabNavigation';
+import { useTabNavigation, parseTabName } from './hooks/useTabNavigation';
+import { DataTableView } from './components/DataTableView';
+import { StructView } from './components/StructView';
+import { useUndoRedo } from './hooks/useUndoRedo';
 
 const nodeTypes = {
   blueprintNode: BlueprintNode,
@@ -89,6 +93,7 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
   const initial = useMemo(() => graphJsonToFlow(graphJSON), [graphJSON]);
   const [nodes, setNodes, onNodesChange] = useNodesState(initial.nodes);
   const [edges, , onEdgesChange] = useEdgesState(initial.edges);
+  const { captureSnapshot } = useUndoRedo(nodes, setNodes);
 
   // Resolve focus title to node position using stable initial data
   // Handles mismatches: sidebar has "BeginPlay", graph has "Event ReceiveBeginPlay"
@@ -112,6 +117,7 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
   const dragContext = useRef<{ childIds: Set<string>; commentId: string; lastPos: { x: number; y: number } } | null>(null);
 
   const handleNodeDragStart = useCallback((_: React.MouseEvent, node: { id: string; position: { x: number; y: number }; data: Record<string, unknown>; initialWidth?: number; initialHeight?: number }) => {
+    captureSnapshot();
     if ((node.data as FlowNodeData).ueType !== 'comment') return;
     const cx = node.position.x;
     const cy = node.position.y;
@@ -138,7 +144,7 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
         return n;
       }),
     );
-  }, [nodes, setNodes]);
+  }, [nodes, setNodes, captureSnapshot]);
 
   const handleNodeDrag = useCallback((_: React.MouseEvent, node: { id: string; position: { x: number; y: number }; data: Record<string, unknown> }) => {
     const ctx = dragContext.current;
@@ -197,6 +203,9 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
         onlyRenderVisibleElements
         elevateNodesOnSelect
         nodesConnectable={false}
+        panOnDrag={[1, 2]}
+        selectionOnDrag
+        selectionMode={SelectionMode.Partial}
         minZoom={0.05}
         maxZoom={4}
         proOptions={{ hideAttribution: true }}
@@ -204,8 +213,8 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
         <PinBodyProvider>
           <FitViewOnMount focusNode={focusNode} />
           <ExposeGlobalFitView />
-          <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.03)" gap={20} />
-          <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.06)" gap={100} />
+          <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.025)" gap={20} />
+          <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.05)" gap={100} />
           <Controls />
           <MiniMap nodeColor={(node) => {
             const t = (node.data as FlowNodeData)?.ueType ?? '';
@@ -244,10 +253,11 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
   const graphNames = useMemo(() => Object.keys(multiGraph.graphs), [multiGraph]);
   const {
     openTabs, activeGraph, breadcrumbs, focusNodeTitle, pinnedTab,
-    selectGraph, closeTab, navigateToGraph, navigateBreadcrumb,
+    selectGraph, closeTab, navigateToGraph, navigateBreadcrumb, openSpecialTab,
   } = useTabNavigation(graphNames);
 
-  const currentGraphJSON = multiGraph.graphs[activeGraph] ?? null;
+  const activeTabInfo = parseTabName(activeGraph);
+  const currentGraphJSON = activeTabInfo.type === 'graph' ? (multiGraph.graphs[activeGraph] ?? null) : null;
   const nodeCount = currentGraphJSON?.nodes?.length ?? 0;
 
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
@@ -290,7 +300,7 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
       />
       <div className="ueflow-multi-layout">
         <div style={{ width: sidebarWidth, minWidth: sidebarWidth, flexShrink: 0 }}>
-          <Sidebar multiGraph={multiGraph} onNavigateToGraph={navigateToGraph} onShowDetails={handleShowDetails} />
+          <Sidebar multiGraph={multiGraph} onNavigateToGraph={navigateToGraph} onShowDetails={handleShowDetails} onOpenSpecialTab={openSpecialTab} />
         </div>
         <div className="ueflow-sidebar-resize" onMouseDown={handleSidebarResize} />
         <main className="ueflow-multi-main">
@@ -304,7 +314,17 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
           />
           <Breadcrumbs items={breadcrumbs} onNavigate={navigateBreadcrumb} />
           <div id="ueflow-graph" className="ueflow-graph-container">
-            {currentGraphJSON ? (
+            {activeTabInfo.type === 'datatable' ? (
+              (() => {
+                const dt = multiGraph.dataTables?.[activeTabInfo.name];
+                return <DataTableView name={activeTabInfo.name} columns={dt?.columns} sampleRows={dt?.sampleRows} />;
+              })()
+            ) : activeTabInfo.type === 'struct' ? (
+              (() => {
+                const s = multiGraph.structs?.find((st) => st.name === activeTabInfo.name);
+                return <StructView name={activeTabInfo.name} fields={s?.fields ?? []} />;
+              })()
+            ) : currentGraphJSON ? (
               <SingleGraphView key={`${activeGraph}:${focusNodeTitle ?? ''}`} graphJSON={currentGraphJSON} focusNodeTitle={focusNodeTitle} onSelectedNodeChange={setSelectedNode} />
             ) : (
               <div className="ueflow-empty-graph">No graph selected</div>
