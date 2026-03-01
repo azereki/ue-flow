@@ -1012,6 +1012,14 @@
 .ueflow-icon--type-enum { background: #886644; }
 .ueflow-icon--type-array { background: #668844; }
 
+/* Instance editable eye badge */
+.ueflow-badge-eye {
+  font-size: 10px;
+  opacity: 0.5;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
 /* Replication badge */
 .ueflow-badge-rep {
   font-size: 8px;

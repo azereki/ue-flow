@@ -87,7 +87,7 @@ export interface UEMultiGraphJSON {
     callInEditor?: boolean;
     accessSpecifier?: 'Public' | 'Protected' | 'Private';
   }>;
-  variables: Array<{ name: string; type: string; category?: string; default?: string; replicated?: boolean; replicationMode?: 'Replicated' | 'RepNotify' | 'ServerRPC' | 'ClientRPC' | 'MulticastRPC'; containerType?: 'Array' | 'Set' | 'Map'; innerType?: string; keyType?: string }>;
+  variables: Array<{ name: string; type: string; category?: string; default?: string; replicated?: boolean; replicationMode?: 'Replicated' | 'RepNotify' | 'ServerRPC' | 'ClientRPC' | 'MulticastRPC'; containerType?: 'Array' | 'Set' | 'Map'; innerType?: string; keyType?: string; instanceEditable?: boolean; exposeOnSpawn?: boolean; private?: boolean; transient?: boolean; saveGame?: boolean }>;
   components?: Array<{ name: string; class: string; parent?: string; properties?: Record<string, Record<string, PropertyField>> }>;
   macros?: Array<{ name: string; category?: string; inputs?: SidebarParam[]; outputs?: SidebarParam[] }>;
   structs: Array<{ name: string; fields: Array<{ name: string; type: string; default?: string }> }>;

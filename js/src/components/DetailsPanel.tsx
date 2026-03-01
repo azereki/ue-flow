@@ -7,7 +7,7 @@ import type { PropertyField } from '../types/ue-graph';
 export type DetailsItem =
   | { kind: 'event'; name: string; params?: Array<{ name: string; type: string }>; replicates?: string; reliable?: boolean; callInEditor?: boolean; accessSpecifier?: string; keywords?: string }
   | { kind: 'function'; name: string; category?: string; pure?: boolean; description?: string; keywords?: string; compactTitle?: string; callInEditor?: boolean; accessSpecifier?: string; inputs?: Array<{ name: string; type: string }>; outputs?: Array<{ name: string; type: string }> }
-  | { kind: 'variable'; name: string; type: string; category?: string; replication?: string; default?: string; containerType?: string; innerType?: string; keyType?: string }
+  | { kind: 'variable'; name: string; type: string; category?: string; replication?: string; default?: string; containerType?: string; innerType?: string; keyType?: string; instanceEditable?: boolean; exposeOnSpawn?: boolean; private?: boolean; transient?: boolean; saveGame?: boolean }
   | { kind: 'struct'; name: string; fields: Array<{ name: string; type: string; default?: string }> }
   | { kind: 'delegate'; name: string; signature?: string; params?: Array<{ name: string; type: string }> }
   | { kind: 'datatable'; name: string; rowCount: number; columns?: string[] }
@@ -262,6 +262,21 @@ function VariableDetails({ item, search, edits, set }: { item: Extract<DetailsIt
           )}
           {shouldShow(search, 'Variable', 'Default') && (
             <FieldText label="Default Value" value={(edits['default'] as string) ?? item.default ?? ''} onChange={(v) => set('default', v)} mono />
+          )}
+          {shouldShow(search, 'Variable', 'Instance Editable') && (
+            <FieldCheckbox label="Instance Editable" checked={(edits['instanceEditable'] as boolean) ?? item.instanceEditable ?? false} onChange={(v) => set('instanceEditable', v)} />
+          )}
+          {shouldShow(search, 'Variable', 'Expose on Spawn') && (
+            <FieldCheckbox label="Expose on Spawn" checked={(edits['exposeOnSpawn'] as boolean) ?? item.exposeOnSpawn ?? false} onChange={(v) => set('exposeOnSpawn', v)} />
+          )}
+          {shouldShow(search, 'Variable', 'Private') && (
+            <FieldCheckbox label="Private" checked={(edits['private'] as boolean) ?? item.private ?? false} onChange={(v) => set('private', v)} />
+          )}
+          {shouldShow(search, 'Variable', 'Transient') && (
+            <FieldCheckbox label="Transient" checked={(edits['transient'] as boolean) ?? item.transient ?? false} onChange={(v) => set('transient', v)} />
+          )}
+          {shouldShow(search, 'Variable', 'Save Game') && (
+            <FieldCheckbox label="Save Game" checked={(edits['saveGame'] as boolean) ?? item.saveGame ?? false} onChange={(v) => set('saveGame', v)} />
           )}
         </CollapsibleSection>
       )}

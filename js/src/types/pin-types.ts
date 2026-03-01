@@ -29,6 +29,38 @@ export function isExecPin(category: PinCategory): boolean {
   return category === 'exec';
 }
 
+/** Extended pin colors for struct sub-types and numeric variants (matches UE5 UGraphEditorSettings). */
+const EXTENDED_PIN_COLORS: Record<string, string> = {
+  // Numeric sub-types
+  'int64':              '#1fe3af',
+  'uint64':             '#1fe3af',
+  'double':             '#a1ff45',
+  // Struct sub-types
+  'linearcolor':        '#f0c040',
+  'color':              '#f06040',
+  'vector':             '#f8d040',
+  'vector2d':           '#d8b838',
+  'vector4':            '#e8c840',
+  'rotator':            '#8cb4e8',
+  'transform':          '#e87830',
+  'gameplaytag':        '#1898a0',
+  'gameplaytagcontainer': '#1898a0',
+  'fieldpath':          '#a0a0a0',
+};
+
+/** Get the display color for a pin, checking sub-type specializations before falling back to base category. */
+export function getExtendedPinColor(pin: { category: PinCategory; subCategory: string; subCategoryObject: string }): string {
+  if (pin.subCategoryObject) {
+    const objName = pin.subCategoryObject.split('.').pop()?.toLowerCase() ?? '';
+    if (EXTENDED_PIN_COLORS[objName]) return EXTENDED_PIN_COLORS[objName];
+  }
+  if (pin.subCategory) {
+    const sub = pin.subCategory.toLowerCase();
+    if (EXTENDED_PIN_COLORS[sub]) return EXTENDED_PIN_COLORS[sub];
+  }
+  return PIN_COLORS[pin.category] ?? '#808080';
+}
+
 /** Classify a UE type string (e.g. "Boolean", "Float (double-precision)") into a PinCategory. */
 export function classifyPinType(type: string | undefined): PinCategory {
   if (!type) return 'wildcard';

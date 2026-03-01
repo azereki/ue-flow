@@ -193,7 +193,12 @@
               "replicationMode": { "type": "string", "enum": ["Replicated", "RepNotify", "ServerRPC", "ClientRPC", "MulticastRPC"] },
               "containerType": { "type": "string", "enum": ["Array", "Set", "Map"] },
               "innerType": { "type": "string" },
-              "keyType": { "type": "string" }
+              "keyType": { "type": "string" },
+              "instanceEditable": { "type": "boolean", "description": "Whether the variable is editable per-instance in the editor." },
+              "exposeOnSpawn": { "type": "boolean", "description": "Whether the variable is exposed as a spawn parameter." },
+              "private": { "type": "boolean", "description": "Whether the variable is private to this Blueprint." },
+              "transient": { "type": "boolean", "description": "Whether the variable is transient (not saved)." },
+              "saveGame": { "type": "boolean", "description": "Whether the variable is included in save game data." }
             }
           }
         },

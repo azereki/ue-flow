@@ -1,7 +1,7 @@
 import { Handle, Position, useStore } from '@xyflow/react';
 import { memo, useCallback, type FC } from 'react';
 import type { UEPin } from '../types/ue-graph';
-import { PIN_COLORS, isExecPin } from '../types/pin-types';
+import { isExecPin, getExtendedPinColor } from '../types/pin-types';
 
 function pinTooltip(pin: UEPin): string {
   const parts: string[] = [];
@@ -40,7 +40,7 @@ export const PinHandle: FC<PinHandleProps> = memo(({ pin }) => {
       [pin.id, isInput],
     ),
   );
-  const color = PIN_COLORS[pin.category] ?? '#808080';
+  const color = getExtendedPinColor(pin);
   const isExec = isExecPin(pin.category);
   const rawLabel = pin.friendlyName || pin.name;
   const containerClass = pin.containerType ? `ueflow-handle--container-${pin.containerType.toLowerCase()}` : '';

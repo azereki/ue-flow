@@ -271,9 +271,10 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
               {vars.map((v: SidebarVariable) => {
                 const typeStr = shortType(v.type || '');
                 return (
-                  <button key={v.name} className="ueflow-sidebar-item ueflow-sidebar-item--clickable" title={v.type} onClick={() => onShowDetails?.({ kind: 'variable', name: v.name, type: v.type, category: v.category, default: v.default, replication: v.replicationMode ?? (v.replicated ? 'Replicated' : undefined), containerType: v.containerType, innerType: v.innerType, keyType: v.keyType })}>
+                  <button key={v.name} className="ueflow-sidebar-item ueflow-sidebar-item--clickable" title={v.type} onClick={() => onShowDetails?.({ kind: 'variable', name: v.name, type: v.type, category: v.category, default: v.default, replication: v.replicationMode ?? (v.replicated ? 'Replicated' : undefined), containerType: v.containerType, innerType: v.innerType, keyType: v.keyType, instanceEditable: v.instanceEditable, exposeOnSpawn: v.exposeOnSpawn, private: v.private, transient: v.transient, saveGame: v.saveGame })}>
                     <span className={`ueflow-icon ueflow-icon--type-${typeClass(v.type)}`} />
                     <span className="ueflow-item-name">{v.name}</span>
+                    {v.instanceEditable && <span className="ueflow-badge-eye" title="Instance Editable">&#128065;</span>}
                     <span className="ueflow-item-type">{typeStr}</span>
                     {replicationBadge(v)}
                   </button>
