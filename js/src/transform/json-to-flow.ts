@@ -57,7 +57,7 @@ export function graphJsonToFlow(graph: UEGraphJSON): { nodes: Node[]; edges: Edg
       type: ueNode.type === 'comment' ? 'commentNode' : 'blueprintNode',
       position: ueNode.position,
       ...(ueNode.type === 'comment'
-        ? { zIndex: -1, style: { width: size.width, height: size.height } }
+        ? { zIndex: -2000, style: { width: size.width, height: size.height } }
         : {}),
       initialWidth: size.width,
       initialHeight: size.height,

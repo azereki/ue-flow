@@ -109,7 +109,7 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
   }, [focusNodeTitle, initial.nodes]);
 
   // Comment group-drag: when a comment node is dragged, move all enclosed nodes with it.
-  const dragContext = useRef<{ childIds: Set<string>; lastPos: { x: number; y: number } } | null>(null);
+  const dragContext = useRef<{ childIds: Set<string>; commentId: string; lastPos: { x: number; y: number } } | null>(null);
 
   const handleNodeDragStart = useCallback((_: React.MouseEvent, node: { id: string; position: { x: number; y: number }; data: Record<string, unknown>; initialWidth?: number; initialHeight?: number }) => {
     if ((node.data as FlowNodeData).ueType !== 'comment') return;
@@ -128,8 +128,17 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
         childIds.add(n.id);
       }
     }
-    dragContext.current = { childIds, lastPos: { x: cx, y: cy } };
-  }, [nodes]);
+    dragContext.current = { childIds, commentId: node.id, lastPos: { x: cx, y: cy } };
+    // Elevate comment above non-children (z 500 + 1000 from elevateNodesOnSelect = 1500),
+    // and children even higher (z 2000) so they always render on top of the comment.
+    setNodes((prev) =>
+      prev.map((n) => {
+        if (n.id === node.id) return { ...n, zIndex: 500 };
+        if (childIds.has(n.id)) return { ...n, zIndex: 2000 };
+        return n;
+      }),
+    );
+  }, [nodes, setNodes]);
 
   const handleNodeDrag = useCallback((_: React.MouseEvent, node: { id: string; position: { x: number; y: number }; data: Record<string, unknown> }) => {
     const ctx = dragContext.current;
@@ -148,8 +157,19 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
   }, [setNodes]);
 
   const handleNodeDragStop = useCallback(() => {
+    const ctx = dragContext.current;
+    if (ctx) {
+      // Reset comment and child z-index back to defaults after drag
+      setNodes((prev) =>
+        prev.map((n) => {
+          if (n.id === ctx.commentId) return { ...n, zIndex: -2000 };
+          if (ctx.childIds.has(n.id)) return { ...n, zIndex: undefined };
+          return n;
+        }),
+      );
+    }
     dragContext.current = null;
-  }, []);
+  }, [setNodes]);
 
   const handleSelectionChange = useCallback(({ nodes: selectedNodes }: { nodes: Array<{ data: Record<string, unknown> }> }) => {
     if (!onSelectedNodeChange) return;

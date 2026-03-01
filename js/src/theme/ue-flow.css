@@ -398,6 +398,8 @@
   flex: 1;
   pointer-events: none;
   background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(6px) saturate(120%);
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
 }
 
 .ueflow-comment-title {
