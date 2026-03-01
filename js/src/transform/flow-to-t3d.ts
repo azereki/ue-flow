@@ -38,9 +38,9 @@ function serializePinWithLinks(
     'PinType.PinSubCategoryMemberReference=()',
     'PinType.PinValueType=()',
     `PinType.ContainerType=${pin.containerType || 'None'}`,
-    `PinType.bIsReference=${pin.isReference}`,
-    `PinType.bIsConst=${pin.isConst}`,
-    `PinType.bIsWeakPointer=${pin.isWeak}`,
+    `PinType.bIsReference=${pin.isReference ? 'True' : 'False'}`,
+    `PinType.bIsConst=${pin.isConst ? 'True' : 'False'}`,
+    `PinType.bIsWeakPointer=${pin.isWeak ? 'True' : 'False'}`,
     'PinType.bIsUObjectWrapper=False',
     'PinType.bSerializeAsSinglePrecisionFloat=False',
   );

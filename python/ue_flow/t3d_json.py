@@ -26,6 +26,7 @@ _CLASS_TO_TYPE = {
     "K2Node_ExecutionSequence": "sequence",
     "K2Node_ForEachElementInEnum": "foreach",
     "K2Node_ForEachLoop": "foreach",
+    "K2Node_ForEachLoopWithBreak": "foreach",
     "K2Node_MakeStruct": "make_struct",
     "K2Node_BreakStruct": "break_struct",
     "K2Node_Timeline": "function",
@@ -33,6 +34,14 @@ _CLASS_TO_TYPE = {
     "K2Node_GetArrayItem": "function",
     "K2Node_CommutativeAssociativeBinaryOperator": "function",
     "K2Node_PromotableOperator": "function",
+    "K2Node_DoOnce": "branch",
+    "K2Node_Gate": "branch",
+    "K2Node_FlipFlop": "branch",
+    "K2Node_MultiGate": "sequence",
+    "K2Node_InputAction": "event",
+    "K2Node_InputAxisEvent": "event",
+    "K2Node_InputAxisKeyEvent": "event",
+    "K2Node_EnhancedInputAction": "event",
 }
 
 
@@ -114,6 +123,11 @@ _FRIENDLY_TITLES: dict[str, str] = {
     "K2Node_BreakStruct": "Break Struct",
     "K2Node_Timeline": "Timeline",
     "K2Node_GetArrayItem": "Get",
+    "K2Node_DoOnce": "Do Once",
+    "K2Node_Gate": "Gate",
+    "K2Node_FlipFlop": "FlipFlop",
+    "K2Node_MultiGate": "MultiGate",
+    "K2Node_ForEachLoopWithBreak": "ForEachLoop With Break",
 }
 
 

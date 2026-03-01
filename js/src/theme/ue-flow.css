@@ -62,7 +62,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.03);
   font-family: var(--uf-font-body);
   font-size: 12px;
-  color: #e0e0e8;
+  color: var(--uf-text);
   overflow: visible;
   position: relative;
 }
@@ -861,7 +861,7 @@
   border-bottom: none;
   border-radius: 4px 4px 0 0;
   white-space: nowrap;
-  color: #888;
+  color: var(--uf-text-muted);
   background: transparent;
   transition: all var(--uf-transition);
   margin-right: 2px;
@@ -1042,13 +1042,13 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  color: #888;
+  color: var(--uf-text-muted);
   user-select: none;
   text-align: left;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-.ueflow-section-header:hover { background: rgba(18, 19, 42, 0.6); color: #aaa; }
+.ueflow-section-header:hover { background: rgba(18, 19, 42, 0.6); color: var(--uf-text-secondary); }
 
 .ueflow-section-title { flex: 0 0 auto; }
 
@@ -1119,7 +1119,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #9aa;
+  color: var(--uf-text-secondary);
   font-size: 10px;
 }
 
@@ -1358,11 +1358,11 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  color: #888;
+  color: var(--uf-text-muted);
   text-align: left;
 }
 
-.ueflow-details-section-header:hover { color: #aaa; }
+.ueflow-details-section-header:hover { color: var(--uf-text-secondary); }
 
 .ueflow-details-section-arrow {
   font-size: 7px;
@@ -1403,7 +1403,7 @@
 }
 
 .ueflow-details-param-value {
-  color: #888;
+  color: var(--uf-text-muted);
   font-size: 10px;
   font-family: var(--uf-font-mono);
 }
@@ -1671,7 +1671,7 @@
 
 .ueflow-field-dropdown option {
   background: #1e2130;
-  color: #e0e0e8;
+  color: var(--uf-text);
 }
 
 .ueflow-field-segmented {
@@ -1727,7 +1727,7 @@
 
 .ueflow-field-array-badge {
   font-size: 10px;
-  color: #888;
+  color: var(--uf-text-muted);
   font-family: var(--uf-font-mono);
   padding: 2px 6px;
   background: rgba(0, 0, 0, 0.2);
@@ -1888,7 +1888,7 @@
 .ueflow-container-node-badge {
   font-family: var(--uf-font-mono);
   font-size: 9px;
-  color: #888;
+  color: var(--uf-text-muted);
   background: rgba(255, 255, 255, 0.04);
   padding: 1px 4px;
   border-radius: 2px;
