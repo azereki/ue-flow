@@ -26,8 +26,17 @@ export const TYPE_COLORS: Record<string, string> = {
   tunnel: '#5a5a7a',
   reroute: '#4a4a5a',
   make_array: '#1060A8',
-  make_struct: '#1a1a88',
-  break_struct: '#1a1a88',
+  struct_op: '#1a1a88',
+  delegate_call: '#6838a0',
+  delegate_add: '#6838a0',
+  delegate_remove: '#6838a0',
+  delegate_clear: '#6838a0',
+  async_action: '#0a6888',
+  latent_task: '#0a6888',
+  construct: '#a06020',
+  subsystem_get: '#1060A8',
+  input: '#B40000',
+  component_event: '#B40000',
 };
 
 const TYPE_ICONS: Record<string, string> = {
@@ -38,6 +47,15 @@ const TYPE_ICONS: Record<string, string> = {
   branch: 'B',
   macro: 'M',
   cast: 'C',
+  delegate_call: 'D',
+  delegate_add: 'D',
+  delegate_remove: 'D',
+  delegate_clear: 'D',
+  async_action: '\u231B',
+  latent_task: '\u231B',
+  construct: '\u2726',
+  input: '\u25C6',
+  component_event: '\u25C6',
 };
 
 /** UE5 compact title icons — K2Node_CallFunction::GetCompactNodeTitle() symbol map. */

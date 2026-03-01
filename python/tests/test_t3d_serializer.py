@@ -310,3 +310,158 @@ class TestBidirectionalLinks:
         ensure_bidirectional_links(graph)
 
         assert len(pin_b.linked_to) == 1  # not duplicated
+
+
+class TestSerializeNewPinFields:
+    """Tests for new pin fields added in Phase 1."""
+
+    def test_pin_sub_category_member_ref(self):
+        pin = BlueprintPin(
+            pin_name="Delegate",
+            direction=PinDirection.INPUT,
+            category=PinCategory.DELEGATE,
+            pin_id="AAAA1111222233334444555566667777",
+            pin_sub_category_member_ref='MemberParent="/Script/Engine.Actor",MemberName="OnDestroyed"',
+        )
+        result = serialize_pin(pin)
+        assert 'PinType.PinSubCategoryMemberReference=(MemberParent="/Script/Engine.Actor",MemberName="OnDestroyed")' in result
+
+    def test_pin_sub_category_member_ref_empty(self):
+        pin = BlueprintPin(
+            pin_name="Normal",
+            direction=PinDirection.INPUT,
+            category=PinCategory.EXEC,
+            pin_id="BBBB1111222233334444555566667777",
+        )
+        result = serialize_pin(pin)
+        assert "PinType.PinSubCategoryMemberReference=()" in result
+
+    def test_pin_value_type(self):
+        pin = BlueprintPin(
+            pin_name="Value",
+            direction=PinDirection.INPUT,
+            category=PinCategory.STRUCT,
+            pin_id="CCCC1122334455667788990011223344",
+            pin_value_type='TerminalCategory="string"',
+        )
+        result = serialize_pin(pin)
+        assert 'PinType.PinValueType=(TerminalCategory="string")' in result
+
+    def test_pin_value_type_empty(self):
+        pin = BlueprintPin(
+            pin_name="Normal",
+            direction=PinDirection.INPUT,
+            category=PinCategory.EXEC,
+            pin_id="DDDD1122334455667788990011223344",
+        )
+        result = serialize_pin(pin)
+        assert "PinType.PinValueType=()" in result
+
+    def test_default_object(self):
+        pin = BlueprintPin(
+            pin_name="Class",
+            direction=PinDirection.INPUT,
+            category=PinCategory.CLASS,
+            pin_id="EEEE1122334455667788990011223344",
+            default_object="/Script/Engine.StaticMeshActor",
+        )
+        result = serialize_pin(pin)
+        assert "DefaultObject=/Script/Engine.StaticMeshActor" in result
+
+    def test_default_object_empty_not_emitted(self):
+        pin = BlueprintPin(
+            pin_name="Normal",
+            direction=PinDirection.INPUT,
+            category=PinCategory.EXEC,
+            pin_id="FFFF1122334455667788990011223344",
+        )
+        result = serialize_pin(pin)
+        assert "DefaultObject" not in result
+
+    def test_default_text_value(self):
+        pin = BlueprintPin(
+            pin_name="TextParam",
+            direction=PinDirection.INPUT,
+            category=PinCategory.TEXT,
+            pin_id="AAAA2233445566778899001122334455",
+            default_text_value="Hello World",
+        )
+        result = serialize_pin(pin)
+        assert 'DefaultTextValue="Hello World"' in result
+
+    def test_default_text_value_empty_not_emitted(self):
+        pin = BlueprintPin(
+            pin_name="Normal",
+            direction=PinDirection.INPUT,
+            category=PinCategory.EXEC,
+            pin_id="BBBB2233445566778899001122334455",
+        )
+        result = serialize_pin(pin)
+        assert "DefaultTextValue" not in result
+
+    def test_not_connectable_true(self):
+        pin = BlueprintPin(
+            pin_name="NotConn",
+            direction=PinDirection.INPUT,
+            category=PinCategory.BOOL,
+            pin_id="CCCC2233445566778899001122334455",
+            not_connectable=True,
+        )
+        result = serialize_pin(pin)
+        assert "bNotConnectable=True" in result
+
+    def test_not_connectable_false(self):
+        pin = BlueprintPin(
+            pin_name="Normal",
+            direction=PinDirection.INPUT,
+            category=PinCategory.EXEC,
+            pin_id="DDDD2233445566778899001122334455",
+        )
+        result = serialize_pin(pin)
+        assert "bNotConnectable=False" in result
+
+    def test_default_value_is_ignored_true(self):
+        pin = BlueprintPin(
+            pin_name="Ignored",
+            direction=PinDirection.INPUT,
+            category=PinCategory.EXEC,
+            pin_id="EEEE2233445566778899001122334455",
+            default_value_is_ignored=True,
+        )
+        result = serialize_pin(pin)
+        assert "bDefaultValueIsIgnored=True" in result
+
+    def test_default_value_is_ignored_false(self):
+        pin = BlueprintPin(
+            pin_name="Normal",
+            direction=PinDirection.INPUT,
+            category=PinCategory.EXEC,
+            pin_id="FFFF2233445566778899001122334455",
+        )
+        result = serialize_pin(pin)
+        assert "bDefaultValueIsIgnored=False" in result
+
+
+class TestSerializeUserDefinedPin:
+    """Tests for UserDefinedPin serialization."""
+
+    def test_node_with_user_defined_pins(self):
+        node = BlueprintNode(
+            node_class="/Script/BlueprintGraph.K2Node_FunctionEntry",
+            node_name="K2Node_FunctionEntry_0",
+            node_guid="AAAA1111222233334444555566667777",
+            user_defined_pins=[
+                {"raw": 'PinName="MyParam",PinType=(PinCategory="bool"),DesiredPinDirection=EGPD_Output'},
+            ],
+        )
+        result = serialize_node(node)
+        assert 'CustomProperties UserDefinedPin (PinName="MyParam"' in result
+
+    def test_node_without_user_defined_pins(self):
+        node = BlueprintNode(
+            node_class="/Script/BlueprintGraph.K2Node_Event",
+            node_name="K2Node_Event_0",
+            node_guid="BBBB1111222233334444555566667777",
+        )
+        result = serialize_node(node)
+        assert "UserDefinedPin" not in result

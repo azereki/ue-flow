@@ -383,12 +383,11 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
     }
   }, [sidebarWidth]);
 
-  // Pin details width on first open (fires before paint → no flash)
+  // Reset details panel to auto-sizing when a different item is selected.
+  // Width only becomes fixed when the user manually drags the resize handle.
   useLayoutEffect(() => {
-    if (detailsWidth === null && detailsRef.current && detailsItem) {
-      setDetailsWidth(detailsRef.current.offsetWidth);
-    }
-  }, [detailsWidth, detailsItem]);
+    if (detailsItem) setDetailsWidth(null);
+  }, [detailsItem]);
 
   const handleShowDetails = useCallback((item: DetailsItem) => {
     setDetailsItem(item);
@@ -484,7 +483,7 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
         {detailsItem && (
           <>
             <div className="ueflow-details-resize" onMouseDown={handleDetailsResize} />
-            <div ref={detailsRef} style={{ width: detailsWidth ?? 'max-content', minWidth: 200, maxWidth: 600, flexShrink: 0 }}>
+            <div ref={detailsRef} style={{ width: detailsWidth ?? 'max-content', minWidth: 260, maxWidth: 600, flexShrink: 0 }}>
               <DetailsPanel item={detailsItem} onClose={() => setDetailsItem(null)} structs={multiGraph.structs} />
             </div>
           </>

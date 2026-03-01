@@ -17,6 +17,7 @@ _CLASS_TO_TYPE = {
     "K2Node_FunctionEntry": "function_entry",
     "K2Node_FunctionResult": "function_result",
     "K2Node_DynamicCast": "cast",
+    "K2Node_ClassDynamicCast": "cast",
     "K2Node_Select": "select",
     "K2Node_MakeArray": "make_array",
     "K2Node_SwitchEnum": "switch",
@@ -27,8 +28,9 @@ _CLASS_TO_TYPE = {
     "K2Node_ForEachElementInEnum": "foreach",
     "K2Node_ForEachLoop": "foreach",
     "K2Node_ForEachLoopWithBreak": "foreach",
-    "K2Node_MakeStruct": "make_struct",
-    "K2Node_BreakStruct": "break_struct",
+    "K2Node_MakeStruct": "struct_op",
+    "K2Node_BreakStruct": "struct_op",
+    "K2Node_SetFieldsInStruct": "struct_op",
     "K2Node_Timeline": "function",
     "K2Node_SpawnActorFromClass": "call_function",
     "K2Node_GetArrayItem": "function",
@@ -38,10 +40,28 @@ _CLASS_TO_TYPE = {
     "K2Node_Gate": "branch",
     "K2Node_FlipFlop": "branch",
     "K2Node_MultiGate": "sequence",
-    "K2Node_InputAction": "event",
+    # Delegate operations
+    "K2Node_CallDelegate": "delegate_call",
+    "K2Node_AddDelegate": "delegate_add",
+    "K2Node_RemoveDelegate": "delegate_remove",
+    "K2Node_ClearDelegate": "delegate_clear",
+    # Async / Latent
+    "K2Node_AsyncAction": "async_action",
+    "K2Node_LatentGameplayTaskCall": "latent_task",
+    # Construction
+    "K2Node_ConstructObjectFromClass": "construct",
+    "K2Node_CreateWidget": "construct",
+    "K2Node_GenericCreateObject": "construct",
+    # Subsystem
+    "K2Node_GetSubsystem": "subsystem_get",
+    # Input
+    "K2Node_InputKey": "input",
+    "K2Node_InputTouch": "input",
+    "K2Node_InputAction": "input",
     "K2Node_InputAxisEvent": "event",
     "K2Node_InputAxisKeyEvent": "event",
     "K2Node_EnhancedInputAction": "event",
+    "K2Node_ComponentBoundEvent": "component_event",
 }
 
 
@@ -121,6 +141,7 @@ _FRIENDLY_TITLES: dict[str, str] = {
     "K2Node_ExecutionSequence": "Sequence",
     "K2Node_MakeStruct": "Make Struct",
     "K2Node_BreakStruct": "Break Struct",
+    "K2Node_SetFieldsInStruct": "Set Fields in Struct",
     "K2Node_Timeline": "Timeline",
     "K2Node_GetArrayItem": "Get",
     "K2Node_DoOnce": "Do Once",
@@ -128,6 +149,17 @@ _FRIENDLY_TITLES: dict[str, str] = {
     "K2Node_FlipFlop": "FlipFlop",
     "K2Node_MultiGate": "MultiGate",
     "K2Node_ForEachLoopWithBreak": "ForEachLoop With Break",
+    "K2Node_CallDelegate": "Call Delegate",
+    "K2Node_AddDelegate": "Add Delegate",
+    "K2Node_RemoveDelegate": "Remove Delegate",
+    "K2Node_ClearDelegate": "Clear Delegate",
+    "K2Node_AsyncAction": "Async Action",
+    "K2Node_LatentGameplayTaskCall": "Latent Task",
+    "K2Node_ConstructObjectFromClass": "Construct Object",
+    "K2Node_CreateWidget": "Create Widget",
+    "K2Node_GenericCreateObject": "Create Object",
+    "K2Node_GetSubsystem": "Get Subsystem",
+    "K2Node_ComponentBoundEvent": "Component Event",
 }
 
 
@@ -179,7 +211,7 @@ def _infer_title(node: BlueprintNode) -> str:
         return "Comment"
 
     # Dynamic cast → "Cast To ClassName"
-    if short_name == "K2Node_DynamicCast" and "TargetType" in props:
+    if short_name in ("K2Node_DynamicCast", "K2Node_ClassDynamicCast") and "TargetType" in props:
         target = props["TargetType"]
         if isinstance(target, str):
             # Extract class name from path like /Script/Engine.Actor

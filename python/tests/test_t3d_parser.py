@@ -390,3 +390,321 @@ class TestRoundTrip:
             )
             assert parsed_node is not None
             assert len(parsed_node.pins) == len(orig_node.pins)
+
+
+# ===================================================================
+# TestNewPinFields — Phase 1 fidelity additions
+# ===================================================================
+
+from ue_flow.t3d_models import BlueprintPin, BlueprintNode, BlueprintGraph
+from ue_flow.t3d_serializer import serialize_pin
+
+
+class TestNewPinFields:
+    """Tests for pin_sub_category_member_ref, pin_value_type, default_object,
+    default_text_value, not_connectable, default_value_is_ignored."""
+
+    def test_parse_pin_sub_category_member_ref(self):
+        t3d = """\
+Begin Object Class=/Script/BlueprintGraph.K2Node_CallFunction Name="K2Node_CallFunction_0"
+   NodePosX=0
+   NodePosY=0
+   NodeGuid=AAAA1111222233334444555566667777
+   CustomProperties Pin (PinId=1111AAAA2222BBBB3333CCCC4444DDDD,PinName="Delegate",PinType.PinCategory="delegate",PinType.PinSubCategory="",PinType.PinSubCategoryObject=None,PinType.PinSubCategoryMemberReference=(MemberParent="/Script/Engine.Actor",MemberName="OnDestroyed"),PinType.PinValueType=(),PinType.ContainerType=None,PinType.bIsReference=False,PinType.bIsConst=False,PinType.bIsWeakPointer=False,PersistentGuid=00000000000000000000000000000000,bHidden=False,bNotConnectable=False,bDefaultValueIsReadOnly=False,bDefaultValueIsIgnored=False,bAdvancedView=False,bOrphanedPin=False,)
+End Object"""
+        node = parse_single_node(t3d)
+        assert node is not None
+        pin = node.pins[0]
+        assert pin.pin_sub_category_member_ref == 'MemberParent="/Script/Engine.Actor",MemberName="OnDestroyed"'
+
+    def test_parse_pin_value_type(self):
+        t3d = """\
+Begin Object Class=/Script/BlueprintGraph.K2Node_CallFunction Name="K2Node_CallFunction_0"
+   NodePosX=0
+   NodePosY=0
+   NodeGuid=AAAA2222333344445555666677778888
+   CustomProperties Pin (PinId=2222AAAA3333BBBB4444CCCC5555DDDD,PinName="Value",PinType.PinCategory="struct",PinType.PinSubCategory="",PinType.PinSubCategoryObject=None,PinType.PinSubCategoryMemberReference=(),PinType.PinValueType=(TerminalCategory="string"),PinType.ContainerType=None,PinType.bIsReference=False,PinType.bIsConst=False,PinType.bIsWeakPointer=False,PersistentGuid=00000000000000000000000000000000,bHidden=False,bNotConnectable=False,bDefaultValueIsReadOnly=False,bDefaultValueIsIgnored=False,bAdvancedView=False,bOrphanedPin=False,)
+End Object"""
+        node = parse_single_node(t3d)
+        assert node is not None
+        pin = node.pins[0]
+        assert pin.pin_value_type == 'TerminalCategory="string"'
+
+    def test_parse_default_object(self):
+        t3d = """\
+Begin Object Class=/Script/BlueprintGraph.K2Node_CallFunction Name="K2Node_CallFunction_0"
+   NodePosX=0
+   NodePosY=0
+   NodeGuid=AAAA3333444455556666777788889999
+   CustomProperties Pin (PinId=3333AAAA4444BBBB5555CCCC6666DDDD,PinName="Class",PinType.PinCategory="class",PinType.PinSubCategory="",PinType.PinSubCategoryObject=/Script/Engine.Actor,PinType.PinSubCategoryMemberReference=(),PinType.PinValueType=(),PinType.ContainerType=None,PinType.bIsReference=False,PinType.bIsConst=False,PinType.bIsWeakPointer=False,DefaultObject=/Script/Engine.StaticMeshActor,PersistentGuid=00000000000000000000000000000000,bHidden=False,bNotConnectable=False,bDefaultValueIsReadOnly=False,bDefaultValueIsIgnored=False,bAdvancedView=False,bOrphanedPin=False,)
+End Object"""
+        node = parse_single_node(t3d)
+        assert node is not None
+        pin = node.pins[0]
+        assert pin.default_object == "/Script/Engine.StaticMeshActor"
+
+    def test_parse_default_text_value(self):
+        t3d = """\
+Begin Object Class=/Script/BlueprintGraph.K2Node_CallFunction Name="K2Node_CallFunction_0"
+   NodePosX=0
+   NodePosY=0
+   NodeGuid=AAAA4444555566667777888899990000
+   CustomProperties Pin (PinId=4444AAAA5555BBBB6666CCCC7777DDDD,PinName="TextParam",PinType.PinCategory="text",PinType.PinSubCategory="",PinType.PinSubCategoryObject=None,PinType.PinSubCategoryMemberReference=(),PinType.PinValueType=(),PinType.ContainerType=None,PinType.bIsReference=False,PinType.bIsConst=False,PinType.bIsWeakPointer=False,DefaultTextValue="Hello World",PersistentGuid=00000000000000000000000000000000,bHidden=False,bNotConnectable=False,bDefaultValueIsReadOnly=False,bDefaultValueIsIgnored=False,bAdvancedView=False,bOrphanedPin=False,)
+End Object"""
+        node = parse_single_node(t3d)
+        assert node is not None
+        pin = node.pins[0]
+        assert pin.default_text_value == "Hello World"
+
+    def test_parse_not_connectable(self):
+        t3d = """\
+Begin Object Class=/Script/BlueprintGraph.K2Node_CallFunction Name="K2Node_CallFunction_0"
+   NodePosX=0
+   NodePosY=0
+   NodeGuid=AAAA5555666677778888999900001111
+   CustomProperties Pin (PinId=5555AAAA6666BBBB7777CCCC8888DDDD,PinName="NotConn",PinType.PinCategory="bool",PinType.PinSubCategory="",PinType.PinSubCategoryObject=None,PinType.PinSubCategoryMemberReference=(),PinType.PinValueType=(),PinType.ContainerType=None,PinType.bIsReference=False,PinType.bIsConst=False,PinType.bIsWeakPointer=False,PersistentGuid=00000000000000000000000000000000,bHidden=False,bNotConnectable=True,bDefaultValueIsReadOnly=False,bDefaultValueIsIgnored=False,bAdvancedView=False,bOrphanedPin=False,)
+End Object"""
+        node = parse_single_node(t3d)
+        assert node is not None
+        pin = node.pins[0]
+        assert pin.not_connectable is True
+
+    def test_parse_default_value_is_ignored(self):
+        t3d = """\
+Begin Object Class=/Script/BlueprintGraph.K2Node_CallFunction Name="K2Node_CallFunction_0"
+   NodePosX=0
+   NodePosY=0
+   NodeGuid=AAAA6666777788889999000011112222
+   CustomProperties Pin (PinId=6666AAAA7777BBBB8888CCCC9999DDDD,PinName="Ignored",PinType.PinCategory="exec",PinType.PinSubCategory="",PinType.PinSubCategoryObject=None,PinType.PinSubCategoryMemberReference=(),PinType.PinValueType=(),PinType.ContainerType=None,PinType.bIsReference=False,PinType.bIsConst=False,PinType.bIsWeakPointer=False,PersistentGuid=00000000000000000000000000000000,bHidden=False,bNotConnectable=False,bDefaultValueIsReadOnly=False,bDefaultValueIsIgnored=True,bAdvancedView=False,bOrphanedPin=False,)
+End Object"""
+        node = parse_single_node(t3d)
+        assert node is not None
+        pin = node.pins[0]
+        assert pin.default_value_is_ignored is True
+
+    def test_round_trip_member_ref(self):
+        """PinSubCategoryMemberReference survives serialize -> parse."""
+        pin = BlueprintPin(
+            pin_name="Delegate",
+            direction=PinDirection.INPUT,
+            category=PinCategory.DELEGATE,
+            pin_id="AAAA1111222233334444555566667777",
+            pin_sub_category_member_ref='MemberParent="/Script/Engine.Actor",MemberName="OnDestroyed"',
+        )
+        serialized = serialize_pin(pin)
+        assert 'PinSubCategoryMemberReference=(MemberParent="/Script/Engine.Actor",MemberName="OnDestroyed")' in serialized
+
+        # Parse it back
+        node_text = f"""\
+Begin Object Class=/Script/BlueprintGraph.K2Node_CallFunction Name="K2Node_CallFunction_0"
+   NodePosX=0
+   NodePosY=0
+   NodeGuid=BBBB1111222233334444555566667777
+{serialized}
+End Object"""
+        node = parse_single_node(node_text)
+        assert node is not None
+        parsed_pin = node.pins[0]
+        assert parsed_pin.pin_sub_category_member_ref == pin.pin_sub_category_member_ref
+
+    def test_round_trip_pin_value_type(self):
+        """PinValueType survives serialize -> parse."""
+        pin = BlueprintPin(
+            pin_name="Value",
+            direction=PinDirection.INPUT,
+            category=PinCategory.STRUCT,
+            pin_id="BBBB2222333344445555666677778888",
+            pin_value_type='TerminalCategory="string"',
+        )
+        serialized = serialize_pin(pin)
+        assert 'PinValueType=(TerminalCategory="string")' in serialized
+
+        node_text = f"""\
+Begin Object Class=/Script/BlueprintGraph.K2Node_CallFunction Name="K2Node_CallFunction_0"
+   NodePosX=0
+   NodePosY=0
+   NodeGuid=CCCC1111222233334444555566667777
+{serialized}
+End Object"""
+        node = parse_single_node(node_text)
+        assert node is not None
+        parsed_pin = node.pins[0]
+        assert parsed_pin.pin_value_type == pin.pin_value_type
+
+    def test_round_trip_default_object(self):
+        """DefaultObject survives serialize -> parse."""
+        pin = BlueprintPin(
+            pin_name="Class",
+            direction=PinDirection.INPUT,
+            category=PinCategory.CLASS,
+            pin_id="CCCC2222333344445555666677778888",
+            default_object="/Script/Engine.StaticMeshActor",
+        )
+        serialized = serialize_pin(pin)
+        assert "DefaultObject=/Script/Engine.StaticMeshActor" in serialized
+
+        node_text = f"""\
+Begin Object Class=/Script/BlueprintGraph.K2Node_CallFunction Name="K2Node_CallFunction_0"
+   NodePosX=0
+   NodePosY=0
+   NodeGuid=DDDD1111222233334444555566667777
+{serialized}
+End Object"""
+        node = parse_single_node(node_text)
+        assert node is not None
+        parsed_pin = node.pins[0]
+        assert parsed_pin.default_object == pin.default_object
+
+    def test_round_trip_default_text_value(self):
+        """DefaultTextValue survives serialize -> parse."""
+        pin = BlueprintPin(
+            pin_name="TextParam",
+            direction=PinDirection.INPUT,
+            category=PinCategory.TEXT,
+            pin_id="DDDD2222333344445555666677778888",
+            default_text_value="Hello World",
+        )
+        serialized = serialize_pin(pin)
+        assert 'DefaultTextValue="Hello World"' in serialized
+
+        node_text = f"""\
+Begin Object Class=/Script/BlueprintGraph.K2Node_CallFunction Name="K2Node_CallFunction_0"
+   NodePosX=0
+   NodePosY=0
+   NodeGuid=EEEE1111222233334444555566667777
+{serialized}
+End Object"""
+        node = parse_single_node(node_text)
+        assert node is not None
+        parsed_pin = node.pins[0]
+        assert parsed_pin.default_text_value == pin.default_text_value
+
+    def test_round_trip_not_connectable(self):
+        """bNotConnectable survives serialize -> parse."""
+        pin = BlueprintPin(
+            pin_name="NotConn",
+            direction=PinDirection.INPUT,
+            category=PinCategory.BOOL,
+            pin_id="EEEE2222333344445555666677778888",
+            not_connectable=True,
+        )
+        serialized = serialize_pin(pin)
+        assert "bNotConnectable=True" in serialized
+
+        node_text = f"""\
+Begin Object Class=/Script/BlueprintGraph.K2Node_CallFunction Name="K2Node_CallFunction_0"
+   NodePosX=0
+   NodePosY=0
+   NodeGuid=FFFF1111222233334444555566667777
+{serialized}
+End Object"""
+        node = parse_single_node(node_text)
+        assert node is not None
+        parsed_pin = node.pins[0]
+        assert parsed_pin.not_connectable is True
+
+    def test_round_trip_default_value_is_ignored(self):
+        """bDefaultValueIsIgnored survives serialize -> parse."""
+        pin = BlueprintPin(
+            pin_name="Ignored",
+            direction=PinDirection.INPUT,
+            category=PinCategory.EXEC,
+            pin_id="FFFF2222333344445555666677778888",
+            default_value_is_ignored=True,
+        )
+        serialized = serialize_pin(pin)
+        assert "bDefaultValueIsIgnored=True" in serialized
+
+        node_text = f"""\
+Begin Object Class=/Script/BlueprintGraph.K2Node_CallFunction Name="K2Node_CallFunction_0"
+   NodePosX=0
+   NodePosY=0
+   NodeGuid=AAAA9999888877776666555544443333
+{serialized}
+End Object"""
+        node = parse_single_node(node_text)
+        assert node is not None
+        parsed_pin = node.pins[0]
+        assert parsed_pin.default_value_is_ignored is True
+
+
+# ===================================================================
+# TestUserDefinedPin
+# ===================================================================
+
+
+class TestUserDefinedPin:
+    """Tests for CustomProperties UserDefinedPin parsing."""
+
+    def test_parse_user_defined_pin(self):
+        t3d = """\
+Begin Object Class=/Script/BlueprintGraph.K2Node_FunctionEntry Name="K2Node_FunctionEntry_0"
+   NodePosX=0
+   NodePosY=0
+   NodeGuid=AAAA1111222233334444555566667777
+   CustomProperties UserDefinedPin (PinName="MyParam",PinType=(PinCategory="bool"),DesiredPinDirection=EGPD_Output)
+End Object"""
+        node = parse_single_node(t3d)
+        assert node is not None
+        assert len(node.user_defined_pins) == 1
+        udp = node.user_defined_pins[0]
+        assert "raw" in udp
+        assert udp["PinName"] == "MyParam"
+        assert udp["DesiredPinDirection"] == "EGPD_Output"
+
+    def test_parse_multiple_user_defined_pins(self):
+        t3d = """\
+Begin Object Class=/Script/BlueprintGraph.K2Node_FunctionEntry Name="K2Node_FunctionEntry_0"
+   NodePosX=0
+   NodePosY=0
+   NodeGuid=BBBB1111222233334444555566667777
+   CustomProperties UserDefinedPin (PinName="Param1",PinType=(PinCategory="bool"),DesiredPinDirection=EGPD_Output)
+   CustomProperties UserDefinedPin (PinName="Param2",PinType=(PinCategory="string"),DesiredPinDirection=EGPD_Output)
+End Object"""
+        node = parse_single_node(t3d)
+        assert node is not None
+        assert len(node.user_defined_pins) == 2
+        assert node.user_defined_pins[0]["PinName"] == "Param1"
+        assert node.user_defined_pins[1]["PinName"] == "Param2"
+
+    def test_user_defined_pin_round_trip(self):
+        """UserDefinedPin raw content survives serialize -> parse."""
+        from ue_flow.t3d_serializer import serialize_node
+        node = BlueprintNode(
+            node_class="/Script/BlueprintGraph.K2Node_FunctionEntry",
+            node_name="K2Node_FunctionEntry_0",
+            node_guid="CCCC1111222233334444555566667777",
+            user_defined_pins=[
+                {"raw": 'PinName="MyParam",PinType=(PinCategory="bool"),DesiredPinDirection=EGPD_Output',
+                 "PinName": "MyParam", "DesiredPinDirection": "EGPD_Output"},
+            ],
+        )
+        serialized = serialize_node(node)
+        assert "CustomProperties UserDefinedPin" in serialized
+
+        parsed = parse_single_node(serialized)
+        assert parsed is not None
+        assert len(parsed.user_defined_pins) == 1
+        assert parsed.user_defined_pins[0]["PinName"] == "MyParam"
+
+
+# ===================================================================
+# TestGraphMetadata
+# ===================================================================
+
+
+class TestGraphMetadata:
+    """Tests for graph_type and graph_schema fields."""
+
+    def test_graph_type_default_empty(self):
+        graph = BlueprintGraph()
+        assert graph.graph_type == ""
+        assert graph.graph_schema == ""
+
+    def test_graph_type_set(self):
+        graph = BlueprintGraph(
+            graph_type="FunctionGraph",
+            graph_schema="EdGraphSchema_K2",
+        )
+        assert graph.graph_type == "FunctionGraph"
+        assert graph.graph_schema == "EdGraphSchema_K2"

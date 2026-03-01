@@ -61,6 +61,12 @@ class BlueprintPin:
     linked_to: list[tuple[str, str]] = field(default_factory=list)
     hidden: bool = False
     advanced_view: bool = False
+    pin_sub_category_member_ref: str = ""   # PinType.PinSubCategoryMemberReference
+    pin_value_type: str = ""                # PinType.PinValueType
+    default_object: str = ""                # DefaultObject
+    default_text_value: str = ""            # DefaultTextValue
+    not_connectable: bool = False           # bNotConnectable
+    default_value_is_ignored: bool = False  # bDefaultValueIsIgnored
 
 
 @dataclass
@@ -73,6 +79,7 @@ class BlueprintNode:
     pos_y: int = 0
     pins: list[BlueprintPin] = field(default_factory=list)
     properties: dict = field(default_factory=dict)
+    user_defined_pins: list[dict] = field(default_factory=list)
 
 
 @dataclass
@@ -81,3 +88,5 @@ class BlueprintGraph:
     nodes: list[BlueprintNode] = field(default_factory=list)
     asset_path: str = ""     # e.g. "/Game/MyBP.MyBP" — for ExportPath generation
     graph_name: str = "EventGraph"  # Graph name for ExportPath
+    graph_type: str = ""     # "EventGraph", "FunctionGraph", "MacroGraph"
+    graph_schema: str = ""   # "EdGraphSchema_K2", "AnimationGraphSchema"
