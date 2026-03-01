@@ -18,7 +18,7 @@ const InputPinRow: FC<{
   const [editedValue, setEditedValue] = useState(pin.defaultValue);
   // Sync local state from prop when undo/redo restores a previous value
   useEffect(() => { setEditedValue(pin.defaultValue); }, [pin.defaultValue]);
-  const showEditor = !isExecPin(pin.category) && pin.defaultValue && !isConnected;
+  const showEditor = !isExecPin(pin.category) && pin.defaultValue !== undefined && !isConnected;
 
   const handleValueChange = useCallback((value: string) => {
     setEditedValue(value);
@@ -39,22 +39,24 @@ const InputPinRow: FC<{
  *  Returns a string key from useStore (stable under ===) then derives Set via useMemo,
  *  so the component only re-renders when the actual connected-pin set changes. */
 function useConnectedPins(pins: Array<{ id: string; direction: string }>) {
-  const pinIds = pins.map(p => p.id);
+  const pinIdKey = JSON.stringify(pins.map(p => p.id));
+  // Memoize a Set for O(1) lookup inside the selector (avoids O(n) includes per edge)
+  const pinIdSet = useMemo(() => new Set<string>(JSON.parse(pinIdKey) as string[]), [pinIdKey]);
   const connectedKey = useStore(
     useCallback(
       (s: { edges: Array<{ sourceHandle?: string | null; targetHandle?: string | null }> }) => {
         const connected: string[] = [];
         for (const e of s.edges) {
-          if (e.sourceHandle && pinIds.includes(e.sourceHandle)) connected.push(e.sourceHandle);
-          if (e.targetHandle && pinIds.includes(e.targetHandle)) connected.push(e.targetHandle);
+          if (e.sourceHandle && pinIdSet.has(e.sourceHandle)) connected.push(e.sourceHandle);
+          if (e.targetHandle && pinIdSet.has(e.targetHandle)) connected.push(e.targetHandle);
         }
-        return connected.sort().join(',');
+        // Use | separator — UE pin IDs (GUIDs) never contain pipes
+        return connected.sort().join('|');
       },
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      [JSON.stringify(pinIds)],
+      [pinIdSet],
     ),
   );
-  return useMemo(() => new Set(connectedKey ? connectedKey.split(',') : []), [connectedKey]);
+  return useMemo(() => new Set(connectedKey ? connectedKey.split('|') : []), [connectedKey]);
 }
 
 export const BlueprintNode = memo(({ data, id }: NodeProps<BlueprintFlowNode>) => {

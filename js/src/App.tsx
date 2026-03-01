@@ -394,14 +394,18 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
     setDetailsItem(item);
   }, []);
 
-  // Abort controller for resize drag listeners — cleaned up on unmount to prevent leaks
-  const resizeAbortRef = useRef<AbortController | null>(null);
-  useEffect(() => () => { resizeAbortRef.current?.abort(); }, []);
+  // Separate abort controllers per resize handle — prevents one drag from cancelling the other
+  const sidebarResizeAbortRef = useRef<AbortController | null>(null);
+  const detailsResizeAbortRef = useRef<AbortController | null>(null);
+  useEffect(() => () => {
+    sidebarResizeAbortRef.current?.abort();
+    detailsResizeAbortRef.current?.abort();
+  }, []);
 
   const handleSidebarResize = useCallback((e: React.MouseEvent) => {
-    resizeAbortRef.current?.abort();
+    sidebarResizeAbortRef.current?.abort();
     const controller = new AbortController();
-    resizeAbortRef.current = controller;
+    sidebarResizeAbortRef.current = controller;
     e.preventDefault();
     const startX = e.clientX;
     const startWidth = sidebarRef.current?.offsetWidth ?? 260;
@@ -415,9 +419,9 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
   }, []);
 
   const handleDetailsResize = useCallback((e: React.MouseEvent) => {
-    resizeAbortRef.current?.abort();
+    detailsResizeAbortRef.current?.abort();
     const controller = new AbortController();
-    resizeAbortRef.current = controller;
+    detailsResizeAbortRef.current = controller;
     e.preventDefault();
     const startX = e.clientX;
     const startWidth = detailsRef.current?.offsetWidth ?? 300;
