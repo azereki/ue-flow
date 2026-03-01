@@ -1,5 +1,5 @@
 import { memo, useContext } from 'react';
-import { BaseEdge, getBezierPath, type EdgeProps } from '@xyflow/react';
+import { BaseEdge, getSmoothStepPath, type EdgeProps } from '@xyflow/react';
 import { PIN_COLORS, isExecPin } from '../types/pin-types';
 import { PinBodyContext } from '../contexts/PinBodyContext';
 import type { BlueprintFlowEdge } from '../types/flow-types';
@@ -20,7 +20,7 @@ export const BlueprintEdge = memo((props: EdgeProps<BlueprintFlowEdge>) => {
   const isExec = isExecPin(category);
   const showDetail = useContext(PinBodyContext);
 
-  const [edgePath] = getBezierPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, curvature: 0.25 });
+  const [edgePath] = getSmoothStepPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, borderRadius: 16 });
 
   // Suppress glow at low zoom (imperceptible, saves GPU filter ops)
   const glowColor = lightenHex(color, 0.35);
