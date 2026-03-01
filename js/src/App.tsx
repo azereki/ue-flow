@@ -266,6 +266,10 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
   const sidebarWidthRef = useRef(sidebarWidth);
   useEffect(() => { sidebarWidthRef.current = sidebarWidth; }, [sidebarWidth]);
 
+  const [detailsWidth, setDetailsWidth] = useState(300);
+  const detailsWidthRef = useRef(detailsWidth);
+  useEffect(() => { detailsWidthRef.current = detailsWidth; }, [detailsWidth]);
+
   const handleShowDetails = useCallback((item: DetailsItem) => {
     setDetailsItem(item);
   }, []);
@@ -277,6 +281,22 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
     const onMove = (me: MouseEvent) => {
       const newWidth = Math.min(400, Math.max(160, startWidth + me.clientX - startX));
       setSidebarWidth(newWidth);
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, []);
+
+  const handleDetailsResize = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = detailsWidthRef.current;
+    const onMove = (me: MouseEvent) => {
+      const newWidth = Math.min(600, Math.max(200, startWidth - (me.clientX - startX)));
+      setDetailsWidth(newWidth);
     };
     const onUp = () => {
       document.removeEventListener('mousemove', onMove);
@@ -332,7 +352,12 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
           </div>
         </main>
         {detailsItem && (
-          <DetailsPanel item={detailsItem} onClose={() => setDetailsItem(null)} />
+          <>
+            <div className="ueflow-details-resize" onMouseDown={handleDetailsResize} />
+            <div style={{ width: detailsWidth, minWidth: detailsWidth, flexShrink: 0 }}>
+              <DetailsPanel item={detailsItem} onClose={() => setDetailsItem(null)} structs={multiGraph.structs} />
+            </div>
+          </>
         )}
       </div>
       <StatusBar

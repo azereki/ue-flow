@@ -14,9 +14,15 @@ export type DetailsItem =
   | { kind: 'component'; name: string; componentClass: string; parent?: string; properties?: Record<string, Record<string, PropertyField>> }
   | { kind: 'macro'; name: string; category?: string; inputs?: Array<{ name: string; type: string }>; outputs?: Array<{ name: string; type: string }> };
 
+export interface StructDef {
+  name: string;
+  fields: Array<{ name: string; type: string; default?: string }>;
+}
+
 interface DetailsPanelProps {
   item: DetailsItem;
   onClose: () => void;
+  structs?: StructDef[];
 }
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
@@ -50,13 +56,55 @@ const CollapsibleSection: FC<{ title: string; defaultOpen?: boolean; children: R
   );
 };
 
-const ParamRow: FC<{ name: string; type: string; value?: string }> = ({ name, type, value }) => (
-  <div className="ueflow-details-param-row">
-    <TypeDot type={type} />
-    <span className="ueflow-details-param-name">{name}</span>
-    <span className="ueflow-details-param-type">{type}</span>
-    {value && <span className="ueflow-details-param-value">{value}</span>}
-  </div>
+/** Built-in struct field definitions for common engine types. */
+const BUILTIN_STRUCTS: Record<string, Array<{ name: string; type: string }>> = {
+  FVector: [{ name: 'X', type: 'float' }, { name: 'Y', type: 'float' }, { name: 'Z', type: 'float' }],
+  Vector: [{ name: 'X', type: 'float' }, { name: 'Y', type: 'float' }, { name: 'Z', type: 'float' }],
+  FRotator: [{ name: 'Pitch', type: 'float' }, { name: 'Yaw', type: 'float' }, { name: 'Roll', type: 'float' }],
+  Rotator: [{ name: 'Pitch', type: 'float' }, { name: 'Yaw', type: 'float' }, { name: 'Roll', type: 'float' }],
+  FTransform: [{ name: 'Rotation', type: 'Rotator' }, { name: 'Translation', type: 'Vector' }, { name: 'Scale3D', type: 'Vector' }],
+  Transform: [{ name: 'Rotation', type: 'Rotator' }, { name: 'Translation', type: 'Vector' }, { name: 'Scale3D', type: 'Vector' }],
+  FLinearColor: [{ name: 'R', type: 'float' }, { name: 'G', type: 'float' }, { name: 'B', type: 'float' }, { name: 'A', type: 'float' }],
+  LinearColor: [{ name: 'R', type: 'float' }, { name: 'G', type: 'float' }, { name: 'B', type: 'float' }, { name: 'A', type: 'float' }],
+  FVector2D: [{ name: 'X', type: 'float' }, { name: 'Y', type: 'float' }],
+  Vector2D: [{ name: 'X', type: 'float' }, { name: 'Y', type: 'float' }],
+};
+
+function resolveSubFields(type: string, structs?: StructDef[]): Array<{ name: string; type: string; default?: string }> | undefined {
+  if (BUILTIN_STRUCTS[type]) return BUILTIN_STRUCTS[type];
+  const found = structs?.find(s => s.name === type);
+  return found?.fields;
+}
+
+const ExpandableParamRow: FC<{ name: string; type: string; value?: string; structs?: StructDef[]; depth?: number }> = ({ name, type, value, structs, depth = 0 }) => {
+  const [expanded, setExpanded] = useState(false);
+  const subFields = resolveSubFields(type, structs);
+  const hasChildren = !!subFields && subFields.length > 0;
+
+  return (
+    <>
+      <div className="ueflow-details-param-row" style={{ paddingLeft: `${18 + depth * 12}px` }}>
+        {hasChildren ? (
+          <button className="ueflow-param-expand" onClick={() => setExpanded(!expanded)} aria-label={expanded ? 'Collapse' : 'Expand'}>
+            <span className={`ueflow-details-section-arrow ${expanded ? '' : 'ueflow-collapsed'}`}>&#9660;</span>
+          </button>
+        ) : (
+          <span className="ueflow-param-expand-spacer" />
+        )}
+        <TypeDot type={type} />
+        <span className="ueflow-details-param-name">{name}</span>
+        <span className="ueflow-details-param-type">{type}</span>
+        {value && <span className="ueflow-details-param-value">{value}</span>}
+      </div>
+      {expanded && subFields && subFields.map((sf, i) => (
+        <ExpandableParamRow key={i} name={sf.name} type={sf.type} value={sf.default} structs={structs} depth={depth + 1} />
+      ))}
+    </>
+  );
+};
+
+const ParamRow: FC<{ name: string; type: string; value?: string; structs?: StructDef[] }> = ({ name, type, value, structs }) => (
+  <ExpandableParamRow name={name} type={type} value={value} structs={structs} />
 );
 
 // ─── Editable Field Components ───────────────────────────────────────────────
@@ -136,7 +184,7 @@ const FieldArrayBadge: FC<{ label: string; count: number }> = ({ label, count })
 
 // ─── Detail Section: Events ──────────────────────────────────────────────────
 
-function EventDetails({ item, search, edits, set }: { item: Extract<DetailsItem, { kind: 'event' }>; search: string; edits: Record<string, unknown>; set: (k: string, v: unknown) => void }) {
+function EventDetails({ item, search, edits, set, structs }: { item: Extract<DetailsItem, { kind: 'event' }>; search: string; edits: Record<string, unknown>; set: (k: string, v: unknown) => void; structs?: StructDef[] }) {
   const replicateOptions = ['NotReplicated', 'Multicast', 'RunOnServer', 'RunOnClient'];
   const accessOptions = ['Public', 'Protected', 'Private'];
 
@@ -173,7 +221,7 @@ function EventDetails({ item, search, edits, set }: { item: Extract<DetailsItem,
       {shouldShow(search, 'Inputs') && (
         <CollapsibleSection title="Inputs">
           {item.params && item.params.length > 0 ? (
-            item.params.map((p, i) => <ParamRow key={i} name={p.name} type={p.type} />)
+            item.params.map((p, i) => <ParamRow key={i} name={p.name} type={p.type} structs={structs} />)
           ) : (
             <div className="ueflow-details-empty">No parameters</div>
           )}
@@ -185,7 +233,7 @@ function EventDetails({ item, search, edits, set }: { item: Extract<DetailsItem,
 
 // ─── Detail Section: Functions ────────────────────────────────────────────────
 
-function FunctionDetails({ item, search, edits, set }: { item: Extract<DetailsItem, { kind: 'function' }>; search: string; edits: Record<string, unknown>; set: (k: string, v: unknown) => void }) {
+function FunctionDetails({ item, search, edits, set, structs }: { item: Extract<DetailsItem, { kind: 'function' }>; search: string; edits: Record<string, unknown>; set: (k: string, v: unknown) => void; structs?: StructDef[] }) {
   const accessOptions = ['Public', 'Protected', 'Private'];
 
   const graphVisible = shouldShow(search, 'Graph', 'Description', 'Category', 'Keywords', 'Compact Title', 'Pure', 'Call In Editor', 'Access Specifier');
@@ -220,7 +268,7 @@ function FunctionDetails({ item, search, edits, set }: { item: Extract<DetailsIt
       {shouldShow(search, 'Inputs') && (
         <CollapsibleSection title="Inputs">
           {item.inputs && item.inputs.length > 0 ? (
-            item.inputs.map((p, i) => <ParamRow key={i} name={p.name} type={p.type} />)
+            item.inputs.map((p, i) => <ParamRow key={i} name={p.name} type={p.type} structs={structs} />)
           ) : (
             <div className="ueflow-details-empty">No inputs</div>
           )}
@@ -229,7 +277,7 @@ function FunctionDetails({ item, search, edits, set }: { item: Extract<DetailsIt
       {shouldShow(search, 'Outputs') && (
         <CollapsibleSection title="Outputs">
           {item.outputs && item.outputs.length > 0 ? (
-            item.outputs.map((p, i) => <ParamRow key={i} name={p.name} type={p.type} />)
+            item.outputs.map((p, i) => <ParamRow key={i} name={p.name} type={p.type} structs={structs} />)
           ) : (
             <div className="ueflow-details-empty">No outputs</div>
           )}
@@ -241,9 +289,61 @@ function FunctionDetails({ item, search, edits, set }: { item: Extract<DetailsIt
 
 // ─── Detail Section: Variables ────────────────────────────────────────────────
 
+/** Parse UE container default value format: "(elem1,elem2,...)" or empty "()" */
+function parseContainerValue(value: string | undefined): string[] {
+  if (!value) return [];
+  const trimmed = value.trim();
+  if (trimmed === '()' || trimmed === '') return [];
+  // Strip outer parens if present
+  const inner = trimmed.startsWith('(') && trimmed.endsWith(')') ? trimmed.slice(1, -1) : trimmed;
+  if (!inner) return [];
+  return inner.split(',').map(s => s.trim());
+}
+
+/** Container element list — expandable section showing indexed entries. */
+const ContainerElementList: FC<{ elements: string[]; containerType: string; innerType?: string; keyType?: string }> = ({ elements, containerType, innerType, keyType }) => {
+  const [expanded, setExpanded] = useState(false);
+  const label = containerType === 'Map' ? 'Map' : containerType === 'Set' ? 'Set' : 'Array';
+  const count = elements.length;
+  const summary = `${count} ${label} element${count !== 1 ? 's' : ''}`;
+
+  return (
+    <div className="ueflow-container-editor">
+      <button className="ueflow-container-summary" onClick={() => setExpanded(!expanded)}>
+        <span className={`ueflow-details-section-arrow ${expanded ? '' : 'ueflow-collapsed'}`}>&#9660;</span>
+        <span className="ueflow-container-badge">{summary}</span>
+      </button>
+      {expanded && elements.length > 0 && (
+        <div className="ueflow-container-entries">
+          {elements.map((elem, i) => (
+            <div key={i} className="ueflow-container-entry">
+              <span className="ueflow-container-index">[{i}]</span>
+              {containerType === 'Map' ? (
+                <>
+                  <TypeDot type={keyType ?? ''} />
+                  <span className="ueflow-container-value">{elem.split(':')[0] ?? elem}</span>
+                  <span className="ueflow-container-arrow">&rarr;</span>
+                  <TypeDot type={innerType ?? ''} />
+                  <span className="ueflow-container-value">{elem.split(':')[1] ?? ''}</span>
+                </>
+              ) : (
+                <>
+                  <TypeDot type={innerType ?? ''} />
+                  <span className="ueflow-container-value">{elem}</span>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 function VariableDetails({ item, search, edits, set }: { item: Extract<DetailsItem, { kind: 'variable' }>; search: string; edits: Record<string, unknown>; set: (k: string, v: unknown) => void }) {
   const replicationOptions = ['None', 'Replicated', 'RepNotify'];
   const isContainer = !!item.containerType;
+  const containerElements = isContainer ? parseContainerValue(item.default) : [];
 
   return (
     <>
@@ -260,8 +360,11 @@ function VariableDetails({ item, search, edits, set }: { item: Extract<DetailsIt
           {shouldShow(search, 'Variable', 'Replication') && (
             <FieldDropdown label="Replication" value={(edits['replication'] as string) ?? item.replication ?? 'None'} options={replicationOptions} onChange={(v) => set('replication', v)} />
           )}
-          {shouldShow(search, 'Variable', 'Default') && (
+          {shouldShow(search, 'Variable', 'Default') && !isContainer && (
             <FieldText label="Default Value" value={(edits['default'] as string) ?? item.default ?? ''} onChange={(v) => set('default', v)} mono />
+          )}
+          {shouldShow(search, 'Variable', 'Default') && isContainer && (
+            <ContainerElementList elements={containerElements} containerType={item.containerType!} innerType={item.innerType} keyType={item.keyType} />
           )}
           {shouldShow(search, 'Variable', 'Instance Editable') && (
             <FieldCheckbox label="Instance Editable" checked={(edits['instanceEditable'] as boolean) ?? item.instanceEditable ?? false} onChange={(v) => set('instanceEditable', v)} />
@@ -355,12 +458,12 @@ function ComponentDetails({ item, search, edits, set }: { item: Extract<DetailsI
 
 // ─── Detail Section: Structs ──────────────────────────────────────────────────
 
-function StructDetails({ item, search }: { item: Extract<DetailsItem, { kind: 'struct' }>; search: string }) {
+function StructDetails({ item, search, structs }: { item: Extract<DetailsItem, { kind: 'struct' }>; search: string; structs?: StructDef[] }) {
   if (!shouldShow(search, 'Fields')) return null;
   return (
     <CollapsibleSection title={`Fields (${item.fields.length})`}>
       {item.fields.map((f, i) => (
-        <ParamRow key={i} name={f.name} type={f.type} value={f.default} />
+        <ParamRow key={i} name={f.name} type={f.type} value={f.default} structs={structs} />
       ))}
     </CollapsibleSection>
   );
@@ -368,7 +471,7 @@ function StructDetails({ item, search }: { item: Extract<DetailsItem, { kind: 's
 
 // ─── Detail Section: Delegates ────────────────────────────────────────────────
 
-function DelegateDetails({ item, search, edits, set }: { item: Extract<DetailsItem, { kind: 'delegate' }>; search: string; edits: Record<string, unknown>; set: (k: string, v: unknown) => void }) {
+function DelegateDetails({ item, search, edits, set, structs }: { item: Extract<DetailsItem, { kind: 'delegate' }>; search: string; edits: Record<string, unknown>; set: (k: string, v: unknown) => void; structs?: StructDef[] }) {
   return (
     <>
       {item.signature && shouldShow(search, 'Signature') && (
@@ -376,7 +479,7 @@ function DelegateDetails({ item, search, edits, set }: { item: Extract<DetailsIt
       )}
       {item.params && item.params.length > 0 && shouldShow(search, 'Parameters') && (
         <CollapsibleSection title={`Parameters (${item.params.length})`}>
-          {item.params.map((p, i) => <ParamRow key={i} name={p.name} type={p.type} />)}
+          {item.params.map((p, i) => <ParamRow key={i} name={p.name} type={p.type} structs={structs} />)}
         </CollapsibleSection>
       )}
     </>
@@ -385,7 +488,7 @@ function DelegateDetails({ item, search, edits, set }: { item: Extract<DetailsIt
 
 // ─── Detail Section: Macros ───────────────────────────────────────────────────
 
-function MacroDetails({ item, search, edits, set }: { item: Extract<DetailsItem, { kind: 'macro' }>; search: string; edits: Record<string, unknown>; set: (k: string, v: unknown) => void }) {
+function MacroDetails({ item, search, edits, set, structs }: { item: Extract<DetailsItem, { kind: 'macro' }>; search: string; edits: Record<string, unknown>; set: (k: string, v: unknown) => void; structs?: StructDef[] }) {
   return (
     <>
       {shouldShow(search, 'Category') && (
@@ -394,7 +497,7 @@ function MacroDetails({ item, search, edits, set }: { item: Extract<DetailsItem,
       {shouldShow(search, 'Inputs') && (
         <CollapsibleSection title="Inputs">
           {item.inputs && item.inputs.length > 0 ? (
-            item.inputs.map((p, i) => <ParamRow key={i} name={p.name} type={p.type} />)
+            item.inputs.map((p, i) => <ParamRow key={i} name={p.name} type={p.type} structs={structs} />)
           ) : (
             <div className="ueflow-details-empty">No inputs</div>
           )}
@@ -403,7 +506,7 @@ function MacroDetails({ item, search, edits, set }: { item: Extract<DetailsItem,
       {shouldShow(search, 'Outputs') && (
         <CollapsibleSection title="Outputs">
           {item.outputs && item.outputs.length > 0 ? (
-            item.outputs.map((p, i) => <ParamRow key={i} name={p.name} type={p.type} />)
+            item.outputs.map((p, i) => <ParamRow key={i} name={p.name} type={p.type} structs={structs} />)
           ) : (
             <div className="ueflow-details-empty">No outputs</div>
           )}
@@ -436,7 +539,7 @@ function DataTableDetails({ item, search }: { item: Extract<DetailsItem, { kind:
 
 // ─── Main Panel ──────────────────────────────────────────────────────────────
 
-export const DetailsPanel: FC<DetailsPanelProps> = ({ item, onClose }) => {
+export const DetailsPanel: FC<DetailsPanelProps> = ({ item, onClose, structs }) => {
   const [search, setSearch] = useState('');
   const [edits, setEdits] = useState<Record<string, unknown>>({});
 
@@ -468,14 +571,14 @@ export const DetailsPanel: FC<DetailsPanelProps> = ({ item, onClose }) => {
       </div>
       <div className="ueflow-details-badge">{item.kind}</div>
       <div className="ueflow-details-content">
-        {item.kind === 'event' && <EventDetails item={item} search={search} edits={edits} set={set} />}
-        {item.kind === 'function' && <FunctionDetails item={item} search={search} edits={edits} set={set} />}
+        {item.kind === 'event' && <EventDetails item={item} search={search} edits={edits} set={set} structs={structs} />}
+        {item.kind === 'function' && <FunctionDetails item={item} search={search} edits={edits} set={set} structs={structs} />}
         {item.kind === 'variable' && <VariableDetails item={item} search={search} edits={edits} set={set} />}
-        {item.kind === 'struct' && <StructDetails item={item} search={search} />}
-        {item.kind === 'delegate' && <DelegateDetails item={item} search={search} edits={edits} set={set} />}
+        {item.kind === 'struct' && <StructDetails item={item} search={search} structs={structs} />}
+        {item.kind === 'delegate' && <DelegateDetails item={item} search={search} edits={edits} set={set} structs={structs} />}
         {item.kind === 'datatable' && <DataTableDetails item={item} search={search} />}
         {item.kind === 'component' && <ComponentDetails item={item} search={search} edits={edits} set={set} />}
-        {item.kind === 'macro' && <MacroDetails item={item} search={search} edits={edits} set={set} />}
+        {item.kind === 'macro' && <MacroDetails item={item} search={search} edits={edits} set={set} structs={structs} />}
       </div>
     </div>
   );

@@ -1652,6 +1652,139 @@
   opacity: 1;
 }
 
+/* ===== Details Panel Resize Handle ===== */
+
+.ueflow-details-resize {
+  width: 4px;
+  cursor: col-resize;
+  background: transparent;
+  flex-shrink: 0;
+  position: relative;
+  transition: background var(--uf-transition);
+}
+
+.ueflow-details-resize:hover {
+  background: #2a2a4a;
+}
+
+.ueflow-details-resize::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 24px;
+  border-left: 1px dotted #555;
+  opacity: 0;
+  transition: opacity var(--uf-transition);
+}
+
+.ueflow-details-resize:hover::after {
+  opacity: 1;
+}
+
+/* ===== Container Type Editors ===== */
+
+.ueflow-container-editor {
+  padding: 2px 0;
+}
+
+.ueflow-container-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--uf-text-secondary);
+  font-size: 11px;
+  font-family: var(--uf-font-body);
+  cursor: pointer;
+  padding: 3px 8px;
+  width: 100%;
+}
+
+.ueflow-container-summary:hover {
+  color: var(--uf-text);
+}
+
+.ueflow-container-badge {
+  font-family: var(--uf-font-mono);
+  font-size: 10px;
+  color: #999;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.ueflow-container-entries {
+  padding: 2px 0 2px 16px;
+}
+
+.ueflow-container-entry {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-family: var(--uf-font-mono);
+  color: var(--uf-text-muted);
+}
+
+.ueflow-container-index {
+  color: #666;
+  min-width: 24px;
+}
+
+.ueflow-container-value {
+  color: var(--uf-text-secondary);
+}
+
+.ueflow-container-arrow {
+  color: #555;
+  margin: 0 2px;
+}
+
+.ueflow-container-node-badge {
+  font-family: var(--uf-font-mono);
+  font-size: 9px;
+  color: #888;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 1px 4px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+/* ===== Expandable Parameter Rows ===== */
+
+.ueflow-param-expand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: #777;
+  flex-shrink: 0;
+}
+
+.ueflow-param-expand:hover {
+  color: var(--uf-text);
+}
+
+.ueflow-param-expand .ueflow-details-section-arrow {
+  font-size: 7px;
+}
+
+.ueflow-param-expand-spacer {
+  display: inline-block;
+  width: 14px;
+  flex-shrink: 0;
+}
+
 /* ===== Reduced Transparency Fallback ===== */
 
 @media (prefers-reduced-transparency: reduce) {

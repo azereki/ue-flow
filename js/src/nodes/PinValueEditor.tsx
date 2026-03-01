@@ -135,6 +135,20 @@ function editorForCategory(
   }
 }
 
+/** Container summary badge for on-node display. */
+function ContainerSummary({ pin }: { pin: UEPin }) {
+  const val = pin.defaultValue || '';
+  let count = 0;
+  if (val && val !== '()') {
+    const inner = val.startsWith('(') && val.endsWith(')') ? val.slice(1, -1) : val;
+    count = inner ? inner.split(',').length : 0;
+  }
+  const label = pin.containerType === 'Map' ? 'map' : pin.containerType === 'Set' ? 'set' : 'array';
+  return (
+    <span className="ueflow-container-node-badge">{count} {label} elem{count !== 1 ? 's' : ''}</span>
+  );
+}
+
 export const PinValueEditor: FC<PinValueEditorProps> = ({ pin }) => {
   const [value, setValue] = useState(pin.defaultValue);
 
@@ -148,6 +162,15 @@ export const PinValueEditor: FC<PinValueEditorProps> = ({ pin }) => {
   }, []);
 
   if (!pin.defaultValue && !value) return null;
+
+  // Container pins show summary badge instead of inline editor
+  if (pin.containerType) {
+    return (
+      <div className="ueflow-pin-editor" onClick={(e) => e.stopPropagation()}>
+        <ContainerSummary pin={pin} />
+      </div>
+    );
+  }
 
   return (
     <div className="ueflow-pin-editor" onClick={(e) => e.stopPropagation()}>
