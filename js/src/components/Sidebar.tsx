@@ -222,7 +222,7 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
                       title={c.class}
                       onClick={() => onShowDetails?.({ kind: 'component', name: c.name, componentClass: c.class, parent: c.parent, properties: c.properties })}
                     >
-                      {depth > 0 && <span style={{ color: '#555', fontSize: 8, marginRight: 2 }}>{'└'}</span>}
+                      {depth > 0 && <span style={{ color: '#8a8a94', fontSize: 8, marginRight: 2 }}>{'└'}</span>}
                       <span className="ueflow-icon ueflow-icon--component">C</span>
                       <span className="ueflow-item-name">{c.name}</span>
                       <span className="ueflow-item-type">{shortType(c.class)}</span>

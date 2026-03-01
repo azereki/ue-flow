@@ -25,6 +25,7 @@ import { TopBar } from './components/TopBar';
 import { StatusBar } from './components/StatusBar';
 import { DetailsPanel, type DetailsItem } from './components/DetailsPanel';
 import { PinBodyContext } from './contexts/PinBodyContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import type { UEGraphJSON, UEMultiGraphJSON } from './types/ue-graph';
 import type { AnyFlowNode, BlueprintFlowEdge, BlueprintFlowNode, FlowNodeData } from './types/flow-types';
 import { zoomSelector } from './utils/selectors';
@@ -456,7 +457,9 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
                 return <StructView name={activeTabInfo.name} fields={s?.fields ?? []} />;
               })()
             ) : currentGraphJSON ? (
-              <SingleGraphView key={`${activeGraph}:${focusNodeTitle ?? ''}`} graphJSON={currentGraphJSON} focusNodeTitle={focusNodeTitle} onSelectedNodeChange={setSelectedNode} />
+              <ErrorBoundary key={activeGraph}>
+                <SingleGraphView key={activeGraph} graphJSON={currentGraphJSON} focusNodeTitle={focusNodeTitle} onSelectedNodeChange={setSelectedNode} />
+              </ErrorBoundary>
             ) : (
               <div className="ueflow-empty-graph">No graph selected</div>
             )}

@@ -25,14 +25,16 @@ export const TabBar: FC<TabBarProps> = ({ openTabs, activeGraph, onSelectGraph, 
         const tabInfo = parseTabName(name);
         const icon = TAB_ICONS[tabInfo.type];
         return (
-          <button
+          <div
             key={name}
             role="tab"
+            tabIndex={0}
             aria-selected={isActive}
             className={`ueflow-tab ${isActive ? 'ueflow-tab--active' : ''}`}
             onClick={() => onSelectGraph(name)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectGraph(name); } }}
           >
-            {icon && <span className={`ueflow-icon ueflow-icon--${tabInfo.type === 'datatable' ? 'table' : 'struct'}`} style={{ width: 14, height: 14, fontSize: 8 }}>{icon}</span>}
+            {icon && <span className={`ueflow-icon ueflow-icon--${tabInfo.type === 'datatable' ? 'table' : 'struct'}`} style={{ width: 16, height: 16, fontSize: 9 }}>{icon}</span>}
             <span className="ueflow-tab-name">{tabInfo.name}</span>
             {comp && (
               <span className="ueflow-tab-count">
@@ -48,7 +50,7 @@ export const TabBar: FC<TabBarProps> = ({ openTabs, activeGraph, onSelectGraph, 
                 ×
               </button>
             )}
-          </button>
+          </div>
         );
       })}
     </div>

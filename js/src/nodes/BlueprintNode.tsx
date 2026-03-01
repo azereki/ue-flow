@@ -61,9 +61,12 @@ export const BlueprintNode = memo(({ data, id }: NodeProps<BlueprintFlowNode>) =
   // Issue 3: lift pin edits into node data via the setNodes callback stored on data.
   // When a user edits a pin value, we update the pin's defaultValue in the node store
   // so that flowToT3D() exports the edited value.
+  // Extract the stable callback reference from data so the useCallback dependency
+  // doesn't change on every render when the full data object identity changes.
+  const setPinValue = data.__setPinValue;
   const handlePinValueChange = useCallback((pinId: string, value: string) => {
-    data.__setPinValue?.(id, pinId, value);
-  }, [data, id]);
+    setPinValue?.(id, pinId, value);
+  }, [id, setPinValue]);
 
   // Reroute nodes: minimal 16px dot
   if (ueType === 'reroute') {

@@ -7,7 +7,10 @@ name = "ue-flow"
 version = "0.1.0"
 description = "Open-source UE Blueprint rendering suite"
 license = "MIT"
-readme = "README.md"
+readme = "../README.md"
+
+[[project.authors]]
+name = "azereki"
 requires-python = ">=3.11"
 dependencies = []
 classifiers = [

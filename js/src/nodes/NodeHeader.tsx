@@ -12,9 +12,11 @@ const TYPE_COLORS: Record<string, string> = {
   call_function: '#1060A8',
   function: '#1060A8',
   branch: '#404040',
+  sequence: '#404040',
   variable_get: '#208050',
   variable_set: '#208050',
   macro: '#8020a0',
+  foreach: '#8020a0',
   comment: '#4a4a5a',
   cast: '#30a060',
   switch: '#8a8a20',
@@ -24,6 +26,8 @@ const TYPE_COLORS: Record<string, string> = {
   tunnel: '#5a5a7a',
   reroute: '#4a4a5a',
   make_array: '#1060A8',
+  make_struct: '#1a1a88',
+  break_struct: '#1a1a88',
 };
 
 const TYPE_ICONS: Record<string, string> = {

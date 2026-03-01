@@ -39,6 +39,7 @@ export const CommentNode = memo(({ data, selected }: NodeProps<CommentFlowNode>)
         handleClassName="ueflow-comment-resize-handle"
       />
       <div className="ueflow-comment-node" style={{ border: `1px solid ${borderColor}` }} aria-label={`Comment: ${title}`}>
+        <div className="ueflow-comment-backdrop" />
         <div
           className="ueflow-comment-header"
           style={{ background: headerBg }}
