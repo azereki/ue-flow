@@ -1,4 +1,4 @@
-import { memo, useContext, useState, useCallback } from 'react';
+import { memo, useContext, useState, useCallback, type FC } from 'react';
 import type { NodeProps } from '@xyflow/react';
 import { Handle, Position, useStore } from '@xyflow/react';
 import { NodeHeader, COMPACT_TITLE_ICONS } from './NodeHeader';
@@ -7,6 +7,21 @@ import { PinValueEditor } from './PinValueEditor';
 import { PinBodyContext } from '../contexts/PinBodyContext';
 import type { FlowNodeData } from '../transform/json-to-flow';
 import { isExecPin, PIN_COLORS } from '../types/pin-types';
+import type { UEPin } from '../types/ue-graph';
+
+/** Input pin row: holds edited value state shared between PinHandle hint and PinValueEditor. */
+const InputPinRow: FC<{ pin: UEPin; isConnected: boolean }> = ({ pin, isConnected }) => {
+  const [editedValue, setEditedValue] = useState(pin.defaultValue);
+  const showEditor = !isExecPin(pin.category) && pin.defaultValue && !isConnected;
+  return (
+    <div className="ueflow-pin-row">
+      <PinHandle pin={pin} editedValue={showEditor ? editedValue : undefined} />
+      {showEditor && (
+        <PinValueEditor pin={pin} onValueChange={setEditedValue} />
+      )}
+    </div>
+  );
+};
 
 /** Build a set of connected pin IDs for this node. */
 function useConnectedPins(pins: Array<{ id: string; direction: string }>) {
@@ -66,24 +81,15 @@ export const BlueprintNode = memo(({ data }: NodeProps) => {
 
   const hasCollapsible = collapsibleAdvancedInputs.length > 0 || collapsibleAdvancedOutputs.length > 0;
 
-  const renderInputPin = (pin: typeof inputPins[number]) => (
-    <div key={pin.id} className="ueflow-pin-row">
-      <PinHandle pin={pin} />
-      {!isExecPin(pin.category) && pin.defaultValue && !connectedPinIds.has(pin.id) && (
-        <PinValueEditor pin={pin} />
-      )}
-    </div>
-  );
-
   return (
     <div className="ueflow-node" data-ue-type={ueType} data-compact={isCompact ? '' : undefined} aria-label={`${ueType} node: ${title}`}>
       <NodeHeader title={title} ueType={ueType} isPure={isPure} />
       {showPinBody && (
         <div className="ueflow-node-body">
           <div className="ueflow-pins-column ueflow-pins--input">
-            {standardInputs.map(renderInputPin)}
-            {alwaysVisibleAdvancedInputs.map(renderInputPin)}
-            {showAdvanced && collapsibleAdvancedInputs.map(renderInputPin)}
+            {standardInputs.map(pin => <InputPinRow key={pin.id} pin={pin} isConnected={connectedPinIds.has(pin.id)} />)}
+            {alwaysVisibleAdvancedInputs.map(pin => <InputPinRow key={pin.id} pin={pin} isConnected={connectedPinIds.has(pin.id)} />)}
+            {showAdvanced && collapsibleAdvancedInputs.map(pin => <InputPinRow key={pin.id} pin={pin} isConnected={connectedPinIds.has(pin.id)} />)}
           </div>
           <div className="ueflow-pins-column ueflow-pins--output">
             {standardOutputs.map(pin => <PinHandle key={pin.id} pin={pin} />)}

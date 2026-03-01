@@ -176,6 +176,52 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
           <button className="ueflow-search-clear" onClick={() => setSearch('')} aria-label="Clear search">&times;</button>
         )}
       </div>
+      {/* Components (tree view) */}
+      {filteredComponents.length > 0 && (
+        <Section title="COMPONENTS" count={filteredComponents.length}>
+          {(() => {
+            // Build tree from flat list using parent references
+            const allComponents = components ?? [];
+            const childrenMap = new Map<string, SidebarComponent[]>();
+            const roots: SidebarComponent[] = [];
+            for (const c of allComponents) {
+              if (c.parent) {
+                if (!childrenMap.has(c.parent)) childrenMap.set(c.parent, []);
+                childrenMap.get(c.parent)!.push(c);
+              } else {
+                roots.push(c);
+              }
+            }
+            const filteredSet = new Set(filteredComponents.map((c: SidebarComponent) => c.name));
+            const renderTree = (items: SidebarComponent[], depth: number): React.ReactNode[] => {
+              const result: React.ReactNode[] = [];
+              for (const c of items) {
+                if (filteredSet.has(c.name)) {
+                  result.push(
+                    <button
+                      key={c.name}
+                      className="ueflow-sidebar-item ueflow-sidebar-item--clickable"
+                      style={{ paddingLeft: `${16 + depth * 14}px` }}
+                      title={c.class}
+                      onClick={() => onShowDetails?.({ kind: 'component', name: c.name, componentClass: c.class, parent: c.parent, properties: c.properties })}
+                    >
+                      {depth > 0 && <span style={{ color: '#555', fontSize: 8, marginRight: 2 }}>{'└'}</span>}
+                      <span className="ueflow-icon ueflow-icon--component">C</span>
+                      <span className="ueflow-item-name">{c.name}</span>
+                      <span className="ueflow-item-type">{shortType(c.class)}</span>
+                    </button>
+                  );
+                }
+                const kids = childrenMap.get(c.name);
+                if (kids) result.push(...renderTree(kids, depth + 1));
+              }
+              return result;
+            };
+            return renderTree(roots, 0);
+          })()}
+        </Section>
+      )}
+
       {/* Events */}
       {eventNodes.length > 0 && (
         <Section title="EVENTS" count={eventNodes.length}>
@@ -282,52 +328,6 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
               })}
             </div>
           ))}
-        </Section>
-      )}
-
-      {/* Components (tree view) */}
-      {filteredComponents.length > 0 && (
-        <Section title="COMPONENTS" count={filteredComponents.length}>
-          {(() => {
-            // Build tree from flat list using parent references
-            const allComponents = components ?? [];
-            const childrenMap = new Map<string, SidebarComponent[]>();
-            const roots: SidebarComponent[] = [];
-            for (const c of allComponents) {
-              if (c.parent) {
-                if (!childrenMap.has(c.parent)) childrenMap.set(c.parent, []);
-                childrenMap.get(c.parent)!.push(c);
-              } else {
-                roots.push(c);
-              }
-            }
-            const filteredSet = new Set(filteredComponents.map((c: SidebarComponent) => c.name));
-            const renderTree = (items: SidebarComponent[], depth: number): React.ReactNode[] => {
-              const result: React.ReactNode[] = [];
-              for (const c of items) {
-                if (filteredSet.has(c.name)) {
-                  result.push(
-                    <button
-                      key={c.name}
-                      className="ueflow-sidebar-item ueflow-sidebar-item--clickable"
-                      style={{ paddingLeft: `${16 + depth * 14}px` }}
-                      title={c.class}
-                      onClick={() => onShowDetails?.({ kind: 'component', name: c.name, componentClass: c.class, parent: c.parent, properties: c.properties })}
-                    >
-                      {depth > 0 && <span style={{ color: '#555', fontSize: 8, marginRight: 2 }}>{'└'}</span>}
-                      <span className="ueflow-icon ueflow-icon--component">C</span>
-                      <span className="ueflow-item-name">{c.name}</span>
-                      <span className="ueflow-item-type">{shortType(c.class)}</span>
-                    </button>
-                  );
-                }
-                const kids = childrenMap.get(c.name);
-                if (kids) result.push(...renderTree(kids, depth + 1));
-              }
-              return result;
-            };
-            return renderTree(roots, 0);
-          })()}
         </Section>
       )}
 

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useState, useMemo, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import {
   ReactFlow,
   Background,
@@ -177,6 +177,65 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
     dragContext.current = null;
   }, [setNodes]);
 
+  // Right-click pan through nodes: React Flow adds the "nopan" class to all draggable
+  // node wrappers, and d3-zoom's filter rejects mousedown events originating from
+  // inside .nopan. There's a bypass for middle-click but not right-click.
+  // Fix: intercept mousedown (what d3-zoom listens for) on nodes in capture phase,
+  // then re-dispatch on .react-flow__pane (outside .nopan) so the filter passes.
+  // d3-zoom binds mousemove/mouseup on event.view (window), so view must be set.
+  useEffect(() => {
+    const BYPASS = '__ueflow_rpan';
+
+    const onMouseDown = (e: MouseEvent) => {
+      if (e.button !== 2) return;
+      if ((e as Record<string, unknown>)[BYPASS]) return;
+      const rf = document.querySelector('.react-flow');
+      if (!rf?.contains(e.target as Node)) return;
+      const node = (e.target as HTMLElement).closest('.react-flow__node');
+      if (!node) return;
+
+      e.stopPropagation();
+      e.preventDefault();
+
+      // Safety: disable pointer-events on nodes so mousemove reaches pane
+      rf.classList.add('ueflow-rpan');
+
+      // Re-dispatch on the pane — event.target will be the pane (not inside .nopan)
+      // and event.view must be window so d3-zoom can bind mousemove/mouseup there
+      const pane = rf.querySelector('.react-flow__pane');
+      if (pane) {
+        const synth = new MouseEvent('mousedown', {
+          bubbles: true, cancelable: true,
+          button: 2, buttons: 2,
+          clientX: e.clientX, clientY: e.clientY,
+          screenX: e.screenX, screenY: e.screenY,
+          view: window,
+        });
+        (synth as Record<string, unknown>)[BYPASS] = true;
+        pane.dispatchEvent(synth);
+      }
+    };
+
+    const onMouseUp = () => {
+      document.querySelector('.react-flow')?.classList.remove('ueflow-rpan');
+    };
+
+    const onContextMenu = (e: Event) => {
+      if (document.querySelector('.react-flow')?.contains(e.target as Node)) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('mousedown', onMouseDown, true);
+    document.addEventListener('mouseup', onMouseUp);
+    document.addEventListener('contextmenu', onContextMenu);
+    return () => {
+      document.removeEventListener('mousedown', onMouseDown, true);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.removeEventListener('contextmenu', onContextMenu);
+    };
+  }, []);
+
   const handleSelectionChange = useCallback(({ nodes: selectedNodes }: { nodes: Array<{ data: Record<string, unknown> }> }) => {
     if (!onSelectedNodeChange) return;
     if (selectedNodes.length === 1) {
@@ -262,13 +321,27 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
 
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [detailsItem, setDetailsItem] = useState<DetailsItem | null>(null);
-  const [sidebarWidth, setSidebarWidth] = useState(240);
-  const sidebarWidthRef = useRef(sidebarWidth);
-  useEffect(() => { sidebarWidthRef.current = sidebarWidth; }, [sidebarWidth]);
+  // Sidebar and details panel use auto-measurement: start with max-content sizing,
+  // then pin the measured width before first paint so the resize handle has a px value.
+  const [sidebarWidth, setSidebarWidth] = useState<number | null>(null);
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
-  const [detailsWidth, setDetailsWidth] = useState(300);
-  const detailsWidthRef = useRef(detailsWidth);
-  useEffect(() => { detailsWidthRef.current = detailsWidth; }, [detailsWidth]);
+  const [detailsWidth, setDetailsWidth] = useState<number | null>(null);
+  const detailsRef = useRef<HTMLDivElement>(null);
+
+  // Pin sidebar width on mount (fires before paint → no flash)
+  useLayoutEffect(() => {
+    if (sidebarWidth === null && sidebarRef.current) {
+      setSidebarWidth(sidebarRef.current.offsetWidth);
+    }
+  }, [sidebarWidth]);
+
+  // Pin details width on first open (fires before paint → no flash)
+  useLayoutEffect(() => {
+    if (detailsWidth === null && detailsRef.current && detailsItem) {
+      setDetailsWidth(detailsRef.current.offsetWidth);
+    }
+  }, [detailsWidth, detailsItem]);
 
   const handleShowDetails = useCallback((item: DetailsItem) => {
     setDetailsItem(item);
@@ -277,7 +350,7 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
   const handleSidebarResize = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     const startX = e.clientX;
-    const startWidth = sidebarWidthRef.current;
+    const startWidth = sidebarRef.current?.offsetWidth ?? 260;
     const onMove = (me: MouseEvent) => {
       const newWidth = Math.min(400, Math.max(160, startWidth + me.clientX - startX));
       setSidebarWidth(newWidth);
@@ -293,7 +366,7 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
   const handleDetailsResize = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     const startX = e.clientX;
-    const startWidth = detailsWidthRef.current;
+    const startWidth = detailsRef.current?.offsetWidth ?? 300;
     const onMove = (me: MouseEvent) => {
       const newWidth = Math.min(600, Math.max(200, startWidth - (me.clientX - startX)));
       setDetailsWidth(newWidth);
@@ -319,7 +392,7 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
         variableCount={multiGraph.variables?.length ?? 0}
       />
       <div className="ueflow-multi-layout">
-        <div style={{ width: sidebarWidth, minWidth: sidebarWidth, flexShrink: 0 }}>
+        <div ref={sidebarRef} style={{ width: sidebarWidth ?? 'max-content', minWidth: 160, maxWidth: 400, flexShrink: 0 }}>
           <Sidebar multiGraph={multiGraph} onNavigateToGraph={navigateToGraph} onShowDetails={handleShowDetails} onOpenSpecialTab={openSpecialTab} />
         </div>
         <div className="ueflow-sidebar-resize" onMouseDown={handleSidebarResize} />
@@ -354,7 +427,7 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
         {detailsItem && (
           <>
             <div className="ueflow-details-resize" onMouseDown={handleDetailsResize} />
-            <div style={{ width: detailsWidth, minWidth: detailsWidth, flexShrink: 0 }}>
+            <div ref={detailsRef} style={{ width: detailsWidth ?? 'max-content', minWidth: 200, maxWidth: 600, flexShrink: 0 }}>
               <DetailsPanel item={detailsItem} onClose={() => setDetailsItem(null)} structs={multiGraph.structs} />
             </div>
           </>

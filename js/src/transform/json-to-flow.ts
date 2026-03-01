@@ -57,7 +57,7 @@ export function graphJsonToFlow(graph: UEGraphJSON): { nodes: Node[]; edges: Edg
       type: ueNode.type === 'comment' ? 'commentNode' : 'blueprintNode',
       position: ueNode.position,
       ...(ueNode.type === 'comment'
-        ? { zIndex: -2000, style: { width: size.width, height: size.height } }
+        ? { zIndex: -2000, dragHandle: '.ueflow-comment-header', style: { width: size.width, height: size.height } }
         : {}),
       initialWidth: size.width,
       initialHeight: size.height,
@@ -79,9 +79,9 @@ export function graphJsonToFlow(graph: UEGraphJSON): { nodes: Node[]; edges: Edg
   // so nodes at edges are included. Padding ensures no node overflows the comment border.
   const commentNodes = nodes.filter((n) => (n.data as FlowNodeData).ueType === 'comment');
   const regularNodes = nodes.filter((n) => (n.data as FlowNodeData).ueType !== 'comment');
-  const COMMENT_PAD_X = 50;     // horizontal padding from child edge to comment edge
-  const COMMENT_PAD_BOTTOM = 50; // bottom padding
-  const COMMENT_HEADER = 60;     // space above topmost child (includes header height)
+  const COMMENT_PAD_X = 60;     // horizontal padding from child edge to comment edge
+  const COMMENT_PAD_BOTTOM = 60; // bottom padding
+  const COMMENT_HEADER = 70;     // space above topmost child (includes header height)
 
   for (const comment of commentNodes) {
     const cx = comment.position.x;
@@ -92,7 +92,7 @@ export function graphJsonToFlow(graph: UEGraphJSON): { nodes: Node[]; edges: Edg
     // Find children that overlap with the original comment bounds (any intersection)
     const children = regularNodes.filter((n) => {
       const nw = n.initialWidth ?? MIN_NODE_WIDTH;
-      const nh = n.initialHeight ?? 42;
+      const nh = n.initialHeight ?? 80;
       const nx = n.position.x;
       const ny = n.position.y;
       // AABB overlap: node rect intersects comment rect
@@ -105,7 +105,7 @@ export function graphJsonToFlow(graph: UEGraphJSON): { nodes: Node[]; edges: Edg
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const child of children) {
       const nw = child.initialWidth ?? MIN_NODE_WIDTH;
-      const nh = child.initialHeight ?? 42;
+      const nh = child.initialHeight ?? 80;
       minX = Math.min(minX, child.position.x);
       minY = Math.min(minY, child.position.y);
       maxX = Math.max(maxX, child.position.x + nw);

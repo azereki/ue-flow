@@ -343,26 +343,56 @@
   border-radius: 15px;
   min-width: 130px;
 }
+/* Variable pill: brighter body tint to distinguish from function/event nodes.
+   Header tint baked into node background so it clips to pill border-radius.
+   ::after accent stripe hidden — can't clip to pill with overflow:visible. */
+.ueflow-node[data-ue-type="variable_get"],
+.ueflow-node[data-ue-type="variable_set"] {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--header-accent, #208050) 22%, rgba(30, 33, 48, 0.85)) 0%,
+      color-mix(in srgb, var(--header-accent, #208050) 10%, rgba(26, 29, 42, 0.9)) 32px,
+      color-mix(in srgb, var(--header-accent, #208050) 6%, var(--uf-node-bg)) 32px,
+      color-mix(in srgb, var(--header-accent, #208050) 3%, var(--uf-node-bg)) 100%
+    );
+  border-color: color-mix(in srgb, var(--header-accent, #208050) 15%, var(--uf-node-border));
+}
 .ueflow-node[data-ue-type="variable_get"] .ueflow-node-header,
 .ueflow-node[data-ue-type="variable_set"] .ueflow-node-header {
-  border-radius: 15px 15px 0 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
 }
 .ueflow-node[data-ue-type="variable_get"]::after,
 .ueflow-node[data-ue-type="variable_set"]::after {
-  border-radius: 15px 0 0 15px;
+  display: none;
 }
 
 /* Compact math operator nodes — pill shape with centered symbol */
+/* Compact math operator nodes — pill shape with centered symbol.
+   Same treatment as variable pills: header tint baked into node background,
+   ::after hidden to avoid accent stripe overflow at rounded corners. */
 .ueflow-node[data-compact] {
   border-radius: 15px;
   min-width: 80px;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--header-accent, #3a5a8c) 25%, rgba(30, 33, 48, 0.85)) 0%,
+      color-mix(in srgb, var(--header-accent, #3a5a8c) 12%, rgba(26, 29, 42, 0.9)) 100%
+    );
 }
 .ueflow-node[data-compact] .ueflow-node-header {
-  border-radius: 15px 15px 0 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
   justify-content: center;
 }
 .ueflow-node[data-compact]::after {
-  border-radius: 15px 0 0 15px;
+  display: none;
 }
 
 .ueflow-node-operator {
@@ -437,7 +467,15 @@
 }
 
 .ueflow-editor-text { width: 120px; }
-.ueflow-editor-number { width: 80px; }
+.ueflow-editor-number {
+  width: 80px;
+  -moz-appearance: textfield;
+}
+.ueflow-editor-number::-webkit-inner-spin-button,
+.ueflow-editor-number::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
 
 .ueflow-editor-text:focus,
 .ueflow-editor-number:focus {
@@ -445,8 +483,34 @@
 }
 
 .ueflow-editor-checkbox {
-  accent-color: var(--uf-accent);
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
   cursor: pointer;
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  position: relative;
+  vertical-align: middle;
+}
+.ueflow-editor-checkbox:checked {
+  background: rgba(74, 128, 192, 0.3);
+  border-color: rgba(74, 128, 192, 0.5);
+}
+.ueflow-editor-checkbox:checked::after {
+  content: '\2713';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 10px;
+  color: #8ac0ff;
+  line-height: 1;
+}
+.ueflow-editor-checkbox:hover {
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .ueflow-editor-color {
@@ -469,6 +533,18 @@
 }
 
 /* ===== Comment Node ===== */
+
+/* Comment node: wrapper is pointer-events:none so clicks on the body pass through
+   to the pane for right-click panning (matching UE5 behavior).
+   Header re-enables pointer-events for drag/select.
+   dragHandle='.ueflow-comment-header' in json-to-flow.ts as a safety net. */
+.react-flow__node-commentNode {
+  pointer-events: none !important;
+}
+/* During right-click pan: make all nodes transparent to pointer events so d3-zoom receives the event on the pane */
+.react-flow.ueflow-rpan .react-flow__node {
+  pointer-events: none !important;
+}
 
 .ueflow-comment-node {
   min-width: 150px;
@@ -528,6 +604,7 @@
 
 .ueflow-comment-resize-line {
   border-color: var(--uf-accent) !important;
+  pointer-events: auto !important;
 }
 
 .ueflow-comment-resize-handle {
@@ -535,6 +612,7 @@
   height: 8px !important;
   background: var(--uf-accent) !important;
   border-radius: 2px !important;
+  pointer-events: auto !important;
 }
 
 /* ===== Export Toolbar ===== */
@@ -1106,12 +1184,15 @@
 
 /* ===== Pin Shape Variants (UE5 SGraphPin::GetPinIcon) ===== */
 
-/* Reference pins: rotated diamond (matches UE Graph.RefPin brush) */
+/* Reference pins: rotated diamond (matches UE Graph.RefPin brush).
+   The 45deg rotation extends corners ~1.7px past the 8px bounds,
+   so we add margin to prevent label overlap. */
 .ueflow-handle--reference {
   border-radius: 1px !important;
   width: 8px !important;
   height: 8px !important;
   transform: translate(-50%, -50%) rotate(45deg) !important;
+  margin-inline: 3px !important;
 }
 
 /* Delegate pins: small rectangle (matches UE Graph.DelegatePin brush) */
@@ -1128,6 +1209,7 @@
   width: 8px !important;
   height: 8px !important;
   transform: translate(-50%, -50%) rotate(45deg) !important;
+  margin-inline: 3px !important;
 }
 
 .ueflow-handle--container-set {
@@ -1136,6 +1218,7 @@
   height: 8px !important;
   border-width: 3px !important;
   transform: translate(-50%, -50%) rotate(45deg) !important;
+  margin-inline: 3px !important;
 }
 
 .ueflow-handle--container-map {
@@ -1147,20 +1230,14 @@
 /* ===== Details Panel ===== */
 
 .ueflow-details-panel {
-  width: 300px;
-  min-width: 300px;
+  width: 100%;
   height: 100%;
-  background-color: rgba(13, 13, 26, 0.85);
-  background-image: var(--uf-noise);
-  background-blend-mode: soft-light;
-  backdrop-filter: blur(12px) saturate(130%);
-  -webkit-backdrop-filter: blur(12px) saturate(130%);
-  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--uf-chrome-bg);
+  border-left: 1px solid var(--uf-subtle-border);
   box-shadow: inset 0 1px 0 var(--uf-subtle-border);
   overflow-y: auto;
   font-family: var(--uf-font-body);
   font-size: 11px;
-  flex-shrink: 0;
   zoom: var(--uf-scale, 1);
 }
 
@@ -1172,9 +1249,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 12px;
-  background: rgba(10, 11, 20, 0.6);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: var(--uf-chrome-bg);
   border-bottom: 1px solid var(--uf-section-border);
 }
 
@@ -1417,8 +1492,8 @@
 
 .ueflow-details-search-input {
   width: 100%;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 4px;
   color: var(--uf-text);
   font-family: var(--uf-font-body);
@@ -1465,8 +1540,16 @@
 .ueflow-field-label {
   color: #909090;
   font-size: 10px;
-  min-width: 90px;
+  min-width: 60px;
   flex-shrink: 0;
+}
+/* Zero out flex controls' intrinsic width inside the details panel so max-content
+   sizing is driven by label text widths, not browser-default input widths (~180px).
+   flex: 1 still grows them to fill available space in the actual layout. */
+.ueflow-details-panel .ueflow-field-text,
+.ueflow-details-panel .ueflow-field-number,
+.ueflow-details-panel .ueflow-field-dropdown {
+  width: 0;
 }
 
 .ueflow-field-value {
@@ -1479,10 +1562,10 @@
 
 .ueflow-field-text,
 .ueflow-field-number {
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-left: 2px solid #4a6080;
-  border-radius: 2px;
+  border-radius: 3px;
   color: var(--uf-text);
   font-family: var(--uf-font-body);
   font-size: 10px;
@@ -1490,6 +1573,14 @@
   outline: none;
   flex: 1;
   min-width: 0;
+}
+.ueflow-field-number {
+  -moz-appearance: textfield;
+}
+.ueflow-field-number::-webkit-inner-spin-button,
+.ueflow-field-number::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .ueflow-field-mono {
@@ -1503,23 +1594,46 @@
 }
 
 .ueflow-field-checkbox {
-  accent-color: #4a80c0;
+  appearance: none;
+  -webkit-appearance: none;
   width: 16px;
   height: 16px;
   cursor: pointer;
   flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  position: relative;
+}
+.ueflow-field-checkbox:checked {
+  background: rgba(74, 128, 192, 0.3);
+  border-color: rgba(74, 128, 192, 0.5);
+}
+.ueflow-field-checkbox:checked::after {
+  content: '\2713';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 11px;
+  color: #8ac0ff;
+  line-height: 1;
+}
+.ueflow-field-checkbox:hover {
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .ueflow-field-dropdown {
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
   color: var(--uf-text);
   font-family: var(--uf-font-body);
   font-size: 10px;
   padding: 3px 20px 3px 6px;
   outline: none;
   appearance: none;
+  -webkit-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 6px center;
@@ -1530,6 +1644,11 @@
 
 .ueflow-field-dropdown:focus {
   border-color: var(--uf-accent);
+}
+
+.ueflow-field-dropdown option {
+  background: #1e2130;
+  color: #e0e0e8;
 }
 
 .ueflow-field-segmented {
@@ -1547,7 +1666,7 @@
   color: #777;
   font-family: var(--uf-font-body);
   font-size: 10px;
-  padding: 3px 8px;
+  padding: 3px 4px;
   cursor: pointer;
   flex: 1;
   text-align: center;
@@ -1790,15 +1909,12 @@
 @media (prefers-reduced-transparency: reduce) {
   .ueflow-export-toolbar,
   .ueflow-comment-header,
-  .react-flow__minimap,
-  .ueflow-details-panel,
-  .ueflow-details-header {
+  .react-flow__minimap {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }
 
   .ueflow-export-toolbar { background-color: rgba(15, 17, 23, 0.95); }
-  .ueflow-details-panel { background-color: rgba(13, 13, 26, 0.95); }
 
   .react-flow::before { display: none; }
 }

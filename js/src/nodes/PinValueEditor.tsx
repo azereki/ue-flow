@@ -5,6 +5,8 @@ import type React from 'react';
 
 interface PinValueEditorProps {
   pin: UEPin;
+  /** Called when the user edits the value, so parent can sync the inline hint. */
+  onValueChange?: (value: string) => void;
 }
 
 function editorForCategory(
@@ -149,7 +151,7 @@ function ContainerSummary({ pin }: { pin: UEPin }) {
   );
 }
 
-export const PinValueEditor: FC<PinValueEditorProps> = ({ pin }) => {
+export const PinValueEditor: FC<PinValueEditorProps> = ({ pin, onValueChange }) => {
   const [value, setValue] = useState(pin.defaultValue);
 
   // Sync local state when the pin prop changes (e.g., graph switch)
@@ -159,7 +161,8 @@ export const PinValueEditor: FC<PinValueEditorProps> = ({ pin }) => {
 
   const handleChange = useCallback((newValue: string) => {
     setValue(newValue);
-  }, []);
+    onValueChange?.(newValue);
+  }, [onValueChange]);
 
   if (!pin.defaultValue && !value) return null;
 

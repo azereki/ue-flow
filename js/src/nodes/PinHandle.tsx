@@ -31,7 +31,7 @@ function formatDefaultHint(pin: UEPin): string {
   const v = pin.defaultValue;
   if (!v) return '';
   // Booleans
-  if (pin.category === 'bool') return v.toLowerCase() === 'true' ? '\u2713' : '\u2717';
+  if (pin.category === 'bool') return v.toLowerCase() === 'true' ? 'true' : 'false';
   // Object refs — show just the asset name
   if (pin.category === 'object' || pin.category === 'softobject' || pin.category === 'class' || pin.category === 'softclass') {
     const last = v.split('.').pop() ?? v;
@@ -43,9 +43,11 @@ function formatDefaultHint(pin: UEPin): string {
 
 interface PinHandleProps {
   pin: UEPin;
+  /** Live edited value — overrides pin.defaultValue for the inline hint. */
+  editedValue?: string;
 }
 
-export const PinHandle: FC<PinHandleProps> = memo(({ pin }) => {
+export const PinHandle: FC<PinHandleProps> = memo(({ pin, editedValue }) => {
   const isInput = pin.direction === 'input';
   const type = isInput ? 'target' : 'source';
   const isConnected = useStore(
@@ -78,7 +80,7 @@ export const PinHandle: FC<PinHandleProps> = memo(({ pin }) => {
       />
       {label && <span className="ueflow-pin-label">{label}</span>}
       {isInput && pin.defaultValue && !isExec && !isConnected && (
-        <span className="ueflow-pin-default-hint">= {formatDefaultHint(pin)}</span>
+        <span className="ueflow-pin-default-hint">= {formatDefaultHint(editedValue !== undefined ? { ...pin, defaultValue: editedValue } : pin)}</span>
       )}
     </div>
   );

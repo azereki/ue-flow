@@ -471,11 +471,22 @@ function StructDetails({ item, search, structs }: { item: Extract<DetailsItem, {
 
 // ─── Detail Section: Delegates ────────────────────────────────────────────────
 
-function DelegateDetails({ item, search, edits, set, structs }: { item: Extract<DetailsItem, { kind: 'delegate' }>; search: string; edits: Record<string, unknown>; set: (k: string, v: unknown) => void; structs?: StructDef[] }) {
+function deriveDelegateSignature(name: string, params?: Array<{ name: string; type: string }>): string {
+  const args = params && params.length > 0
+    ? params.map(p => `${p.type} ${p.name}`).join(', ')
+    : '';
+  return `void ${name}(${args})`;
+}
+
+function DelegateDetails({ item, search, structs }: { item: Extract<DetailsItem, { kind: 'delegate' }>; search: string; structs?: StructDef[] }) {
+  const sig = deriveDelegateSignature(item.name, item.params);
   return (
     <>
-      {item.signature && shouldShow(search, 'Signature') && (
-        <FieldText label="Signature" value={(edits['signature'] as string) ?? item.signature} onChange={(v) => set('signature', v)} mono />
+      {shouldShow(search, 'Signature') && (
+        <div className="ueflow-field-row">
+          <span className="ueflow-field-label">Signature</span>
+          <span className="ueflow-field-value ueflow-field-mono" style={{ opacity: 0.7 }}>{sig}</span>
+        </div>
       )}
       {item.params && item.params.length > 0 && shouldShow(search, 'Parameters') && (
         <CollapsibleSection title={`Parameters (${item.params.length})`}>
@@ -575,7 +586,7 @@ export const DetailsPanel: FC<DetailsPanelProps> = ({ item, onClose, structs }) 
         {item.kind === 'function' && <FunctionDetails item={item} search={search} edits={edits} set={set} structs={structs} />}
         {item.kind === 'variable' && <VariableDetails item={item} search={search} edits={edits} set={set} />}
         {item.kind === 'struct' && <StructDetails item={item} search={search} structs={structs} />}
-        {item.kind === 'delegate' && <DelegateDetails item={item} search={search} edits={edits} set={set} structs={structs} />}
+        {item.kind === 'delegate' && <DelegateDetails item={item} search={search} structs={structs} />}
         {item.kind === 'datatable' && <DataTableDetails item={item} search={search} />}
         {item.kind === 'component' && <ComponentDetails item={item} search={search} edits={edits} set={set} />}
         {item.kind === 'macro' && <MacroDetails item={item} search={search} edits={edits} set={set} structs={structs} />}

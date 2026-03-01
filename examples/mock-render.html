@@ -509,8 +509,17 @@
           ]
         },
         {
+          "id": "fl5", "type": "call_function", "nodeClass": "K2Node_CallArrayFunction", "nodeGuid": "F0000005",
+          "position": { "x": 500, "y": -20 }, "title": "Get", "properties": {},
+          "pins": [
+            { "id": "fl5_arr", "name": "TargetArray", "friendlyName": "Array", "direction": "input", "category": "wildcard", "subCategory": "", "subCategoryObject": "", "containerType": "Array", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "fl5_idx", "name": "Index", "friendlyName": "Index", "direction": "input", "category": "int", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "fl5_elem", "name": "ReturnValue", "friendlyName": "Element", "direction": "output", "category": "wildcard", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
           "id": "fl4", "type": "tunnel", "nodeClass": "K2Node_MacroInstance", "nodeGuid": "F0000004",
-          "position": { "x": 600, "y": 60 }, "title": "Outputs", "properties": {},
+          "position": { "x": 750, "y": 60 }, "title": "Outputs", "properties": {},
           "pins": [
             { "id": "fl4_body", "name": "LoopBody", "friendlyName": "Loop Body", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
             { "id": "fl4_elem", "name": "Element", "friendlyName": "Element", "direction": "input", "category": "wildcard", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
@@ -522,10 +531,13 @@
       "edges": [
         { "id": "fe1", "source": "fl1", "sourcePin": "exec", "target": "fl3", "targetPin": "execute", "category": "exec" },
         { "id": "fe2", "source": "fl1", "sourcePin": "Array", "target": "fl2", "targetPin": "TargetArray", "category": "wildcard" },
+        { "id": "fe2b", "source": "fl1", "sourcePin": "Array", "target": "fl5", "targetPin": "TargetArray", "category": "wildcard" },
         { "id": "fe3", "source": "fl2", "sourcePin": "ReturnValue", "target": "fl3", "targetPin": "LastIndex", "category": "int" },
         { "id": "fe4", "source": "fl3", "sourcePin": "LoopBody", "target": "fl4", "targetPin": "LoopBody", "category": "exec" },
-        { "id": "fe5", "source": "fl3", "sourcePin": "Index", "target": "fl4", "targetPin": "Index", "category": "int" },
-        { "id": "fe6", "source": "fl3", "sourcePin": "Completed", "target": "fl4", "targetPin": "Completed", "category": "exec" }
+        { "id": "fe5", "source": "fl3", "sourcePin": "Index", "target": "fl5", "targetPin": "Index", "category": "int" },
+        { "id": "fe5b", "source": "fl3", "sourcePin": "Index", "target": "fl4", "targetPin": "Index", "category": "int" },
+        { "id": "fe6", "source": "fl3", "sourcePin": "Completed", "target": "fl4", "targetPin": "Completed", "category": "exec" },
+        { "id": "fe7", "source": "fl5", "sourcePin": "ReturnValue", "target": "fl4", "targetPin": "Element", "category": "wildcard" }
       ]
     },
     "IsValid": {

@@ -48,6 +48,7 @@ export const CommentNode = memo(({ data, selected }: NodeProps) => {
         <div
           className="ueflow-comment-header"
           style={{ background: headerBg }}
+          onContextMenu={(e) => e.preventDefault()}
         >
           <span className="ueflow-comment-title">{title}</span>
         </div>
