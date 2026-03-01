@@ -1,5 +1,5 @@
-import { Handle, Position, useStore } from '@xyflow/react';
-import { memo, useCallback, type FC } from 'react';
+import { Handle, Position } from '@xyflow/react';
+import { memo, type FC } from 'react';
 import type { UEPin } from '../types/ue-graph';
 import { isExecPin, getExtendedPinColor } from '../types/pin-types';
 
@@ -41,22 +41,17 @@ function formatDefaultHint(pin: UEPin): string {
   return v.length > 20 ? v.slice(0, 17) + '...' : v;
 }
 
-interface PinHandleProps {
+export interface PinHandleProps {
   pin: UEPin;
+  /** Whether this pin has at least one connected edge. Provided by the parent BlueprintNode. */
+  isConnected?: boolean;
   /** Live edited value — overrides pin.defaultValue for the inline hint. */
   editedValue?: string;
 }
 
-export const PinHandle: FC<PinHandleProps> = memo(({ pin, editedValue }) => {
+export const PinHandle: FC<PinHandleProps> = memo(({ pin, isConnected = false, editedValue }) => {
   const isInput = pin.direction === 'input';
   const type = isInput ? 'target' : 'source';
-  const isConnected = useStore(
-    useCallback(
-      (s: { edges: Array<{ sourceHandle?: string | null; targetHandle?: string | null }> }) =>
-        s.edges.some((e) => (isInput ? e.targetHandle : e.sourceHandle) === pin.id),
-      [pin.id, isInput],
-    ),
-  );
   const color = getExtendedPinColor(pin);
   const isExec = isExecPin(pin.category);
   const rawLabel = pin.friendlyName || pin.name;

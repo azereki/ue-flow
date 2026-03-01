@@ -5,19 +5,29 @@ import { NodeHeader, COMPACT_TITLE_ICONS } from './NodeHeader';
 import { PinHandle } from './PinHandle';
 import { PinValueEditor } from './PinValueEditor';
 import { PinBodyContext } from '../contexts/PinBodyContext';
-import type { FlowNodeData } from '../transform/json-to-flow';
+import type { BlueprintFlowNode } from '../types/flow-types';
 import { isExecPin, PIN_COLORS } from '../types/pin-types';
 import type { UEPin } from '../types/ue-graph';
 
 /** Input pin row: holds edited value state shared between PinHandle hint and PinValueEditor. */
-const InputPinRow: FC<{ pin: UEPin; isConnected: boolean }> = ({ pin, isConnected }) => {
+const InputPinRow: FC<{
+  pin: UEPin;
+  isConnected: boolean;
+  onPinValueChange?: (pinId: string, value: string) => void;
+}> = ({ pin, isConnected, onPinValueChange }) => {
   const [editedValue, setEditedValue] = useState(pin.defaultValue);
   const showEditor = !isExecPin(pin.category) && pin.defaultValue && !isConnected;
+
+  const handleValueChange = useCallback((value: string) => {
+    setEditedValue(value);
+    onPinValueChange?.(pin.id, value);
+  }, [pin.id, onPinValueChange]);
+
   return (
     <div className="ueflow-pin-row">
-      <PinHandle pin={pin} editedValue={showEditor ? editedValue : undefined} />
+      <PinHandle pin={pin} isConnected={isConnected} editedValue={showEditor ? editedValue : undefined} />
       {showEditor && (
-        <PinValueEditor pin={pin} onValueChange={setEditedValue} />
+        <PinValueEditor pin={pin} onValueChange={handleValueChange} />
       )}
     </div>
   );
@@ -37,16 +47,23 @@ function useConnectedPins(pins: Array<{ id: string; direction: string }>) {
         return connected;
       },
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [pinIds.join(',')],
+      [JSON.stringify(pinIds)],
     ),
   );
 }
 
-export const BlueprintNode = memo(({ data }: NodeProps) => {
-  const { title, ueType, pins } = data as unknown as FlowNodeData;
+export const BlueprintNode = memo(({ data, id }: NodeProps<BlueprintFlowNode>) => {
+  const { title, ueType, pins } = data;
   const showPinBody = useContext(PinBodyContext);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const connectedPinIds = useConnectedPins(pins);
+
+  // Issue 3: lift pin edits into node data via the setNodes callback stored on data.
+  // When a user edits a pin value, we update the pin's defaultValue in the node store
+  // so that flowToT3D() exports the edited value.
+  const handlePinValueChange = useCallback((pinId: string, value: string) => {
+    data.__setPinValue?.(id, pinId, value);
+  }, [data, id]);
 
   // Reroute nodes: minimal 16px dot
   if (ueType === 'reroute') {
@@ -87,14 +104,14 @@ export const BlueprintNode = memo(({ data }: NodeProps) => {
       {showPinBody && (
         <div className="ueflow-node-body">
           <div className="ueflow-pins-column ueflow-pins--input">
-            {standardInputs.map(pin => <InputPinRow key={pin.id} pin={pin} isConnected={connectedPinIds.has(pin.id)} />)}
-            {alwaysVisibleAdvancedInputs.map(pin => <InputPinRow key={pin.id} pin={pin} isConnected={connectedPinIds.has(pin.id)} />)}
-            {showAdvanced && collapsibleAdvancedInputs.map(pin => <InputPinRow key={pin.id} pin={pin} isConnected={connectedPinIds.has(pin.id)} />)}
+            {standardInputs.map(pin => <InputPinRow key={pin.id} pin={pin} isConnected={connectedPinIds.has(pin.id)} onPinValueChange={handlePinValueChange} />)}
+            {alwaysVisibleAdvancedInputs.map(pin => <InputPinRow key={pin.id} pin={pin} isConnected={connectedPinIds.has(pin.id)} onPinValueChange={handlePinValueChange} />)}
+            {showAdvanced && collapsibleAdvancedInputs.map(pin => <InputPinRow key={pin.id} pin={pin} isConnected={connectedPinIds.has(pin.id)} onPinValueChange={handlePinValueChange} />)}
           </div>
           <div className="ueflow-pins-column ueflow-pins--output">
-            {standardOutputs.map(pin => <PinHandle key={pin.id} pin={pin} />)}
-            {alwaysVisibleAdvancedOutputs.map(pin => <PinHandle key={pin.id} pin={pin} />)}
-            {showAdvanced && collapsibleAdvancedOutputs.map(pin => <PinHandle key={pin.id} pin={pin} />)}
+            {standardOutputs.map(pin => <PinHandle key={pin.id} pin={pin} isConnected={connectedPinIds.has(pin.id)} />)}
+            {alwaysVisibleAdvancedOutputs.map(pin => <PinHandle key={pin.id} pin={pin} isConnected={connectedPinIds.has(pin.id)} />)}
+            {showAdvanced && collapsibleAdvancedOutputs.map(pin => <PinHandle key={pin.id} pin={pin} isConnected={connectedPinIds.has(pin.id)} />)}
           </div>
         </div>
       )}
