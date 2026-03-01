@@ -292,7 +292,7 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
         <div style={{ width: sidebarWidth, minWidth: sidebarWidth, flexShrink: 0 }}>
           <Sidebar multiGraph={multiGraph} onNavigateToGraph={navigateToGraph} onShowDetails={handleShowDetails} />
         </div>
-        <div className="uf-sidebar-resize" onMouseDown={handleSidebarResize} />
+        <div className="ueflow-sidebar-resize" onMouseDown={handleSidebarResize} />
         <main className="ueflow-multi-main">
           <TabBar
             openTabs={openTabs}

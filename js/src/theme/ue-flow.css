@@ -772,7 +772,7 @@
 
 /* ===== Sidebar ===== */
 
-.uf-sidebar {
+.ueflow-sidebar {
   width: 100%;
   height: 100%;
   background: var(--uf-chrome-bg);
@@ -786,17 +786,17 @@
   zoom: var(--uf-scale, 1);
 }
 
-.uf-sidebar::-webkit-scrollbar { width: 5px; }
-.uf-sidebar::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+.ueflow-sidebar::-webkit-scrollbar { width: 5px; }
+.ueflow-sidebar::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
 
 /* Sidebar search */
-.uf-sidebar-search {
+.ueflow-sidebar-search {
   position: relative;
   padding: 6px 8px;
   border-bottom: 1px solid var(--uf-section-border);
 }
 
-.uf-search-input {
+.ueflow-search-input {
   width: 100%;
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid var(--uf-surface-border);
@@ -809,11 +809,11 @@
   box-sizing: border-box;
 }
 
-.uf-search-input:focus {
+.ueflow-search-input:focus {
   border-color: #4a4a8a;
 }
 
-.uf-search-clear {
+.ueflow-search-clear {
   position: absolute;
   right: 12px;
   top: 50%;
@@ -827,10 +827,10 @@
   line-height: 1;
 }
 
-.uf-search-clear:hover { color: #aaa; }
+.ueflow-search-clear:hover { color: #aaa; }
 
 /* Sidebar resize handle */
-.uf-sidebar-resize {
+.ueflow-sidebar-resize {
   width: 4px;
   cursor: col-resize;
   background: transparent;
@@ -838,13 +838,13 @@
   transition: background var(--uf-transition);
 }
 
-.uf-sidebar-resize:hover {
+.ueflow-sidebar-resize:hover {
   background: #2a2a4a;
 }
 
-.uf-sidebar-section { border-bottom: 1px solid var(--uf-section-border); }
+.ueflow-sidebar-section { border-bottom: 1px solid var(--uf-section-border); }
 
-.uf-section-header {
+.ueflow-section-header {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -863,28 +863,28 @@
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-.uf-section-header:hover { background: rgba(18, 19, 42, 0.6); color: #aaa; }
+.ueflow-section-header:hover { background: rgba(18, 19, 42, 0.6); color: #aaa; }
 
-.uf-section-title { flex: 0 0 auto; }
+.ueflow-section-title { flex: 0 0 auto; }
 
-.uf-section-count {
+.ueflow-section-count {
   font-size: 9px;
   color: #909090;
   margin-left: auto;
 }
 
-.uf-section-arrow {
+.ueflow-section-arrow {
   font-size: 7px;
   transition: transform 0.2s;
   color: #909090;
 }
 
-.uf-section-arrow.uf-collapsed { transform: rotate(-90deg); }
+.ueflow-section-arrow.ueflow-collapsed { transform: rotate(-90deg); }
 
-.uf-section-body { padding: 2px 0; }
+.ueflow-section-body { padding: 2px 0; }
 
 /* Category labels within sections */
-.uf-category-label {
+.ueflow-category-label {
   padding: 4px 10px 2px 12px;
   font-size: 9px;
   font-weight: 600;
@@ -895,7 +895,7 @@
 }
 
 /* Sidebar items */
-.uf-sidebar-item {
+.ueflow-sidebar-item {
   display: flex;
   align-items: center;
   padding: 3px 10px 3px 18px;
@@ -911,10 +911,10 @@
   color: inherit;
 }
 
-.uf-sidebar-item--clickable { cursor: pointer; }
-.uf-sidebar-item--clickable:hover { background: #1a1a3a; }
+.ueflow-sidebar-item--clickable { cursor: pointer; }
+.ueflow-sidebar-item--clickable:hover { background: #1a1a3a; }
 
-.uf-item-name {
+.ueflow-item-name {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -923,10 +923,10 @@
   font-size: 11px;
 }
 
-.uf-sidebar-item--clickable .uf-item-name { color: var(--uf-text-link); }
-.uf-sidebar-item--clickable:hover .uf-item-name { color: #b0d0ff; }
+.ueflow-sidebar-item--clickable .ueflow-item-name { color: var(--uf-text-link); }
+.ueflow-sidebar-item--clickable:hover .ueflow-item-name { color: #b0d0ff; }
 
-.uf-item-type {
+.ueflow-item-type {
   color: #8a8a94;
   font-size: 10px;
   font-family: var(--uf-font-mono);
@@ -937,7 +937,7 @@
 }
 
 /* Icons */
-.uf-icon {
+.ueflow-icon {
   width: 16px;
   height: 16px;
   border-radius: 2px;
@@ -950,35 +950,35 @@
   color: #fff;
 }
 
-.uf-icon--event { background: #cc6600; }
+.ueflow-icon--event { background: #cc6600; }
 
 /* Event type color coding */
-.uf-evt--server .uf-item-name { color: #ff6666; }
-.uf-evt--client .uf-item-name { color: #66cc66; }
-.uf-evt--multicast .uf-item-name { color: #cc66ff; }
-.uf-evt--replicated .uf-item-name { color: #66cccc; }
-.uf-icon--server { background: #cc3333; }
-.uf-icon--client { background: #33aa33; }
-.uf-icon--multicast { background: #9933cc; }
-.uf-icon--replicated { background: #339999; }
-.uf-icon--function { background: #5566cc; }
-.uf-icon--struct { background: #1a1a88; color: #88aaff; }
-.uf-icon--delegate { background: #cc3333; }
-.uf-icon--table { background: #338866; }
+.ueflow-evt--server .ueflow-item-name { color: #ff6666; }
+.ueflow-evt--client .ueflow-item-name { color: #66cc66; }
+.ueflow-evt--multicast .ueflow-item-name { color: #cc66ff; }
+.ueflow-evt--replicated .ueflow-item-name { color: #66cccc; }
+.ueflow-icon--server { background: #cc3333; }
+.ueflow-icon--client { background: #33aa33; }
+.ueflow-icon--multicast { background: #9933cc; }
+.ueflow-icon--replicated { background: #339999; }
+.ueflow-icon--function { background: #5566cc; }
+.ueflow-icon--struct { background: #1a1a88; color: #88aaff; }
+.ueflow-icon--delegate { background: #cc3333; }
+.ueflow-icon--table { background: #338866; }
 
 /* Variable type color indicators */
-.uf-icon--type-bool { background: #8b0000; }
-.uf-icon--type-float { background: #00aa00; }
-.uf-icon--type-int { background: #00aaaa; }
-.uf-icon--type-string { background: #aa00aa; }
-.uf-icon--type-object { background: #0066cc; }
-.uf-icon--type-struct { background: #1a1a88; }
-.uf-icon--type-delegate { background: #cc3333; }
-.uf-icon--type-enum { background: #886644; }
-.uf-icon--type-array { background: #668844; }
+.ueflow-icon--type-bool { background: #8b0000; }
+.ueflow-icon--type-float { background: #00aa00; }
+.ueflow-icon--type-int { background: #00aaaa; }
+.ueflow-icon--type-string { background: #aa00aa; }
+.ueflow-icon--type-object { background: #0066cc; }
+.ueflow-icon--type-struct { background: #1a1a88; }
+.ueflow-icon--type-delegate { background: #cc3333; }
+.ueflow-icon--type-enum { background: #886644; }
+.ueflow-icon--type-array { background: #668844; }
 
 /* Replication badge */
-.uf-badge-rep {
+.ueflow-badge-rep {
   font-size: 8px;
   font-weight: 700;
   padding: 0 3px;
@@ -990,7 +990,7 @@
 
 /* ===== Details Panel ===== */
 
-.uf-details-panel {
+.ueflow-details-panel {
   width: 300px;
   min-width: 300px;
   height: 100%;
@@ -1004,10 +1004,10 @@
   zoom: var(--uf-scale, 1);
 }
 
-.uf-details-panel::-webkit-scrollbar { width: 5px; }
-.uf-details-panel::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+.ueflow-details-panel::-webkit-scrollbar { width: 5px; }
+.ueflow-details-panel::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
 
-.uf-details-header {
+.ueflow-details-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1016,7 +1016,7 @@
   border-bottom: 1px solid var(--uf-section-border);
 }
 
-.uf-details-title {
+.ueflow-details-title {
   font-size: 13px;
   font-weight: 700;
   color: var(--uf-text-link);
@@ -1026,7 +1026,7 @@
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-.uf-details-close {
+.ueflow-details-close {
   background: none;
   border: none;
   color: #909090;
@@ -1036,9 +1036,9 @@
   line-height: 1;
 }
 
-.uf-details-close:hover { color: #aaa; }
+.ueflow-details-close:hover { color: #aaa; }
 
-.uf-details-badge {
+.ueflow-details-badge {
   display: inline-block;
   margin: 8px 12px;
   padding: 2px 8px;
@@ -1051,24 +1051,24 @@
   color: var(--uf-text-link);
 }
 
-.uf-details-content {
+.ueflow-details-content {
   padding: 4px 0;
 }
 
-.uf-details-row {
+.ueflow-details-row {
   display: flex;
   align-items: center;
   padding: 4px 12px;
   gap: 8px;
 }
 
-.uf-details-label {
+.ueflow-details-label {
   color: #909090;
   font-size: 10px;
   min-width: 70px;
 }
 
-.uf-details-value {
+.ueflow-details-value {
   color: var(--uf-text-secondary);
   font-size: 11px;
   display: flex;
@@ -1076,16 +1076,16 @@
   gap: 4px;
 }
 
-.uf-details-mono {
+.ueflow-details-mono {
   font-family: var(--uf-font-mono);
   font-size: 10px;
 }
 
-.uf-details-section {
+.ueflow-details-section {
   border-top: 1px solid var(--uf-section-border);
 }
 
-.uf-details-section-header {
+.ueflow-details-section-header {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1102,47 +1102,47 @@
   text-align: left;
 }
 
-.uf-details-section-header:hover { color: #aaa; }
+.ueflow-details-section-header:hover { color: #aaa; }
 
-.uf-details-section-arrow {
+.ueflow-details-section-arrow {
   font-size: 7px;
   transition: transform 0.2s;
   color: #909090;
 }
 
-.uf-details-section-arrow.uf-collapsed { transform: rotate(-90deg); }
+.ueflow-details-section-arrow.ueflow-collapsed { transform: rotate(-90deg); }
 
-.uf-details-section-body {
+.ueflow-details-section-body {
   padding: 2px 0;
 }
 
-.uf-details-param-row {
+.ueflow-details-param-row {
   display: flex;
   align-items: center;
   padding: 3px 12px 3px 18px;
   gap: 6px;
 }
 
-.uf-details-type-dot {
+.ueflow-details-type-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
-.uf-details-param-name {
+.ueflow-details-param-name {
   color: var(--uf-text-secondary);
   font-size: 11px;
 }
 
-.uf-details-param-type {
+.ueflow-details-param-type {
   color: var(--uf-text-muted);
   font-size: 10px;
   font-family: var(--uf-font-mono);
   margin-left: auto;
 }
 
-.uf-details-param-value {
+.ueflow-details-param-value {
   color: #888;
   font-size: 10px;
   font-family: var(--uf-font-mono);
@@ -1165,7 +1165,7 @@
   border-radius: 50%;
 }
 
-.uf-details-empty {
+.ueflow-details-empty {
   padding: 6px 18px;
   color: #909090;
   font-style: italic;
@@ -1208,7 +1208,7 @@
 
 /* ===== Sidebar Resize Affordance ===== */
 
-.uf-sidebar-resize::after {
+.ueflow-sidebar-resize::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -1221,11 +1221,11 @@
   transition: opacity var(--uf-transition);
 }
 
-.uf-sidebar-resize {
+.ueflow-sidebar-resize {
   position: relative;
 }
 
-.uf-sidebar-resize:hover::after {
+.ueflow-sidebar-resize:hover::after {
   opacity: 1;
 }
 
@@ -1265,6 +1265,6 @@
 
   .ueflow-node { border-width: 2px; }
   .ueflow-node-header { border-top-width: 2px; }
-  .uf-sidebar-item--clickable .uf-item-name { color: #a0c8ff; }
+  .ueflow-sidebar-item--clickable .ueflow-item-name { color: #a0c8ff; }
   .ueflow-breadcrumb-link { color: #80a8e0; }
 }

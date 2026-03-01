@@ -19,13 +19,13 @@ interface SectionProps {
 const Section: FC<SectionProps> = ({ title, count, defaultOpen = true, children }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="uf-sidebar-section">
-      <button className="uf-section-header" aria-expanded={open} onClick={() => setOpen(!open)}>
-        <span className="uf-section-title">{title}</span>
-        <span className="uf-section-count">{count}</span>
-        <span className={`uf-section-arrow ${open ? '' : 'uf-collapsed'}`}>&#9660;</span>
+    <div className="ueflow-sidebar-section">
+      <button className="ueflow-section-header" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <span className="ueflow-section-title">{title}</span>
+        <span className="ueflow-section-count">{count}</span>
+        <span className={`ueflow-section-arrow ${open ? '' : 'ueflow-collapsed'}`}>&#9660;</span>
       </button>
-      {open && <div className="uf-section-body">{children}</div>}
+      {open && <div className="ueflow-section-body">{children}</div>}
     </div>
   );
 };
@@ -75,10 +75,10 @@ function shortType(t: string): string {
 
 function eventColorClass(name: string): string {
   const n = name.toLowerCase();
-  if (n.startsWith('server_')) return 'uf-evt--server';
-  if (n.startsWith('client_')) return 'uf-evt--client';
-  if (n.startsWith('multicast_')) return 'uf-evt--multicast';
-  if (n.startsWith('onrep_')) return 'uf-evt--replicated';
+  if (n.startsWith('server_')) return 'ueflow-evt--server';
+  if (n.startsWith('client_')) return 'ueflow-evt--client';
+  if (n.startsWith('multicast_')) return 'ueflow-evt--multicast';
+  if (n.startsWith('onrep_')) return 'ueflow-evt--replicated';
   return '';
 }
 
@@ -137,10 +137,10 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
   const varGroups = useMemo(() => groupByCategory(filteredVariables), [filteredVariables]);
 
   return (
-    <nav className="uf-sidebar" aria-label="Blueprint explorer">
-      <div className="uf-sidebar-search">
+    <nav className="ueflow-sidebar" aria-label="Blueprint explorer">
+      <div className="ueflow-sidebar-search">
         <input
-          className="uf-search-input"
+          className="ueflow-search-input"
           type="text"
           placeholder="Search sidebar..."
           value={search}
@@ -148,7 +148,7 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
           aria-label="Search sidebar"
         />
         {search && (
-          <button className="uf-search-clear" onClick={() => setSearch('')} aria-label="Clear search">&times;</button>
+          <button className="ueflow-search-clear" onClick={() => setSearch('')} aria-label="Clear search">&times;</button>
         )}
       </div>
       {/* Events */}
@@ -164,7 +164,7 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
             return (
               <button
                 key={evt.name}
-                className={`uf-sidebar-item uf-sidebar-item--clickable ${evtClass}`}
+                className={`ueflow-sidebar-item ueflow-sidebar-item--clickable ${evtClass}`}
                 title={params || undefined}
                 onClick={() => {
                   const graphName = findGraphForEvent(graphs, evt.name);
@@ -174,8 +174,8 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
                   onShowDetails?.({ kind: 'event', name: evt.name, params: parsed });
                 }}
               >
-                <span className={`uf-icon uf-icon--event ${evtClass ? 'uf-icon--' + evtClass.replace('uf-evt--', '') : ''}`}>E</span>
-                <span className="uf-item-name">{evt.name}</span>
+                <span className={`ueflow-icon ueflow-icon--event ${evtClass ? 'ueflow-icon--' + evtClass.replace('ueflow-evt--', '') : ''}`}>E</span>
+                <span className="ueflow-item-name">{evt.name}</span>
               </button>
             );
           })}
@@ -187,14 +187,14 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
         <Section title="FUNCTIONS" count={filteredFunctions.length}>
           {Array.from(funcGroups.entries()).map(([category, fns]) => (
             <div key={category}>
-              <div className="uf-category-label">{category}</div>
+              <div className="ueflow-category-label">{category}</div>
               {fns.map((fn: SidebarFunction) => {
                 const hasGraph = graphNames.includes(fn.name);
                 const sig = formatSignature(fn);
                 return (
                   <button
                     key={fn.name}
-                    className={`uf-sidebar-item ${hasGraph ? 'uf-sidebar-item--clickable' : ''}`}
+                    className={`ueflow-sidebar-item ${hasGraph ? 'ueflow-sidebar-item--clickable' : ''}`}
                     title={sig}
                     onClick={() => {
                       if (hasGraph) onNavigateToGraph(fn.name);
@@ -203,8 +203,8 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
                       onShowDetails?.({ kind: 'function', name: fn.name, category: fn.category, inputs, outputs });
                     }}
                   >
-                    <span className="uf-icon uf-icon--function">f</span>
-                    <span className="uf-item-name">{fn.name}</span>
+                    <span className="ueflow-icon ueflow-icon--function">f</span>
+                    <span className="ueflow-item-name">{fn.name}</span>
                   </button>
                 );
               })}
@@ -218,15 +218,15 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
         <Section title="VARIABLES" count={filteredVariables.length} defaultOpen={filteredVariables.length <= 30}>
           {Array.from(varGroups.entries()).map(([category, vars]) => (
             <div key={category}>
-              {varGroups.size > 1 && <div className="uf-category-label">{category}</div>}
+              {varGroups.size > 1 && <div className="ueflow-category-label">{category}</div>}
               {vars.map((v: SidebarVariable) => {
                 const typeStr = shortType(v.type || '');
                 return (
-                  <button key={v.name} className="uf-sidebar-item uf-sidebar-item--clickable" title={v.type} onClick={() => onShowDetails?.({ kind: 'variable', name: v.name, type: v.type, category: v.category, default: v.default, replication: v.replicated ? 'Replicated' : undefined })}>
-                    <span className={`uf-icon uf-icon--type-${typeClass(v.type)}`} />
-                    <span className="uf-item-name">{v.name}</span>
-                    <span className="uf-item-type">{typeStr}</span>
-                    {v.replicated && <span className="uf-badge-rep">R</span>}
+                  <button key={v.name} className="ueflow-sidebar-item ueflow-sidebar-item--clickable" title={v.type} onClick={() => onShowDetails?.({ kind: 'variable', name: v.name, type: v.type, category: v.category, default: v.default, replication: v.replicated ? 'Replicated' : undefined })}>
+                    <span className={`ueflow-icon ueflow-icon--type-${typeClass(v.type)}`} />
+                    <span className="ueflow-item-name">{v.name}</span>
+                    <span className="ueflow-item-type">{typeStr}</span>
+                    {v.replicated && <span className="ueflow-badge-rep">R</span>}
                   </button>
                 );
               })}
@@ -241,10 +241,10 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
           {filteredStructs.map((s: SidebarStruct) => {
             const fieldCount = s.fields?.length ?? 0;
             return (
-              <button key={s.name} className="uf-sidebar-item uf-sidebar-item--clickable" title={`${fieldCount} fields`} onClick={() => onShowDetails?.({ kind: 'struct', name: s.name, fields: s.fields || [] })}>
-                <span className="uf-icon uf-icon--struct">S</span>
-                <span className="uf-item-name">{s.name}</span>
-                <span className="uf-item-type">{fieldCount}f</span>
+              <button key={s.name} className="ueflow-sidebar-item ueflow-sidebar-item--clickable" title={`${fieldCount} fields`} onClick={() => onShowDetails?.({ kind: 'struct', name: s.name, fields: s.fields || [] })}>
+                <span className="ueflow-icon ueflow-icon--struct">S</span>
+                <span className="ueflow-item-name">{s.name}</span>
+                <span className="ueflow-item-type">{fieldCount}f</span>
               </button>
             );
           })}
@@ -255,9 +255,9 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
       {filteredDelegates.length > 0 && (
         <Section title="DELEGATES" count={filteredDelegates.length} defaultOpen={true}>
           {filteredDelegates.map((d: SidebarDelegate) => (
-            <button key={d.name} className="uf-sidebar-item uf-sidebar-item--clickable" title={d.signature || ''} onClick={() => onShowDetails?.({ kind: 'delegate', name: d.name, signature: d.signature })}>
-              <span className="uf-icon uf-icon--delegate">D</span>
-              <span className="uf-item-name">{d.name}</span>
+            <button key={d.name} className="ueflow-sidebar-item ueflow-sidebar-item--clickable" title={d.signature || ''} onClick={() => onShowDetails?.({ kind: 'delegate', name: d.name, signature: d.signature })}>
+              <span className="ueflow-icon ueflow-icon--delegate">D</span>
+              <span className="ueflow-item-name">{d.name}</span>
             </button>
           ))}
         </Section>
@@ -271,10 +271,10 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
             const rowCount = dt?.sampleRows?.length ?? 0;
             const columns = dt?.columns as string[] | undefined;
             return (
-              <button key={name} className="uf-sidebar-item uf-sidebar-item--clickable" title={`${rowCount} rows`} onClick={() => onShowDetails?.({ kind: 'datatable', name, rowCount, columns })}>
-                <span className="uf-icon uf-icon--table">T</span>
-                <span className="uf-item-name">{name}</span>
-                {rowCount > 0 && <span className="uf-item-type">{rowCount}r</span>}
+              <button key={name} className="ueflow-sidebar-item ueflow-sidebar-item--clickable" title={`${rowCount} rows`} onClick={() => onShowDetails?.({ kind: 'datatable', name, rowCount, columns })}>
+                <span className="ueflow-icon ueflow-icon--table">T</span>
+                <span className="ueflow-item-name">{name}</span>
+                {rowCount > 0 && <span className="ueflow-item-type">{rowCount}r</span>}
               </button>
             );
           })}

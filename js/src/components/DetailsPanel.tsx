@@ -19,28 +19,28 @@ function typeColor(type: string | undefined): string {
 }
 
 const TypeDot: FC<{ type: string }> = ({ type }) => (
-  <span className="uf-details-type-dot" style={{ background: typeColor(type) }} />
+  <span className="ueflow-details-type-dot" style={{ background: typeColor(type) }} />
 );
 
 const CollapsibleSection: FC<{ title: string; defaultOpen?: boolean; children: React.ReactNode }> = ({ title, defaultOpen = true, children }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="uf-details-section">
-      <button className="uf-details-section-header" aria-expanded={open} onClick={() => setOpen(!open)}>
-        <span className={`uf-details-section-arrow ${open ? '' : 'uf-collapsed'}`}>&#9660;</span>
+    <div className="ueflow-details-section">
+      <button className="ueflow-details-section-header" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <span className={`ueflow-details-section-arrow ${open ? '' : 'ueflow-collapsed'}`}>&#9660;</span>
         <span>{title}</span>
       </button>
-      {open && <div className="uf-details-section-body">{children}</div>}
+      {open && <div className="ueflow-details-section-body">{children}</div>}
     </div>
   );
 };
 
 const ParamRow: FC<{ name: string; type: string; value?: string }> = ({ name, type, value }) => (
-  <div className="uf-details-param-row">
+  <div className="ueflow-details-param-row">
     <TypeDot type={type} />
-    <span className="uf-details-param-name">{name}</span>
-    <span className="uf-details-param-type">{type}</span>
-    {value && <span className="uf-details-param-value">{value}</span>}
+    <span className="ueflow-details-param-name">{name}</span>
+    <span className="ueflow-details-param-type">{type}</span>
+    {value && <span className="ueflow-details-param-value">{value}</span>}
   </div>
 );
 
@@ -51,7 +51,7 @@ function EventDetails({ item }: { item: Extract<DetailsItem, { kind: 'event' }> 
         {item.params && item.params.length > 0 ? (
           item.params.map((p, i) => <ParamRow key={i} name={p.name} type={p.type} />)
         ) : (
-          <div className="uf-details-empty">No parameters</div>
+          <div className="ueflow-details-empty">No parameters</div>
         )}
       </CollapsibleSection>
     </>
@@ -62,23 +62,23 @@ function FunctionDetails({ item }: { item: Extract<DetailsItem, { kind: 'functio
   return (
     <>
       {item.category && (
-        <div className="uf-details-row">
-          <span className="uf-details-label">Category</span>
-          <span className="uf-details-value">{item.category}</span>
+        <div className="ueflow-details-row">
+          <span className="ueflow-details-label">Category</span>
+          <span className="ueflow-details-value">{item.category}</span>
         </div>
       )}
       <CollapsibleSection title="Inputs">
         {item.inputs && item.inputs.length > 0 ? (
           item.inputs.map((p, i) => <ParamRow key={i} name={p.name} type={p.type} />)
         ) : (
-          <div className="uf-details-empty">No inputs</div>
+          <div className="ueflow-details-empty">No inputs</div>
         )}
       </CollapsibleSection>
       <CollapsibleSection title="Outputs">
         {item.outputs && item.outputs.length > 0 ? (
           item.outputs.map((p, i) => <ParamRow key={i} name={p.name} type={p.type} />)
         ) : (
-          <div className="uf-details-empty">No outputs</div>
+          <div className="ueflow-details-empty">No outputs</div>
         )}
       </CollapsibleSection>
     </>
@@ -88,26 +88,26 @@ function FunctionDetails({ item }: { item: Extract<DetailsItem, { kind: 'functio
 function VariableDetails({ item }: { item: Extract<DetailsItem, { kind: 'variable' }> }) {
   return (
     <>
-      <div className="uf-details-row">
-        <span className="uf-details-label">Type</span>
-        <span className="uf-details-value"><TypeDot type={item.type} /> {item.type}</span>
+      <div className="ueflow-details-row">
+        <span className="ueflow-details-label">Type</span>
+        <span className="ueflow-details-value"><TypeDot type={item.type} /> {item.type}</span>
       </div>
       {item.category && (
-        <div className="uf-details-row">
-          <span className="uf-details-label">Category</span>
-          <span className="uf-details-value">{item.category}</span>
+        <div className="ueflow-details-row">
+          <span className="ueflow-details-label">Category</span>
+          <span className="ueflow-details-value">{item.category}</span>
         </div>
       )}
       {item.replication && (
-        <div className="uf-details-row">
-          <span className="uf-details-label">Replication</span>
-          <span className="uf-details-value">{item.replication}</span>
+        <div className="ueflow-details-row">
+          <span className="ueflow-details-label">Replication</span>
+          <span className="ueflow-details-value">{item.replication}</span>
         </div>
       )}
       {item.default && (
-        <div className="uf-details-row">
-          <span className="uf-details-label">Default</span>
-          <span className="uf-details-value uf-details-mono">{item.default}</span>
+        <div className="ueflow-details-row">
+          <span className="ueflow-details-label">Default</span>
+          <span className="ueflow-details-value ueflow-details-mono">{item.default}</span>
         </div>
       )}
     </>
@@ -128,9 +128,9 @@ function DelegateDetails({ item }: { item: Extract<DetailsItem, { kind: 'delegat
   return (
     <>
       {item.signature && (
-        <div className="uf-details-row">
-          <span className="uf-details-label">Signature</span>
-          <span className="uf-details-value uf-details-mono">{item.signature}</span>
+        <div className="ueflow-details-row">
+          <span className="ueflow-details-label">Signature</span>
+          <span className="ueflow-details-value ueflow-details-mono">{item.signature}</span>
         </div>
       )}
     </>
@@ -140,15 +140,15 @@ function DelegateDetails({ item }: { item: Extract<DetailsItem, { kind: 'delegat
 function DataTableDetails({ item }: { item: Extract<DetailsItem, { kind: 'datatable' }> }) {
   return (
     <>
-      <div className="uf-details-row">
-        <span className="uf-details-label">Rows</span>
-        <span className="uf-details-value">{item.rowCount}</span>
+      <div className="ueflow-details-row">
+        <span className="ueflow-details-label">Rows</span>
+        <span className="ueflow-details-value">{item.rowCount}</span>
       </div>
       {item.columns && item.columns.length > 0 && (
         <CollapsibleSection title={`Columns (${item.columns.length})`}>
           {item.columns.map((col, i) => (
-            <div key={i} className="uf-details-param-row">
-              <span className="uf-details-param-name">{col}</span>
+            <div key={i} className="ueflow-details-param-row">
+              <span className="ueflow-details-param-name">{col}</span>
             </div>
           ))}
         </CollapsibleSection>
@@ -159,13 +159,13 @@ function DataTableDetails({ item }: { item: Extract<DetailsItem, { kind: 'datata
 
 export const DetailsPanel: FC<DetailsPanelProps> = ({ item, onClose }) => {
   return (
-    <div className="uf-details-panel">
-      <div className="uf-details-header">
-        <span className="uf-details-title">{item.name}</span>
-        <button className="uf-details-close" onClick={onClose} aria-label="Close details">&times;</button>
+    <div className="ueflow-details-panel">
+      <div className="ueflow-details-header">
+        <span className="ueflow-details-title">{item.name}</span>
+        <button className="ueflow-details-close" onClick={onClose} aria-label="Close details">&times;</button>
       </div>
-      <div className="uf-details-badge">{item.kind}</div>
-      <div className="uf-details-content">
+      <div className="ueflow-details-badge">{item.kind}</div>
+      <div className="ueflow-details-content">
         {item.kind === 'event' && <EventDetails item={item} />}
         {item.kind === 'function' && <FunctionDetails item={item} />}
         {item.kind === 'variable' && <VariableDetails item={item} />}
