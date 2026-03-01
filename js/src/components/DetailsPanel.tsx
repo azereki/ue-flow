@@ -485,7 +485,7 @@ function DelegateDetails({ item, search, structs }: { item: Extract<DetailsItem,
       {shouldShow(search, 'Signature') && (
         <div className="ueflow-field-row">
           <span className="ueflow-field-label">Signature</span>
-          <span className="ueflow-field-value ueflow-field-mono" style={{ opacity: 0.7 }}>{sig}</span>
+          <span className="ueflow-field-value ueflow-field-mono ueflow-delegate-signature">{sig}</span>
         </div>
       )}
       {item.params && item.params.length > 0 && shouldShow(search, 'Parameters') && (

@@ -167,10 +167,9 @@
 }
 
 .ueflow-pin-default-hint {
-  color: #777;
+  color: var(--uf-text-muted);
   font-family: var(--uf-font-mono);
   font-size: 9px;
-  opacity: 0.7;
   white-space: nowrap;
   max-width: 100px;
   overflow: hidden;
@@ -178,7 +177,7 @@
 }
 
 .ueflow-pin-value {
-  color: #aab;
+  color: var(--uf-text-secondary);
   font-family: var(--uf-font-mono);
   font-size: 10px;
   max-width: 140px;
@@ -199,7 +198,7 @@
   background: none;
   border: none;
   border-top: 1px solid rgba(255, 255, 255, 0.04);
-  color: #777;
+  color: var(--uf-text-muted);
   font-family: var(--uf-font-body);
   font-size: 9px;
   cursor: pointer;
@@ -207,7 +206,7 @@
 }
 
 .ueflow-advanced-toggle:hover {
-  color: #aaa;
+  color: var(--uf-text-secondary);
 }
 
 .ueflow-advanced-arrow {
@@ -297,9 +296,7 @@
 }
 
 .react-flow__minimap {
-  background: rgba(10, 12, 18, 0.6) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
+  background: var(--uf-chrome-bg-solid) !important;
   border: 1px solid var(--uf-surface-border) !important;
   border-radius: 4px !important;
 }
@@ -850,7 +847,7 @@
 }
 
 .ueflow-tab-bar::-webkit-scrollbar { height: 3px; }
-.ueflow-tab-bar::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+.ueflow-tab-bar::-webkit-scrollbar-thumb { background: #555; border-radius: 2px; }
 
 .ueflow-tab {
   padding: 4px 12px;
@@ -972,7 +969,7 @@
 }
 
 .ueflow-sidebar::-webkit-scrollbar { width: 5px; }
-.ueflow-sidebar::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+.ueflow-sidebar::-webkit-scrollbar-thumb { background: #555; border-radius: 2px; }
 
 /* Sidebar search */
 .ueflow-sidebar-search {
@@ -995,7 +992,7 @@
 }
 
 .ueflow-search-input:focus {
-  border-color: #4a4a8a;
+  border-color: var(--uf-accent);
 }
 
 .ueflow-search-clear {
@@ -1024,7 +1021,7 @@
 }
 
 .ueflow-sidebar-resize:hover {
-  background: #2a2a4a;
+  background: var(--uf-surface-hover);
 }
 
 .ueflow-sidebar-section { border-bottom: 1px solid var(--uf-section-border); }
@@ -1097,7 +1094,7 @@
 }
 
 .ueflow-sidebar-item--clickable { cursor: pointer; }
-.ueflow-sidebar-item--clickable:hover { background: #1a1a3a; }
+.ueflow-sidebar-item--clickable:hover { background: var(--uf-surface-hover); }
 
 .ueflow-sidebar-show-more {
   display: block;
@@ -1177,6 +1174,13 @@
 .ueflow-icon--type-enum { background: #886644; }
 .ueflow-icon--type-array { background: #668844; }
 
+/* Tree connector glyph (component hierarchy) */
+.ueflow-tree-connector {
+  color: var(--uf-text-muted);
+  font-size: 8px;
+  margin-right: 2px;
+}
+
 /* Instance editable eye badge */
 .ueflow-badge-eye {
   font-size: 10px;
@@ -1191,15 +1195,15 @@
   font-weight: 700;
   padding: 0 3px;
   border-radius: 2px;
-  background: #2a3a2a;
-  color: #6a8a6a;
+  background: var(--uf-surface);
+  color: #8aba8a;
   margin-left: 2px;
 }
 
-.ueflow-badge-rep--repnotify { background: #2a2a3a; color: #8a8aff; }
-.ueflow-badge-rep--server { background: #3a2a2a; color: #ff6666; }
-.ueflow-badge-rep--client { background: #2a3a2a; color: #66cc66; }
-.ueflow-badge-rep--multicast { background: #2a2a3a; color: #cc66ff; }
+.ueflow-badge-rep--repnotify { background: var(--uf-surface); color: #9a9aff; }
+.ueflow-badge-rep--server { background: var(--uf-surface); color: #ff8888; }
+.ueflow-badge-rep--client { background: var(--uf-surface); color: #88dd88; }
+.ueflow-badge-rep--multicast { background: var(--uf-surface); color: #dd88ff; }
 
 /* Component & Macro icons */
 .ueflow-icon--component { background: #446688; }
@@ -1265,7 +1269,7 @@
 }
 
 .ueflow-details-panel::-webkit-scrollbar { width: 5px; }
-.ueflow-details-panel::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+.ueflow-details-panel::-webkit-scrollbar-thumb { background: #555; border-radius: 2px; }
 
 .ueflow-details-header {
   display: flex;
@@ -1307,7 +1311,7 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-radius: 3px;
-  background: #1a1a3a;
+  background: var(--uf-surface);
   color: var(--uf-text-link);
 }
 
@@ -1425,6 +1429,11 @@
   border-radius: 50%;
 }
 
+/* Delegate signature — subdued mono text */
+.ueflow-delegate-signature {
+  opacity: 0.7;
+}
+
 .ueflow-details-empty {
   padding: 6px 18px;
   color: #909090;
@@ -1527,7 +1536,7 @@
 }
 
 .ueflow-details-search-input:focus {
-  border-color: #4a4a8a;
+  border-color: var(--uf-accent);
 }
 
 .ueflow-details-search-clear {
@@ -1587,7 +1596,7 @@
 .ueflow-field-number {
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-left: 2px solid #4a6080;
+  border-left: 2px solid color-mix(in srgb, var(--uf-accent) 50%, var(--uf-surface-border));
   border-radius: 3px;
   color: var(--uf-text);
   font-family: var(--uf-font-body);
@@ -1686,7 +1695,7 @@
   background: rgba(0, 0, 0, 0.2);
   border: none;
   border-right: 1px solid var(--uf-surface-border);
-  color: #777;
+  color: var(--uf-text-muted);
   font-family: var(--uf-font-body);
   font-size: 10px;
   padding: 3px 4px;
@@ -1804,7 +1813,7 @@
 }
 
 .ueflow-details-resize:hover {
-  background: #2a2a4a;
+  background: var(--uf-surface-hover);
 }
 
 .ueflow-details-resize::after {
@@ -1851,7 +1860,7 @@
 .ueflow-container-badge {
   font-family: var(--uf-font-mono);
   font-size: 10px;
-  color: #999;
+  color: var(--uf-text-muted);
   background: rgba(255, 255, 255, 0.04);
   padding: 2px 6px;
   border-radius: 3px;
@@ -1907,7 +1916,7 @@
   border: none;
   padding: 0;
   cursor: pointer;
-  color: #777;
+  color: var(--uf-text-muted);
   flex-shrink: 0;
 }
 

@@ -15,6 +15,7 @@ import '@xyflow/react/dist/style.css';
 import './theme/ue-flow.css';
 import { graphJsonToFlow } from './transform/json-to-flow';
 import { BlueprintNode } from './nodes/BlueprintNode';
+import { TYPE_COLORS } from './nodes/NodeHeader';
 import { BlueprintEdge } from './edges/BlueprintEdge';
 import { CommentNode } from './nodes/CommentNode';
 import { ExportToolbar } from './components/ExportToolbar';
@@ -316,13 +317,7 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
             const t = (node as AnyFlowNode).type === 'blueprintNode'
               ? ((node as BlueprintFlowNode).data.ueType ?? '')
               : 'comment';
-            if (t === 'event' || t === 'function_entry') return '#B40000';
-            if (t === 'call_function' || t === 'function') return '#1060A8';
-            if (t === 'branch') return '#404040';
-            if (t === 'variable_get' || t === 'variable_set') return '#208050';
-            if (t === 'comment') return '#4a4a5a';
-            if (t === 'macro') return '#8020a0';
-            return '#2a2d37';
+            return TYPE_COLORS[t] ?? '#2a2d37';
           }} maskColor="rgba(0, 0, 0, 0.7)" />
           <ZoomIndicator />
         </PinBodyProvider>

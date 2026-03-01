@@ -7,7 +7,7 @@ interface NodeHeaderProps {
 }
 
 // More saturated colors for better visibility against dark background
-const TYPE_COLORS: Record<string, string> = {
+export const TYPE_COLORS: Record<string, string> = {
   event: '#B40000',
   call_function: '#1060A8',
   function: '#1060A8',
@@ -63,7 +63,7 @@ export const COMPACT_TITLE_ICONS: Record<string, string> = {
 };
 
 export const NodeHeader: FC<NodeHeaderProps> = ({ title, ueType, isPure }) => {
-  const color = TYPE_COLORS[ueType] ?? '#3060a0';
+  const color = TYPE_COLORS[ueType] ?? TYPE_COLORS.call_function;
   const icon = TYPE_ICONS[ueType];
   const compactIcon = COMPACT_TITLE_ICONS[title];
 
