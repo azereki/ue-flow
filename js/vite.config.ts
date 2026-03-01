@@ -49,6 +49,9 @@ function cssInjectedByJsPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [react(), cssInjectedByJsPlugin()],
+  test: {
+    exclude: ['e2e/**', 'node_modules/**'],
+  },
   define: {
     'process.env.NODE_ENV': JSON.stringify('production'),
   },
