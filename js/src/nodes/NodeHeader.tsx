@@ -36,9 +36,45 @@ const TYPE_ICONS: Record<string, string> = {
   cast: 'C',
 };
 
+/** UE5 compact title icons — K2Node_CallFunction::GetCompactNodeTitle() symbol map. */
+export const COMPACT_TITLE_ICONS: Record<string, string> = {
+  'Add':            '+',
+  'Subtract':       '\u2212',
+  'Multiply':       '\u00D7',
+  'Divide':         '\u00F7',
+  'Modulo':         '%',
+  'Power':          '^',
+  'Negate':         '\u00B1',
+  'Dot Product':    '\u00B7',
+  'Cross Product':  '\u00D7',
+  'Equal':          '==',
+  'Not Equal':      '!=',
+  'Less':           '<',
+  'Less Equal':     '\u2264',
+  'Greater':        '>',
+  'Greater Equal':  '\u2265',
+  'AND Boolean':    '&&',
+  'OR Boolean':     '||',
+  'NOT Boolean':    '!',
+};
+
 export const NodeHeader: FC<NodeHeaderProps> = ({ title, ueType, isPure }) => {
   const color = TYPE_COLORS[ueType] ?? '#3060a0';
   const icon = TYPE_ICONS[ueType];
+  const compactIcon = COMPACT_TITLE_ICONS[title];
+
+  // Compact mode: show operator symbol instead of title
+  if (compactIcon && ueType === 'call_function') {
+    return (
+      <div
+        className="ueflow-node-header"
+        style={{ '--header-accent': color } as React.CSSProperties}
+      >
+        <span className="ueflow-node-operator">{compactIcon}</span>
+      </div>
+    );
+  }
+
   return (
     <div
       className="ueflow-node-header"

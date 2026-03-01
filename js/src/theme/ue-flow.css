@@ -166,6 +166,17 @@
   white-space: nowrap;
 }
 
+.ueflow-pin-default-hint {
+  color: #777;
+  font-family: var(--uf-font-mono);
+  font-size: 9px;
+  opacity: 0.7;
+  white-space: nowrap;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .ueflow-pin-value {
   color: #aab;
   font-family: var(--uf-font-mono);
@@ -174,6 +185,38 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ===== Advanced Pin Toggle ===== */
+
+.ueflow-advanced-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  padding: 2px 8px;
+  background: none;
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  color: #777;
+  font-family: var(--uf-font-body);
+  font-size: 9px;
+  cursor: pointer;
+  transition: color var(--uf-transition);
+}
+
+.ueflow-advanced-toggle:hover {
+  color: #aaa;
+}
+
+.ueflow-advanced-arrow {
+  font-size: 6px;
+  transition: transform 0.2s;
+}
+
+.ueflow-advanced-arrow.ueflow-collapsed {
+  transform: rotate(-90deg);
 }
 
 /* ===== Handle (Pin Dot) Styling ===== */
@@ -307,6 +350,27 @@
 .ueflow-node[data-ue-type="variable_get"]::after,
 .ueflow-node[data-ue-type="variable_set"]::after {
   border-radius: 15px 0 0 15px;
+}
+
+/* Compact math operator nodes — pill shape with centered symbol */
+.ueflow-node[data-compact] {
+  border-radius: 15px;
+  min-width: 80px;
+}
+.ueflow-node[data-compact] .ueflow-node-header {
+  border-radius: 15px 15px 0 0;
+  justify-content: center;
+}
+.ueflow-node[data-compact]::after {
+  border-radius: 15px 0 0 15px;
+}
+
+.ueflow-node-operator {
+  font-size: 16px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+  font-family: var(--uf-font-mono);
+  line-height: 1;
 }
 
 /* Edge hover */
@@ -1039,6 +1103,23 @@
 /* Component & Macro icons */
 .ueflow-icon--component { background: #446688; }
 .ueflow-icon--macro { background: #8020a0; }
+
+/* ===== Pin Shape Variants (UE5 SGraphPin::GetPinIcon) ===== */
+
+/* Reference pins: rotated diamond (matches UE Graph.RefPin brush) */
+.ueflow-handle--reference {
+  border-radius: 1px !important;
+  width: 8px !important;
+  height: 8px !important;
+  transform: translate(-50%, -50%) rotate(45deg) !important;
+}
+
+/* Delegate pins: small rectangle (matches UE Graph.DelegatePin brush) */
+.ueflow-handle--delegate {
+  border-radius: 2px !important;
+  width: 10px !important;
+  height: 6px !important;
+}
 
 /* ===== Container Type Pin Handles ===== */
 

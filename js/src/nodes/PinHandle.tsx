@@ -26,6 +26,21 @@ function pinTooltip(pin: UEPin): string {
   return parts.join(' \u2014 ');
 }
 
+/** Format a default value hint for inline display on unconnected pins. */
+function formatDefaultHint(pin: UEPin): string {
+  const v = pin.defaultValue;
+  if (!v) return '';
+  // Booleans
+  if (pin.category === 'bool') return v.toLowerCase() === 'true' ? '\u2713' : '\u2717';
+  // Object refs — show just the asset name
+  if (pin.category === 'object' || pin.category === 'softobject' || pin.category === 'class' || pin.category === 'softclass') {
+    const last = v.split('.').pop() ?? v;
+    return last.length > 20 ? last.slice(0, 17) + '...' : last;
+  }
+  // Truncate long values
+  return v.length > 20 ? v.slice(0, 17) + '...' : v;
+}
+
 interface PinHandleProps {
   pin: UEPin;
 }
@@ -57,11 +72,14 @@ export const PinHandle: FC<PinHandleProps> = memo(({ pin }) => {
         type={type}
         position={isInput ? Position.Left : Position.Right}
         id={pin.id}
-        className={`ueflow-handle ${isExec ? 'ueflow-handle--exec' : 'ueflow-handle--data'} ${isConnected ? 'ueflow-handle--connected' : ''} ${containerClass}`}
+        className={`ueflow-handle ${isExec ? 'ueflow-handle--exec' : 'ueflow-handle--data'} ${isConnected ? 'ueflow-handle--connected' : ''} ${containerClass} ${pin.isReference ? 'ueflow-handle--reference' : ''} ${pin.category === 'delegate' ? 'ueflow-handle--delegate' : ''}`}
         style={{ '--pin-color': color } as React.CSSProperties}
         isConnectable={false}
       />
       {label && <span className="ueflow-pin-label">{label}</span>}
+      {isInput && pin.defaultValue && !isExec && !isConnected && (
+        <span className="ueflow-pin-default-hint">= {formatDefaultHint(pin)}</span>
+      )}
     </div>
   );
 });

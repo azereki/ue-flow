@@ -1,16 +1,37 @@
-import { memo, useContext } from 'react';
+import { memo, useContext, useState, useCallback } from 'react';
 import type { NodeProps } from '@xyflow/react';
-import { Handle, Position } from '@xyflow/react';
-import { NodeHeader } from './NodeHeader';
+import { Handle, Position, useStore } from '@xyflow/react';
+import { NodeHeader, COMPACT_TITLE_ICONS } from './NodeHeader';
 import { PinHandle } from './PinHandle';
 import { PinValueEditor } from './PinValueEditor';
 import { PinBodyContext } from '../contexts/PinBodyContext';
 import type { FlowNodeData } from '../transform/json-to-flow';
 import { isExecPin, PIN_COLORS } from '../types/pin-types';
 
+/** Build a set of connected pin IDs for this node. */
+function useConnectedPins(pins: Array<{ id: string; direction: string }>) {
+  const pinIds = pins.map(p => p.id);
+  return useStore(
+    useCallback(
+      (s: { edges: Array<{ sourceHandle?: string | null; targetHandle?: string | null }> }) => {
+        const connected = new Set<string>();
+        for (const e of s.edges) {
+          if (e.sourceHandle && pinIds.includes(e.sourceHandle)) connected.add(e.sourceHandle);
+          if (e.targetHandle && pinIds.includes(e.targetHandle)) connected.add(e.targetHandle);
+        }
+        return connected;
+      },
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [pinIds.join(',')],
+    ),
+  );
+}
+
 export const BlueprintNode = memo(({ data }: NodeProps) => {
   const { title, ueType, pins } = data as unknown as FlowNodeData;
   const showPinBody = useContext(PinBodyContext);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const connectedPinIds = useConnectedPins(pins);
 
   // Reroute nodes: minimal 16px dot
   if (ueType === 'reroute') {
@@ -25,31 +46,57 @@ export const BlueprintNode = memo(({ data }: NodeProps) => {
     );
   }
 
-  const inputPins = pins.filter((p) => p.direction === 'input' && !p.hidden);
-  const outputPins = pins.filter((p) => p.direction === 'output' && !p.hidden);
+  const visiblePins = pins.filter((p) => !p.hidden);
   const isPure = !pins.some((p) => isExecPin(p.category));
+  const isCompact = ueType === 'call_function' && COMPACT_TITLE_ICONS[title] !== undefined;
+
+  // Split input/output pins into standard and advanced groups
+  const inputPins = visiblePins.filter(p => p.direction === 'input');
+  const outputPins = visiblePins.filter(p => p.direction === 'output');
+
+  const standardInputs = inputPins.filter(p => !p.advancedView);
+  const advancedInputs = inputPins.filter(p => p.advancedView);
+  const alwaysVisibleAdvancedInputs = advancedInputs.filter(p => connectedPinIds.has(p.id));
+  const collapsibleAdvancedInputs = advancedInputs.filter(p => !connectedPinIds.has(p.id));
+
+  const standardOutputs = outputPins.filter(p => !p.advancedView);
+  const advancedOutputs = outputPins.filter(p => p.advancedView);
+  const alwaysVisibleAdvancedOutputs = advancedOutputs.filter(p => connectedPinIds.has(p.id));
+  const collapsibleAdvancedOutputs = advancedOutputs.filter(p => !connectedPinIds.has(p.id));
+
+  const hasCollapsible = collapsibleAdvancedInputs.length > 0 || collapsibleAdvancedOutputs.length > 0;
+
+  const renderInputPin = (pin: typeof inputPins[number]) => (
+    <div key={pin.id} className="ueflow-pin-row">
+      <PinHandle pin={pin} />
+      {!isExecPin(pin.category) && pin.defaultValue && !connectedPinIds.has(pin.id) && (
+        <PinValueEditor pin={pin} />
+      )}
+    </div>
+  );
 
   return (
-    <div className="ueflow-node" data-ue-type={ueType} aria-label={`${ueType} node: ${title}`}>
+    <div className="ueflow-node" data-ue-type={ueType} data-compact={isCompact ? '' : undefined} aria-label={`${ueType} node: ${title}`}>
       <NodeHeader title={title} ueType={ueType} isPure={isPure} />
       {showPinBody && (
         <div className="ueflow-node-body">
           <div className="ueflow-pins-column ueflow-pins--input">
-            {inputPins.map((pin) => (
-              <div key={pin.id} className="ueflow-pin-row">
-                <PinHandle pin={pin} />
-                {!isExecPin(pin.category) && pin.defaultValue && (
-                  <PinValueEditor pin={pin} />
-                )}
-              </div>
-            ))}
+            {standardInputs.map(renderInputPin)}
+            {alwaysVisibleAdvancedInputs.map(renderInputPin)}
+            {showAdvanced && collapsibleAdvancedInputs.map(renderInputPin)}
           </div>
           <div className="ueflow-pins-column ueflow-pins--output">
-            {outputPins.map((pin) => (
-              <PinHandle key={pin.id} pin={pin} />
-            ))}
+            {standardOutputs.map(pin => <PinHandle key={pin.id} pin={pin} />)}
+            {alwaysVisibleAdvancedOutputs.map(pin => <PinHandle key={pin.id} pin={pin} />)}
+            {showAdvanced && collapsibleAdvancedOutputs.map(pin => <PinHandle key={pin.id} pin={pin} />)}
           </div>
         </div>
+      )}
+      {hasCollapsible && showPinBody && (
+        <button className="ueflow-advanced-toggle" onClick={() => setShowAdvanced(!showAdvanced)}>
+          <span className={`ueflow-advanced-arrow ${showAdvanced ? '' : 'ueflow-collapsed'}`}>&#9660;</span>
+          <span>{collapsibleAdvancedInputs.length + collapsibleAdvancedOutputs.length} advanced</span>
+        </button>
       )}
     </div>
   );
