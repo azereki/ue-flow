@@ -1,17 +1,8 @@
-import type { Node, Edge } from '@xyflow/react';
-import type { UEGraphJSON, UEPin } from '../types/ue-graph';
+import type { UEGraphJSON } from '../types/ue-graph';
+import type { BlueprintFlowNode, CommentFlowNode, AnyFlowNode, BlueprintFlowEdge, FlowNodeData, CommentNodeData } from '../types/flow-types';
 
-export interface FlowNodeData {
-  ueType: string;
-  nodeClass: string;
-  nodeGuid: string;
-  title: string;
-  description?: string;
-  category?: string;
-  properties: Record<string, unknown>;
-  pins: UEPin[];
-  [key: string]: unknown;
-}
+// Re-export FlowNodeData so existing importers don't need to change their import paths.
+export type { FlowNodeData } from '../types/flow-types';
 
 // Layout constants for node size estimation.
 // These must stay in sync with CSS: .ueflow-node-header height and .ueflow-pin min-height.
@@ -47,38 +38,60 @@ function estimateNodeSize(ueNode: UEGraphJSON['nodes'][0]): { width: number; hei
   return { width, height };
 }
 
-export function graphJsonToFlow(graph: UEGraphJSON): { nodes: Node[]; edges: Edge[] } {
+export function graphJsonToFlow(graph: UEGraphJSON): { nodes: AnyFlowNode[]; edges: BlueprintFlowEdge[] } {
   const pinIdLookup = buildPinIdLookup(graph);
 
-  const nodes: Node[] = graph.nodes.map((ueNode) => {
+  const nodes: AnyFlowNode[] = graph.nodes.map((ueNode) => {
     const size = estimateNodeSize(ueNode);
-    return {
+
+    if (ueNode.type === 'comment') {
+      const commentData: CommentNodeData = {
+        ueType: 'comment',
+        title: ueNode.title,
+        nodeGuid: ueNode.nodeGuid,
+        properties: ueNode.properties,
+      };
+      const commentNode: CommentFlowNode = {
+        id: ueNode.id,
+        type: 'commentNode',
+        position: ueNode.position,
+        zIndex: -2000,
+        dragHandle: '.ueflow-comment-header',
+        style: { width: size.width, height: size.height },
+        initialWidth: size.width,
+        initialHeight: size.height,
+        data: commentData,
+      };
+      return commentNode;
+    }
+
+    const nodeData: FlowNodeData = {
+      ueType: ueNode.type,
+      nodeClass: ueNode.nodeClass,
+      nodeGuid: ueNode.nodeGuid,
+      title: ueNode.title,
+      description: ueNode.description,
+      category: ueNode.category,
+      properties: ueNode.properties,
+      pins: ueNode.pins,
+      // __setPinValue is injected by SingleGraphView after construction
+    };
+    const bpNode: BlueprintFlowNode = {
       id: ueNode.id,
-      type: ueNode.type === 'comment' ? 'commentNode' : 'blueprintNode',
+      type: 'blueprintNode',
       position: ueNode.position,
-      ...(ueNode.type === 'comment'
-        ? { zIndex: -2000, dragHandle: '.ueflow-comment-header', style: { width: size.width, height: size.height } }
-        : {}),
       initialWidth: size.width,
       initialHeight: size.height,
-      data: {
-        ueType: ueNode.type,
-        nodeClass: ueNode.nodeClass,
-        nodeGuid: ueNode.nodeGuid,
-        title: ueNode.title,
-        description: ueNode.description,
-        category: ueNode.category,
-        properties: ueNode.properties,
-        pins: ueNode.pins,
-      } satisfies FlowNodeData,
+      data: nodeData,
     };
+    return bpNode;
   });
 
   // Auto-pad comment nodes to encompass their children.
   // Uses overlap detection (any part of node touches comment) rather than center-based,
   // so nodes at edges are included. Padding ensures no node overflows the comment border.
-  const commentNodes = nodes.filter((n) => (n.data as FlowNodeData).ueType === 'comment');
-  const regularNodes = nodes.filter((n) => (n.data as FlowNodeData).ueType !== 'comment');
+  const commentNodes = nodes.filter((n): n is CommentFlowNode => n.type === 'commentNode');
+  const regularNodes = nodes.filter((n): n is BlueprintFlowNode => n.type === 'blueprintNode');
   const COMMENT_PAD_X = 60;     // horizontal padding from child edge to comment edge
   const COMMENT_PAD_BOTTOM = 60; // bottom padding
   const COMMENT_HEADER = 70;     // space above topmost child (includes header height)
@@ -126,13 +139,13 @@ export function graphJsonToFlow(graph: UEGraphJSON): { nodes: Node[]; edges: Edg
     comment.style = { ...(comment.style as Record<string, unknown> ?? {}), width: newW, height: newH };
   }
 
-  const edges: Edge[] = graph.edges.map((ueEdge) => ({
+  const edges: BlueprintFlowEdge[] = graph.edges.map((ueEdge) => ({
     id: ueEdge.id,
     source: ueEdge.source,
     sourceHandle: pinIdLookup.get(`${ueEdge.source}:${ueEdge.sourcePin}`) ?? ueEdge.sourcePin,
     target: ueEdge.target,
     targetHandle: pinIdLookup.get(`${ueEdge.target}:${ueEdge.targetPin}`) ?? ueEdge.targetPin,
-    type: 'blueprintEdge',
+    type: 'blueprintEdge' as const,
     data: { category: ueEdge.category },
   }));
 

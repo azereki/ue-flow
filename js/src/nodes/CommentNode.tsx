@@ -1,13 +1,7 @@
 import { memo } from 'react';
 import type { NodeProps } from '@xyflow/react';
 import { NodeResizer } from '@xyflow/react';
-
-interface CommentNodeData {
-  title: string;
-  ueType: string;
-  properties: Record<string, unknown>;
-  [key: string]: unknown;
-}
+import type { CommentFlowNode } from '../types/flow-types';
 
 function parseCommentColor(commentColor: string): { r: number; g: number; b: number; a: number } | null {
   const colorMatch = commentColor.match(/R=([\d.]+).*?G=([\d.]+).*?B=([\d.]+).*?A=([\d.]+)/);
@@ -20,8 +14,8 @@ function parseCommentColor(commentColor: string): { r: number; g: number; b: num
   };
 }
 
-export const CommentNode = memo(({ data, selected }: NodeProps) => {
-  const { title, properties } = data as unknown as CommentNodeData;
+export const CommentNode = memo(({ data, selected }: NodeProps<CommentFlowNode>) => {
+  const { title, properties } = data;
 
   const commentColor = (properties?.CommentColor as string) ?? '';
   const parsed = parseCommentColor(commentColor);

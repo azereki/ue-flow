@@ -5,8 +5,7 @@
  * It converts the current React Flow nodes/edges back to valid T3D text
  * that can be pasted into the UE editor.
  */
-import type { Node, Edge } from '@xyflow/react';
-import type { FlowNodeData } from './json-to-flow';
+import type { AnyFlowNode, BlueprintFlowEdge, FlowNodeData } from '../types/flow-types';
 import type { UEPin } from '../types/ue-graph';
 
 function serializePinWithLinks(
@@ -76,7 +75,7 @@ interface PinLinkInfo {
  * Returns a map for both source and target directions (bidirectional links).
  */
 function buildLinkedToMap(
-  edges: Edge[],
+  edges: BlueprintFlowEdge[],
 ): Map<string, PinLinkInfo[]> {
   const map = new Map<string, PinLinkInfo[]>();
 
@@ -104,16 +103,14 @@ function buildLinkedToMap(
 /**
  * Convert React Flow nodes and edges back to UE T3D paste text.
  */
-export function flowToT3D(nodes: Node[], edges: Edge[]): string {
+export function flowToT3D(nodes: AnyFlowNode[], edges: BlueprintFlowEdge[]): string {
   const linkedToMap = buildLinkedToMap(edges);
   const blocks: string[] = [];
 
   for (const node of nodes) {
-    const data = node.data as FlowNodeData;
-    if (!data) continue;
-
-    // Comment nodes use EdGraphNode_Comment format
-    if (data.ueType === 'comment') {
+    if (node.type === 'commentNode') {
+      // Comment nodes use EdGraphNode_Comment format
+      const data = node.data;
       const cLines: string[] = [];
       cLines.push(`Begin Object Class=/Script/UnrealEd.EdGraphNode_Comment Name="${node.id}"`);
       cLines.push(`   NodePosX=${Math.round(node.position.x)}`);
@@ -129,6 +126,8 @@ export function flowToT3D(nodes: Node[], edges: Edge[]): string {
       continue;
     }
 
+    // Blueprint node
+    const data: FlowNodeData = node.data;
     const lines: string[] = [];
 
     // Header
@@ -148,7 +147,7 @@ export function flowToT3D(nodes: Node[], edges: Edge[]): string {
     // GUID
     lines.push(`   NodeGuid=${data.nodeGuid}`);
 
-    // Pins with linked_to
+    // Pins with linked_to — reads data.pins which now contains edited defaultValues
     for (const pin of data.pins) {
       const pinKey = `${node.id}:${pin.id}`;
       const linked = linkedToMap.get(pinKey) ?? [];

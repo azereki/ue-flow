@@ -1,12 +1,11 @@
 import { useState, useCallback, type FC } from 'react';
-import type { Node, Edge } from '@xyflow/react';
 import { flowToT3D } from '../transform/flow-to-t3d';
-import type { FlowNodeData } from '../transform/json-to-flow';
+import type { AnyFlowNode, BlueprintFlowEdge, BlueprintFlowNode } from '../types/flow-types';
 import { isExecPin } from '../types/pin-types';
 
 interface ExportToolbarProps {
-  nodes: Node[];
-  edges: Edge[];
+  nodes: AnyFlowNode[];
+  edges: BlueprintFlowEdge[];
 }
 
 async function copyToClipboard(text: string) {
@@ -28,28 +27,26 @@ async function copyToClipboard(text: string) {
 /**
  * Generate an LLM-optimized context summary from React Flow state.
  */
-function generateContext(nodes: Node[], edges: Edge[]): string {
+function generateContext(nodes: AnyFlowNode[], edges: BlueprintFlowEdge[]): string {
   const lines: string[] = [];
   lines.push('BLUEPRINT CONTEXT');
   lines.push('');
 
-  // Execution flow
-  const execEdges = edges.filter(e => (e.data as { category?: string })?.category === 'exec');
-  const targetNodes = new Set(execEdges.map(e => e.target));
+  // Execution flow — only blueprint nodes have exec pins
+  const bpNodes = nodes.filter((n): n is BlueprintFlowNode => n.type === 'blueprintNode');
+  const execEdges = edges.filter(e => e.data?.category === 'exec');
+  const targetNodeIds = new Set(execEdges.map(e => e.target));
 
   // Find entry points (nodes with exec output but not targets of exec edges)
-  const entryNodes = nodes.filter(n => {
-    const data = n.data as FlowNodeData;
-    if (!data) return false;
-    const hasExecOut = data.pins?.some(p => p.direction === 'output' && isExecPin(p.category));
-    return hasExecOut && !targetNodes.has(n.id);
+  const entryNodes = bpNodes.filter(n => {
+    const hasExecOut = n.data.pins?.some(p => p.direction === 'output' && isExecPin(p.category));
+    return hasExecOut && !targetNodeIds.has(n.id);
   });
 
   if (entryNodes.length > 0) {
     lines.push('EXECUTION FLOW:');
     for (const entry of entryNodes) {
-      const data = entry.data as FlowNodeData;
-      lines.push(`  ${data.title}`);
+      lines.push(`  ${entry.data.title}`);
       // BFS to follow all branches
       const queue = [entry.id];
       const visited = new Set<string>();
@@ -59,14 +56,13 @@ function generateContext(nodes: Node[], edges: Edge[]): string {
         visited.add(current);
         const nextEdges = execEdges.filter(e => e.source === current);
         for (const next of nextEdges) {
-          const targetNode = nodes.find(n => n.id === next.target);
+          const targetNode = bpNodes.find(n => n.id === next.target);
           if (targetNode && !visited.has(next.target)) {
-            const td = targetNode.data as FlowNodeData;
-            const args = td.pins
+            const args = targetNode.data.pins
               ?.filter(p => p.direction === 'input' && p.defaultValue && !isExecPin(p.category))
               .map(p => `${p.friendlyName || p.name}="${p.defaultValue}"`)
               .join(', ');
-            lines.push(`    -> ${td.title}${args ? `(${args})` : ''}`);
+            lines.push(`    -> ${targetNode.data.title}${args ? `(${args})` : ''}`);
             queue.push(next.target);
           }
         }
@@ -75,14 +71,12 @@ function generateContext(nodes: Node[], edges: Edge[]): string {
     lines.push('');
   }
 
-  // Pin values
+  // Pin values — reflects any in-canvas edits via data.pins
   const pinValues: string[] = [];
-  for (const node of nodes) {
-    const data = node.data as FlowNodeData;
-    if (!data?.pins) continue;
-    for (const pin of data.pins) {
+  for (const node of bpNodes) {
+    for (const pin of node.data.pins) {
       if (pin.defaultValue && pin.direction === 'input' && !isExecPin(pin.category)) {
-        pinValues.push(`  ${data.title}.${pin.friendlyName || pin.name} = "${pin.defaultValue}"`);
+        pinValues.push(`  ${node.data.title}.${pin.friendlyName || pin.name} = "${pin.defaultValue}"`);
       }
     }
   }
@@ -103,26 +97,24 @@ function generateContext(nodes: Node[], edges: Edge[]): string {
 /**
  * Generate a markdown documentation summary from React Flow state.
  */
-function generateMarkdown(nodes: Node[], edges: Edge[]): string {
+function generateMarkdown(nodes: AnyFlowNode[], edges: BlueprintFlowEdge[]): string {
   const lines: string[] = [];
   lines.push('### Blueprint Graph');
   lines.push('');
 
-  const execEdges = edges.filter(e => (e.data as { category?: string })?.category === 'exec');
-  const targetNodes = new Set(execEdges.map(e => e.target));
+  const bpNodes = nodes.filter((n): n is BlueprintFlowNode => n.type === 'blueprintNode');
+  const execEdges = edges.filter(e => e.data?.category === 'exec');
+  const targetNodeIds = new Set(execEdges.map(e => e.target));
 
-  const entryNodes = nodes.filter(n => {
-    const data = n.data as FlowNodeData;
-    if (!data) return false;
-    const hasExecOut = data.pins?.some(p => p.direction === 'output' && isExecPin(p.category));
-    return hasExecOut && !targetNodes.has(n.id);
+  const entryNodes = bpNodes.filter(n => {
+    const hasExecOut = n.data.pins?.some(p => p.direction === 'output' && isExecPin(p.category));
+    return hasExecOut && !targetNodeIds.has(n.id);
   });
 
   if (entryNodes.length > 0) {
     lines.push('| Entry | Flow | Nodes |');
     lines.push('|-------|------|-------|');
     for (const entry of entryNodes) {
-      const data = entry.data as FlowNodeData;
       // BFS to collect all reachable nodes
       const chain: string[] = [];
       const queue = [entry.id];
@@ -133,15 +125,15 @@ function generateMarkdown(nodes: Node[], edges: Edge[]): string {
         visited.add(current);
         const nextEdges = execEdges.filter(e => e.source === current);
         for (const next of nextEdges) {
-          const targetNode = nodes.find(n => n.id === next.target);
+          const targetNode = bpNodes.find(n => n.id === next.target);
           if (targetNode && !visited.has(next.target)) {
-            chain.push((targetNode.data as FlowNodeData).title);
+            chain.push(targetNode.data.title);
             queue.push(next.target);
           }
         }
       }
       const flow = chain.slice(0, 3).join(' -> ') + (chain.length > 3 ? ' -> ...' : '');
-      lines.push(`| ${data.title} | ${flow} | ${chain.length + 1} |`);
+      lines.push(`| ${entry.data.title} | ${flow} | ${chain.length + 1} |`);
     }
     lines.push('');
   }

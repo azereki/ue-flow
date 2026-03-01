@@ -1,7 +1,8 @@
 import { memo, useContext } from 'react';
 import { BaseEdge, getBezierPath, type EdgeProps } from '@xyflow/react';
-import { PIN_COLORS, isExecPin, type PinCategory } from '../types/pin-types';
+import { PIN_COLORS, isExecPin } from '../types/pin-types';
 import { PinBodyContext } from '../contexts/PinBodyContext';
+import type { BlueprintFlowEdge } from '../types/flow-types';
 
 /** Lighten a hex color towards white for neon glow effect. */
 function lightenHex(hex: string, amount = 0.4): string {
@@ -12,9 +13,9 @@ function lightenHex(hex: string, amount = 0.4): string {
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
-export const BlueprintEdge = memo((props: EdgeProps) => {
+export const BlueprintEdge = memo((props: EdgeProps<BlueprintFlowEdge>) => {
   const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data } = props;
-  const category = (data?.category ?? 'wildcard') as PinCategory;
+  const category = data?.category ?? 'wildcard';
   const color = PIN_COLORS[category] ?? '#808080';
   const isExec = isExecPin(category);
   const showDetail = useContext(PinBodyContext);

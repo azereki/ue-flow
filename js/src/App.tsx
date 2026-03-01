@@ -26,7 +26,7 @@ import { StatusBar } from './components/StatusBar';
 import { DetailsPanel, type DetailsItem } from './components/DetailsPanel';
 import { PinBodyContext } from './contexts/PinBodyContext';
 import type { UEGraphJSON, UEMultiGraphJSON } from './types/ue-graph';
-import type { FlowNodeData } from './transform/json-to-flow';
+import type { AnyFlowNode, BlueprintFlowEdge, BlueprintFlowNode, FlowNodeData } from './types/flow-types';
 import { zoomSelector } from './utils/selectors';
 import { useTabNavigation, parseTabName } from './hooks/useTabNavigation';
 import { DataTableView } from './components/DataTableView';
@@ -70,10 +70,10 @@ function FitViewOnMount({ focusNode }: { focusNode?: { x: number; y: number; w: 
 function ExposeGlobalFitView() {
   const { fitView } = useReactFlow();
   useEffect(() => {
-    (window as Record<string, unknown>).ueFlowFitView = () => {
+    (window as unknown as Record<string, unknown>).ueFlowFitView = () => {
       fitView({ padding: 0.15, minZoom: 0.5, maxZoom: 1.5 });
     };
-    return () => { delete (window as Record<string, unknown>).ueFlowFitView; };
+    return () => { delete (window as unknown as Record<string, unknown>).ueFlowFitView; };
   }, [fitView]);
   return null;
 }
@@ -91,9 +91,42 @@ function PinBodyProvider({ children }: { children: React.ReactNode }) {
 
 function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { graphJSON: UEGraphJSON; focusNodeTitle?: string | null; onSelectedNodeChange?: (title: string | null) => void }) {
   const initial = useMemo(() => graphJsonToFlow(graphJSON), [graphJSON]);
-  const [nodes, setNodes, onNodesChange] = useNodesState(initial.nodes);
-  const [edges, , onEdgesChange] = useEdgesState(initial.edges);
+  const [nodes, setNodes, onNodesChange] = useNodesState<AnyFlowNode>(initial.nodes);
+  // useEdgesState is kept untyped because its OnEdgesChange generic is contravariant —
+  // React Flow's internal edge changes produce base Edge objects which can't satisfy the
+  // narrower BlueprintFlowEdge constraint at the handler level. We cast at usage sites.
+  const [edgesRaw, , onEdgesChange] = useEdgesState(initial.edges);
+  const edges = edgesRaw as BlueprintFlowEdge[];
   const { captureSnapshot } = useUndoRedo(nodes, setNodes);
+
+  // Issue 3: inject __setPinValue callback into each BlueprintNode's data so that
+  // PinValueEditor edits propagate back to the node store.  flowToT3D() reads
+  // data.pins[i].defaultValue, so we patch that field in-place on the node.
+  const setPinValue = useCallback((nodeId: string, pinId: string, value: string) => {
+    setNodes((prev) =>
+      prev.map((n) => {
+        if (n.id !== nodeId || n.type !== 'blueprintNode') return n;
+        const bp = n as BlueprintFlowNode;
+        const updatedPins = bp.data.pins.map((p) =>
+          p.id === pinId ? { ...p, defaultValue: value } : p,
+        );
+        return { ...bp, data: { ...bp.data, pins: updatedPins } };
+      }),
+    );
+  }, [setNodes]);
+
+  // Attach __setPinValue to every blueprintNode's data.
+  // We do this as a derived value from nodes so nodes without the callback always get it.
+  const nodesWithCallback = useMemo(() =>
+    nodes.map((n) => {
+      if (n.type !== 'blueprintNode') return n;
+      const bp = n as BlueprintFlowNode;
+      if (bp.data.__setPinValue === setPinValue) return n; // already attached, skip allocation
+      return { ...bp, data: { ...bp.data, __setPinValue: setPinValue } };
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [nodes, setPinValue],
+  );
 
   // Resolve focus title to node position using stable initial data
   // Handles mismatches: sidebar has "BeginPlay", graph has "Event ReceiveBeginPlay"
@@ -101,7 +134,8 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
     if (!focusNodeTitle) return undefined;
     const q = focusNodeTitle.toLowerCase();
     const target = initial.nodes.find((n) => {
-      const title = ((n.data as FlowNodeData).title ?? '').toLowerCase();
+      if (n.type !== 'blueprintNode') return false;
+      const title = (n.data.title ?? '').toLowerCase();
       return title === q || title.includes(q) || title.replace('event ', '').replace('receive', '') === q;
     });
     if (!target) return undefined;
@@ -116,16 +150,16 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
   // Comment group-drag: when a comment node is dragged, move all enclosed nodes with it.
   const dragContext = useRef<{ childIds: Set<string>; commentId: string; lastPos: { x: number; y: number } } | null>(null);
 
-  const handleNodeDragStart = useCallback((_: React.MouseEvent, node: { id: string; position: { x: number; y: number }; data: Record<string, unknown>; initialWidth?: number; initialHeight?: number }) => {
+  const handleNodeDragStart = useCallback((_: React.MouseEvent, node: AnyFlowNode) => {
     captureSnapshot();
-    if ((node.data as FlowNodeData).ueType !== 'comment') return;
+    if (node.type !== 'commentNode') return;
     const cx = node.position.x;
     const cy = node.position.y;
     const cw = node.initialWidth ?? 400;
     const ch = node.initialHeight ?? 200;
     const childIds = new Set<string>();
     for (const n of nodes) {
-      if (n.id === node.id || (n.data as FlowNodeData).ueType === 'comment') continue;
+      if (n.id === node.id || n.type === 'commentNode') continue;
       const nw = n.initialWidth ?? 160;
       const nh = n.initialHeight ?? 42;
       const ncx = n.position.x + nw / 2;
@@ -146,9 +180,9 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
     );
   }, [nodes, setNodes, captureSnapshot]);
 
-  const handleNodeDrag = useCallback((_: React.MouseEvent, node: { id: string; position: { x: number; y: number }; data: Record<string, unknown> }) => {
+  const handleNodeDrag = useCallback((_: React.MouseEvent, node: AnyFlowNode) => {
     const ctx = dragContext.current;
-    if (!ctx || (node.data as FlowNodeData).ueType !== 'comment' || ctx.childIds.size === 0) return;
+    if (!ctx || node.type !== 'commentNode' || ctx.childIds.size === 0) return;
     const dx = node.position.x - ctx.lastPos.x;
     const dy = node.position.y - ctx.lastPos.y;
     if (dx === 0 && dy === 0) return;
@@ -188,7 +222,7 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
 
     const onMouseDown = (e: MouseEvent) => {
       if (e.button !== 2) return;
-      if ((e as Record<string, unknown>)[BYPASS]) return;
+      if ((e as unknown as Record<string, unknown>)[BYPASS]) return;
       const rf = document.querySelector('.react-flow');
       if (!rf?.contains(e.target as Node)) return;
       const node = (e.target as HTMLElement).closest('.react-flow__node');
@@ -211,7 +245,7 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
           screenX: e.screenX, screenY: e.screenY,
           view: window,
         });
-        (synth as Record<string, unknown>)[BYPASS] = true;
+        (synth as unknown as Record<string, unknown>)[BYPASS] = true;
         pane.dispatchEvent(synth);
       }
     };
@@ -236,10 +270,11 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
     };
   }, []);
 
-  const handleSelectionChange = useCallback(({ nodes: selectedNodes }: { nodes: Array<{ data: Record<string, unknown> }> }) => {
+  const handleSelectionChange = useCallback(({ nodes: selectedNodes }: { nodes: AnyFlowNode[] }) => {
     if (!onSelectedNodeChange) return;
     if (selectedNodes.length === 1) {
-      onSelectedNodeChange((selectedNodes[0].data as FlowNodeData).title ?? null);
+      const n = selectedNodes[0];
+      onSelectedNodeChange(n.type === 'blueprintNode' ? (n.data as FlowNodeData).title ?? null : null);
     } else {
       onSelectedNodeChange(null);
     }
@@ -248,7 +283,7 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
   return (
     <div style={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }}>
       <ReactFlow
-        nodes={nodes}
+        nodes={nodesWithCallback}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
@@ -268,6 +303,7 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
         minZoom={0.05}
         maxZoom={4}
         proOptions={{ hideAttribution: true }}
+        aria-label="Blueprint graph"
       >
         <PinBodyProvider>
           <FitViewOnMount focusNode={focusNode} />
@@ -276,7 +312,9 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
           <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.05)" gap={100} />
           <Controls />
           <MiniMap nodeColor={(node) => {
-            const t = (node.data as FlowNodeData)?.ueType ?? '';
+            const t = (node as AnyFlowNode).type === 'blueprintNode'
+              ? ((node as BlueprintFlowNode).data.ueType ?? '')
+              : 'comment';
             if (t === 'event' || t === 'function_entry') return '#B40000';
             if (t === 'call_function' || t === 'function') return '#1060A8';
             if (t === 'branch') return '#404040';
@@ -289,7 +327,7 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
         </PinBodyProvider>
       </ReactFlow>
       <div className="ueflow-watermark">BLUEPRINT</div>
-      <ExportToolbar nodes={nodes} edges={edges} />
+      <ExportToolbar nodes={nodesWithCallback} edges={edges} />
     </div>
   );
 }
