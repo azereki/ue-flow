@@ -1,4 +1,4 @@
-import { memo, useContext, useState, useCallback, type FC } from 'react';
+import { memo, useContext, useState, useCallback, useEffect, useMemo, type FC } from 'react';
 import type { NodeProps } from '@xyflow/react';
 import { Handle, Position, useStore } from '@xyflow/react';
 import { NodeHeader, COMPACT_TITLE_ICONS } from './NodeHeader';
@@ -16,6 +16,8 @@ const InputPinRow: FC<{
   onPinValueChange?: (pinId: string, value: string) => void;
 }> = ({ pin, isConnected, onPinValueChange }) => {
   const [editedValue, setEditedValue] = useState(pin.defaultValue);
+  // Sync local state from prop when undo/redo restores a previous value
+  useEffect(() => { setEditedValue(pin.defaultValue); }, [pin.defaultValue]);
   const showEditor = !isExecPin(pin.category) && pin.defaultValue && !isConnected;
 
   const handleValueChange = useCallback((value: string) => {
@@ -33,23 +35,26 @@ const InputPinRow: FC<{
   );
 };
 
-/** Build a set of connected pin IDs for this node. */
+/** Build a set of connected pin IDs for this node.
+ *  Returns a string key from useStore (stable under ===) then derives Set via useMemo,
+ *  so the component only re-renders when the actual connected-pin set changes. */
 function useConnectedPins(pins: Array<{ id: string; direction: string }>) {
   const pinIds = pins.map(p => p.id);
-  return useStore(
+  const connectedKey = useStore(
     useCallback(
       (s: { edges: Array<{ sourceHandle?: string | null; targetHandle?: string | null }> }) => {
-        const connected = new Set<string>();
+        const connected: string[] = [];
         for (const e of s.edges) {
-          if (e.sourceHandle && pinIds.includes(e.sourceHandle)) connected.add(e.sourceHandle);
-          if (e.targetHandle && pinIds.includes(e.targetHandle)) connected.add(e.targetHandle);
+          if (e.sourceHandle && pinIds.includes(e.sourceHandle)) connected.push(e.sourceHandle);
+          if (e.targetHandle && pinIds.includes(e.targetHandle)) connected.push(e.targetHandle);
         }
-        return connected;
+        return connected.sort().join(',');
       },
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [JSON.stringify(pinIds)],
     ),
   );
+  return useMemo(() => new Set(connectedKey ? connectedKey.split(',') : []), [connectedKey]);
 }
 
 export const BlueprintNode = memo(({ data, id }: NodeProps<BlueprintFlowNode>) => {

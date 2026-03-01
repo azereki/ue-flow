@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import type { BreadcrumbItem } from '../components/Breadcrumbs';
 
 export interface SpecialTabInfo {
@@ -93,7 +93,11 @@ export function useTabNavigation(graphNames: string[]): TabNavigationState & Tab
     setBreadcrumbs([{ label: name, graphName: tabName }]);
   }, []);
 
-  return useMemo(() => ({
+  // State values are volatile; action callbacks are stable via useCallback.
+  // No useMemo wrapper — destructuring consumers pick individual values,
+  // so a new container object is harmless and avoids coupling stable actions
+  // to volatile state in a single memo.
+  return {
     openTabs,
     activeGraph,
     breadcrumbs,
@@ -104,5 +108,5 @@ export function useTabNavigation(graphNames: string[]): TabNavigationState & Tab
     navigateToGraph,
     navigateBreadcrumb,
     openSpecialTab,
-  }), [openTabs, activeGraph, breadcrumbs, focusNodeTitle, pinnedTab, selectGraph, closeTab, navigateToGraph, navigateBreadcrumb, openSpecialTab]);
+  };
 }

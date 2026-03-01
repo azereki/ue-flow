@@ -858,6 +858,7 @@
   border-bottom: none;
   border-radius: 4px 4px 0 0;
   white-space: nowrap;
+  flex-shrink: 0;
   color: var(--uf-text-muted);
   background: transparent;
   transition: all var(--uf-transition);
@@ -1313,6 +1314,17 @@
   border-radius: 3px;
   background: var(--uf-surface);
   color: var(--uf-text-link);
+}
+
+.ueflow-details-readonly {
+  margin: 0 12px 4px;
+  padding: 3px 8px;
+  font-size: 9px;
+  color: var(--uf-text-muted);
+  background: color-mix(in srgb, var(--uf-surface) 60%, transparent);
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .ueflow-details-content {

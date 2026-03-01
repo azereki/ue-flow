@@ -96,6 +96,9 @@ export function graphJsonToFlow(graph: UEGraphJSON): { nodes: AnyFlowNode[]; edg
   const COMMENT_PAD_BOTTOM = 60; // bottom padding
   const COMMENT_HEADER = 70;     // space above topmost child (includes header height)
 
+  // Collect comment updates immutably (no in-place mutation of nodes)
+  const commentUpdates = new Map<string, { x: number; y: number; w: number; h: number }>();
+
   for (const comment of commentNodes) {
     const cx = comment.position.x;
     const cy = comment.position.y;
@@ -130,14 +133,23 @@ export function graphJsonToFlow(graph: UEGraphJSON): { nodes: AnyFlowNode[]; edg
     const newY = Math.min(cy, minY - COMMENT_HEADER);
     const newRight = Math.max(cx + cw, maxX + COMMENT_PAD_X);
     const newBottom = Math.max(cy + ch, maxY + COMMENT_PAD_BOTTOM);
-    const newW = newRight - newX;
-    const newH = newBottom - newY;
-
-    comment.position = { x: newX, y: newY };
-    comment.initialWidth = newW;
-    comment.initialHeight = newH;
-    comment.style = { ...(comment.style as Record<string, unknown> ?? {}), width: newW, height: newH };
+    commentUpdates.set(comment.id, { x: newX, y: newY, w: newRight - newX, h: newBottom - newY });
   }
+
+  // Apply comment updates immutably
+  const finalNodes = commentUpdates.size > 0
+    ? nodes.map((n) => {
+        const update = commentUpdates.get(n.id);
+        if (!update) return n;
+        return {
+          ...n,
+          position: { x: update.x, y: update.y },
+          initialWidth: update.w,
+          initialHeight: update.h,
+          style: { ...(n.style as Record<string, unknown> ?? {}), width: update.w, height: update.h },
+        };
+      })
+    : nodes;
 
   const edges: BlueprintFlowEdge[] = graph.edges.map((ueEdge) => ({
     id: ueEdge.id,
@@ -149,7 +161,7 @@ export function graphJsonToFlow(graph: UEGraphJSON): { nodes: AnyFlowNode[]; edg
     data: { category: ueEdge.category },
   }));
 
-  return { nodes, edges };
+  return { nodes: finalNodes, edges };
 }
 
 function buildPinIdLookup(graph: UEGraphJSON): Map<string, string> {

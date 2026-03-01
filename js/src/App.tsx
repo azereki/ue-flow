@@ -117,17 +117,26 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
     );
   }, [setNodes]);
 
+  // Stable ref wrapper: the callback identity never changes, so nodesWithCallback
+  // can bail out early for nodes that already have it attached — avoids re-spreading
+  // every node on every drag frame.
+  const setPinValueRef = useRef(setPinValue);
+  setPinValueRef.current = setPinValue;
+  const stableSetPinValue = useCallback(
+    (nodeId: string, pinId: string, value: string) => { setPinValueRef.current(nodeId, pinId, value); },
+    [],
+  );
+
   // Attach __setPinValue to every blueprintNode's data.
   // We do this as a derived value from nodes so nodes without the callback always get it.
   const nodesWithCallback = useMemo(() =>
     nodes.map((n) => {
       if (n.type !== 'blueprintNode') return n;
       const bp = n as BlueprintFlowNode;
-      if (bp.data.__setPinValue === setPinValue) return n; // already attached, skip allocation
-      return { ...bp, data: { ...bp.data, __setPinValue: setPinValue } };
+      if (bp.data.__setPinValue === stableSetPinValue) return n; // already attached, skip allocation
+      return { ...bp, data: { ...bp.data, __setPinValue: stableSetPinValue } };
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [nodes, setPinValue],
+    [nodes, stableSetPinValue],
   );
 
   // Resolve focus title to node position using stable initial data
@@ -152,6 +161,10 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
   // Comment group-drag: when a comment node is dragged, move all enclosed nodes with it.
   const dragContext = useRef<{ childIds: Set<string>; commentId: string; lastPos: { x: number; y: number } } | null>(null);
 
+  // Ref to current nodes so drag handlers read latest state without closure staleness
+  const nodesRef = useRef(nodes);
+  nodesRef.current = nodes;
+
   const handleNodeDragStart = useCallback((_: React.MouseEvent, node: AnyFlowNode) => {
     captureSnapshot();
     if (node.type !== 'commentNode') return;
@@ -160,7 +173,7 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
     const cw = node.initialWidth ?? 400;
     const ch = node.initialHeight ?? 200;
     const childIds = new Set<string>();
-    for (const n of nodes) {
+    for (const n of nodesRef.current) {
       if (n.id === node.id || n.type === 'commentNode') continue;
       const nw = n.initialWidth ?? 160;
       const nh = n.initialHeight ?? 42;
@@ -180,7 +193,7 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
         return n;
       }),
     );
-  }, [nodes, setNodes, captureSnapshot]);
+  }, [setNodes, captureSnapshot]);
 
   const handleNodeDrag = useCallback((_: React.MouseEvent, node: AnyFlowNode) => {
     const ctx = dragContext.current;
@@ -381,7 +394,14 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
     setDetailsItem(item);
   }, []);
 
+  // Abort controller for resize drag listeners — cleaned up on unmount to prevent leaks
+  const resizeAbortRef = useRef<AbortController | null>(null);
+  useEffect(() => () => { resizeAbortRef.current?.abort(); }, []);
+
   const handleSidebarResize = useCallback((e: React.MouseEvent) => {
+    resizeAbortRef.current?.abort();
+    const controller = new AbortController();
+    resizeAbortRef.current = controller;
     e.preventDefault();
     const startX = e.clientX;
     const startWidth = sidebarRef.current?.offsetWidth ?? 260;
@@ -389,15 +409,15 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
       const newWidth = Math.min(400, Math.max(160, startWidth + me.clientX - startX));
       setSidebarWidth(newWidth);
     };
-    const onUp = () => {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-    };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
+    const onUp = () => { controller.abort(); };
+    document.addEventListener('mousemove', onMove, { signal: controller.signal });
+    document.addEventListener('mouseup', onUp, { signal: controller.signal });
   }, []);
 
   const handleDetailsResize = useCallback((e: React.MouseEvent) => {
+    resizeAbortRef.current?.abort();
+    const controller = new AbortController();
+    resizeAbortRef.current = controller;
     e.preventDefault();
     const startX = e.clientX;
     const startWidth = detailsRef.current?.offsetWidth ?? 300;
@@ -405,12 +425,9 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
       const newWidth = Math.min(600, Math.max(200, startWidth - (me.clientX - startX)));
       setDetailsWidth(newWidth);
     };
-    const onUp = () => {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-    };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
+    const onUp = () => { controller.abort(); };
+    document.addEventListener('mousemove', onMove, { signal: controller.signal });
+    document.addEventListener('mouseup', onUp, { signal: controller.signal });
   }, []);
 
   const title = multiGraph.metadata?.title || multiGraph.metadata?.blueprintName || multiGraph.metadata?.assetPath || 'Blueprint';

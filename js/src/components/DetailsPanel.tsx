@@ -96,8 +96,8 @@ const ExpandableParamRow: FC<{ name: string; type: string; value?: string; struc
         <span className="ueflow-details-param-type">{type}</span>
         {value && <span className="ueflow-details-param-value">{value}</span>}
       </div>
-      {expanded && subFields && subFields.map((sf, i) => (
-        <ExpandableParamRow key={i} name={sf.name} type={sf.type} value={sf.default} structs={structs} depth={depth + 1} />
+      {expanded && subFields && subFields.map((sf) => (
+        <ExpandableParamRow key={sf.name} name={sf.name} type={sf.type} value={sf.default} structs={structs} depth={depth + 1} />
       ))}
     </>
   );
@@ -221,7 +221,7 @@ function EventDetails({ item, search, edits, set, structs }: { item: Extract<Det
       {shouldShow(search, 'Inputs') && (
         <CollapsibleSection title="Inputs">
           {item.params && item.params.length > 0 ? (
-            item.params.map((p, i) => <ParamRow key={i} name={p.name} type={p.type} structs={structs} />)
+            item.params.map((p) => <ParamRow key={p.name} name={p.name} type={p.type} structs={structs} />)
           ) : (
             <div className="ueflow-details-empty">No parameters</div>
           )}
@@ -268,7 +268,7 @@ function FunctionDetails({ item, search, edits, set, structs }: { item: Extract<
       {shouldShow(search, 'Inputs') && (
         <CollapsibleSection title="Inputs">
           {item.inputs && item.inputs.length > 0 ? (
-            item.inputs.map((p, i) => <ParamRow key={i} name={p.name} type={p.type} structs={structs} />)
+            item.inputs.map((p) => <ParamRow key={p.name} name={p.name} type={p.type} structs={structs} />)
           ) : (
             <div className="ueflow-details-empty">No inputs</div>
           )}
@@ -277,7 +277,7 @@ function FunctionDetails({ item, search, edits, set, structs }: { item: Extract<
       {shouldShow(search, 'Outputs') && (
         <CollapsibleSection title="Outputs">
           {item.outputs && item.outputs.length > 0 ? (
-            item.outputs.map((p, i) => <ParamRow key={i} name={p.name} type={p.type} structs={structs} />)
+            item.outputs.map((p) => <ParamRow key={p.name} name={p.name} type={p.type} structs={structs} />)
           ) : (
             <div className="ueflow-details-empty">No outputs</div>
           )}
@@ -462,8 +462,8 @@ function StructDetails({ item, search, structs }: { item: Extract<DetailsItem, {
   if (!shouldShow(search, 'Fields')) return null;
   return (
     <CollapsibleSection title={`Fields (${item.fields.length})`}>
-      {item.fields.map((f, i) => (
-        <ParamRow key={i} name={f.name} type={f.type} value={f.default} structs={structs} />
+      {item.fields.map((f) => (
+        <ParamRow key={f.name} name={f.name} type={f.type} value={f.default} structs={structs} />
       ))}
     </CollapsibleSection>
   );
@@ -490,7 +490,7 @@ function DelegateDetails({ item, search, structs }: { item: Extract<DetailsItem,
       )}
       {item.params && item.params.length > 0 && shouldShow(search, 'Parameters') && (
         <CollapsibleSection title={`Parameters (${item.params.length})`}>
-          {item.params.map((p, i) => <ParamRow key={i} name={p.name} type={p.type} structs={structs} />)}
+          {item.params.map((p) => <ParamRow key={p.name} name={p.name} type={p.type} structs={structs} />)}
         </CollapsibleSection>
       )}
     </>
@@ -508,7 +508,7 @@ function MacroDetails({ item, search, edits, set, structs }: { item: Extract<Det
       {shouldShow(search, 'Inputs') && (
         <CollapsibleSection title="Inputs">
           {item.inputs && item.inputs.length > 0 ? (
-            item.inputs.map((p, i) => <ParamRow key={i} name={p.name} type={p.type} structs={structs} />)
+            item.inputs.map((p) => <ParamRow key={p.name} name={p.name} type={p.type} structs={structs} />)
           ) : (
             <div className="ueflow-details-empty">No inputs</div>
           )}
@@ -517,7 +517,7 @@ function MacroDetails({ item, search, edits, set, structs }: { item: Extract<Det
       {shouldShow(search, 'Outputs') && (
         <CollapsibleSection title="Outputs">
           {item.outputs && item.outputs.length > 0 ? (
-            item.outputs.map((p, i) => <ParamRow key={i} name={p.name} type={p.type} structs={structs} />)
+            item.outputs.map((p) => <ParamRow key={p.name} name={p.name} type={p.type} structs={structs} />)
           ) : (
             <div className="ueflow-details-empty">No outputs</div>
           )}
@@ -537,8 +537,8 @@ function DataTableDetails({ item, search }: { item: Extract<DetailsItem, { kind:
       )}
       {item.columns && item.columns.length > 0 && shouldShow(search, 'Columns') && (
         <CollapsibleSection title={`Columns (${item.columns.length})`}>
-          {item.columns.map((col, i) => (
-            <div key={i} className="ueflow-details-param-row">
+          {item.columns.map((col) => (
+            <div key={col} className="ueflow-details-param-row">
               <span className="ueflow-details-param-name">{col}</span>
             </div>
           ))}
@@ -555,7 +555,7 @@ export const DetailsPanel: FC<DetailsPanelProps> = ({ item, onClose, structs }) 
   const [edits, setEdits] = useState<Record<string, unknown>>({});
 
   // Reset edits and search when item changes
-  useEffect(() => { setEdits({}); }, [item.name, item.kind]);
+  useEffect(() => { setEdits({}); }, [item]);
 
   const set = useCallback((key: string, value: unknown) => {
     setEdits(prev => ({ ...prev, [key]: value }));
@@ -581,6 +581,7 @@ export const DetailsPanel: FC<DetailsPanelProps> = ({ item, onClose, structs }) 
         )}
       </div>
       <div className="ueflow-details-badge">{item.kind}</div>
+      <div className="ueflow-details-readonly">Read-only preview</div>
       <div className="ueflow-details-content">
         {item.kind === 'event' && <EventDetails item={item} search={search} edits={edits} set={set} structs={structs} />}
         {item.kind === 'function' && <FunctionDetails item={item} search={search} edits={edits} set={set} structs={structs} />}
