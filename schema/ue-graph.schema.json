@@ -1,0 +1,242 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/azereki/ue-flow/schema/ue-graph.schema.json",
+  "title": "UE-Flow Graph JSON",
+  "description": "Schema for Unreal Engine Blueprint graph data consumed by the ue-flow renderer.",
+  "oneOf": [
+    { "$ref": "#/$defs/UEGraphJSON" },
+    { "$ref": "#/$defs/UEMultiGraphJSON" }
+  ],
+  "$defs": {
+    "PinCategory": {
+      "type": "string",
+      "enum": [
+        "exec", "bool", "real", "float", "int", "byte",
+        "string", "name", "text", "object", "class",
+        "struct", "enum", "interface", "delegate",
+        "softclass", "softobject", "wildcard"
+      ]
+    },
+    "UEPin": {
+      "type": "object",
+      "required": ["id", "name", "direction", "category"],
+      "properties": {
+        "id": { "type": "string", "description": "Unique pin identifier within the node." },
+        "name": { "type": "string", "description": "Pin name as defined in the Blueprint." },
+        "friendlyName": { "type": "string", "description": "Display-friendly name for the pin." },
+        "direction": { "type": "string", "enum": ["input", "output"] },
+        "category": { "$ref": "#/$defs/PinCategory" },
+        "subCategory": { "type": "string", "default": "" },
+        "subCategoryObject": { "type": "string", "default": "" },
+        "containerType": { "type": "string", "enum": ["", "Array", "Set", "Map"], "default": "" },
+        "defaultValue": { "type": "string", "default": "" },
+        "isReference": { "type": "boolean", "default": false },
+        "isConst": { "type": "boolean", "default": false },
+        "isWeak": { "type": "boolean", "default": false },
+        "hidden": { "type": "boolean", "default": false },
+        "advancedView": { "type": "boolean", "default": false },
+        "description": { "type": "string" }
+      }
+    },
+    "UENode": {
+      "type": "object",
+      "required": ["id", "type", "nodeClass", "position", "title", "pins"],
+      "properties": {
+        "id": { "type": "string", "description": "Unique node identifier (matches T3D Name)." },
+        "type": {
+          "type": "string",
+          "description": "Semantic node type for rendering.",
+          "enum": [
+            "event", "call_function", "function", "function_entry", "function_result",
+            "branch", "variable_get", "variable_set", "macro", "cast",
+            "switch", "select", "make_array", "comment", "tunnel", "reroute"
+          ]
+        },
+        "nodeClass": { "type": "string", "description": "UE class path (e.g. /Script/BlueprintGraph.K2Node_Event)." },
+        "nodeGuid": { "type": "string", "description": "Node GUID from T3D." },
+        "position": {
+          "type": "object",
+          "required": ["x", "y"],
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" }
+          }
+        },
+        "title": { "type": "string", "description": "Display title for the node header." },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "properties": {
+          "type": "object",
+          "description": "Raw UE properties from T3D.",
+          "additionalProperties": true
+        },
+        "pins": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/UEPin" }
+        }
+      }
+    },
+    "UEEdge": {
+      "type": "object",
+      "required": ["id", "source", "sourcePin", "target", "targetPin", "category"],
+      "properties": {
+        "id": { "type": "string" },
+        "source": { "type": "string", "description": "Source node ID." },
+        "sourcePin": { "type": "string", "description": "Source pin ID." },
+        "target": { "type": "string", "description": "Target node ID." },
+        "targetPin": { "type": "string", "description": "Target pin ID." },
+        "category": { "$ref": "#/$defs/PinCategory" }
+      }
+    },
+    "UEGraphJSON": {
+      "type": "object",
+      "required": ["metadata", "nodes", "edges"],
+      "properties": {
+        "metadata": {
+          "type": "object",
+          "required": ["title"],
+          "properties": {
+            "title": { "type": "string" },
+            "assetPath": { "type": "string" }
+          }
+        },
+        "nodes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/UENode" }
+        },
+        "edges": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/UEEdge" }
+        },
+        "summary": { "type": "string" }
+      }
+    },
+    "SidebarParam": {
+      "oneOf": [
+        { "type": "string", "description": "Format: 'name: Type' or just 'name'." },
+        {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "type": { "type": "string" }
+          }
+        }
+      ]
+    },
+    "UEMultiGraphJSON": {
+      "type": "object",
+      "required": ["metadata", "graphs", "events", "functions", "variables", "structs", "delegates"],
+      "properties": {
+        "metadata": {
+          "type": "object",
+          "required": ["title"],
+          "properties": {
+            "title": { "type": "string" },
+            "blueprintName": { "type": "string" },
+            "assetPath": { "type": "string" }
+          }
+        },
+        "graphs": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/UEGraphJSON" },
+          "description": "Named graphs (EventGraph, function graphs, etc.)."
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "params": { "type": "array", "items": { "$ref": "#/$defs/SidebarParam" } },
+              "inputs": { "type": "array", "items": { "$ref": "#/$defs/SidebarParam" } }
+            }
+          }
+        },
+        "functions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "category": { "type": "string" },
+              "params": { "type": "array", "items": { "$ref": "#/$defs/SidebarParam" } },
+              "returns": { "type": "array", "items": { "$ref": "#/$defs/SidebarParam" } },
+              "inputs": { "type": "array", "items": { "$ref": "#/$defs/SidebarParam" } },
+              "outputs": { "type": "array", "items": { "$ref": "#/$defs/SidebarParam" } }
+            }
+          }
+        },
+        "variables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "type"],
+            "properties": {
+              "name": { "type": "string" },
+              "type": { "type": "string" },
+              "category": { "type": "string" },
+              "default": { "type": "string" },
+              "replicated": { "type": "boolean" }
+            }
+          }
+        },
+        "structs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "fields": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["name", "type"],
+                  "properties": {
+                    "name": { "type": "string" },
+                    "type": { "type": "string" },
+                    "default": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "delegates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "signature": { "type": "string" }
+            }
+          }
+        },
+        "dataTables": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "sampleRows": { "type": "array" },
+              "columns": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "comparison": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["before", "after"],
+            "properties": {
+              "before": { "type": "number" },
+              "after": { "type": "number" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -112,8 +112,22 @@ export function flowToT3D(nodes: Node[], edges: Edge[]): string {
     const data = node.data as FlowNodeData;
     if (!data) continue;
 
-    // Skip comment nodes — they use a different format
-    if (data.ueType === 'comment') continue;
+    // Comment nodes use EdGraphNode_Comment format
+    if (data.ueType === 'comment') {
+      const cLines: string[] = [];
+      cLines.push(`Begin Object Class=/Script/UnrealEd.EdGraphNode_Comment Name="${node.id}"`);
+      cLines.push(`   NodePosX=${Math.round(node.position.x)}`);
+      cLines.push(`   NodePosY=${Math.round(node.position.y)}`);
+      if (node.initialWidth) cLines.push(`   NodeWidth=${Math.round(node.initialWidth)}`);
+      if (node.initialHeight) cLines.push(`   NodeHeight=${Math.round(node.initialHeight)}`);
+      cLines.push(`   NodeComment="${data.title ?? 'Comment'}"`);
+      if (data.nodeGuid) cLines.push(`   NodeGuid=${data.nodeGuid}`);
+      const commentColor = data.properties?.CommentColor;
+      if (commentColor) cLines.push(`   CommentColor=${commentColor}`);
+      cLines.push('End Object');
+      blocks.push(cLines.join('\n'));
+      continue;
+    }
 
     const lines: string[] = [];
 

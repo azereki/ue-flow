@@ -1,5 +1,5 @@
 import { Handle, Position, useStore } from '@xyflow/react';
-import { useCallback, type FC } from 'react';
+import { memo, useCallback, type FC } from 'react';
 import type { UEPin } from '../types/ue-graph';
 import { PIN_COLORS, isExecPin } from '../types/pin-types';
 
@@ -30,7 +30,7 @@ interface PinHandleProps {
   pin: UEPin;
 }
 
-export const PinHandle: FC<PinHandleProps> = ({ pin }) => {
+export const PinHandle: FC<PinHandleProps> = memo(({ pin }) => {
   const isInput = pin.direction === 'input';
   const type = isInput ? 'target' : 'source';
   const isConnected = useStore(
@@ -57,4 +57,6 @@ export const PinHandle: FC<PinHandleProps> = ({ pin }) => {
       {label && <span className="ueflow-pin-label">{label}</span>}
     </div>
   );
-};
+});
+
+PinHandle.displayName = 'PinHandle';

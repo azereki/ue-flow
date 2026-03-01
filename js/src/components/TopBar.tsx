@@ -9,11 +9,11 @@ interface TopBarProps {
 
 export const TopBar: FC<TopBarProps> = ({ title, graphCount, functionCount, variableCount }) => {
   return (
-    <div className="ueflow-topbar">
+    <header className="ueflow-topbar">
       <span className="ueflow-topbar-title">{title}</span>
       <span className="ueflow-topbar-stats">
         {graphCount} graphs | {functionCount} functions | {variableCount} variables
       </span>
-    </div>
+    </header>
   );
 };

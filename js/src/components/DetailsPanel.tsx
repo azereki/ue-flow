@@ -1,11 +1,13 @@
 import { useState, type FC } from 'react';
-import { PIN_COLORS } from '../types/pin-types';
+import { PIN_COLORS, classifyPinType } from '../types/pin-types';
 
 export type DetailsItem =
   | { kind: 'event'; name: string; params?: Array<{ name: string; type: string }> }
   | { kind: 'function'; name: string; category?: string; pure?: boolean; inputs?: Array<{ name: string; type: string }>; outputs?: Array<{ name: string; type: string }> }
   | { kind: 'variable'; name: string; type: string; category?: string; replication?: string; default?: string }
-  | { kind: 'struct'; name: string; fields: Array<{ name: string; type: string; default?: string }> };
+  | { kind: 'struct'; name: string; fields: Array<{ name: string; type: string; default?: string }> }
+  | { kind: 'delegate'; name: string; signature?: string }
+  | { kind: 'datatable'; name: string; rowCount: number; columns?: string[] };
 
 interface DetailsPanelProps {
   item: DetailsItem;
@@ -13,19 +15,7 @@ interface DetailsPanelProps {
 }
 
 function typeColor(type: string | undefined): string {
-  if (!type) return PIN_COLORS.wildcard;
-  const t = type.toLowerCase();
-  if (t.includes('bool')) return PIN_COLORS.bool;
-  if (t.includes('float') || t.includes('real') || t.includes('double')) return PIN_COLORS.float;
-  if (t.includes('int') && !t.includes('interface')) return PIN_COLORS.int;
-  if (t.includes('string') || t.includes('text') || t.includes('name')) return PIN_COLORS.string;
-  if (t.includes('struct') || t.includes('vector') || t.includes('rotator') || t.includes('tag')) return PIN_COLORS.struct;
-  if (t.includes('enum')) return PIN_COLORS.enum;
-  if (t.includes('delegate')) return PIN_COLORS.delegate;
-  if (t.includes('class')) return PIN_COLORS.class;
-  if (t.includes('interface')) return PIN_COLORS.interface;
-  if (t.includes('object')) return PIN_COLORS.object;
-  return PIN_COLORS.wildcard;
+  return PIN_COLORS[classifyPinType(type)];
 }
 
 const TypeDot: FC<{ type: string }> = ({ type }) => (
@@ -134,6 +124,39 @@ function StructDetails({ item }: { item: Extract<DetailsItem, { kind: 'struct' }
   );
 }
 
+function DelegateDetails({ item }: { item: Extract<DetailsItem, { kind: 'delegate' }> }) {
+  return (
+    <>
+      {item.signature && (
+        <div className="uf-details-row">
+          <span className="uf-details-label">Signature</span>
+          <span className="uf-details-value uf-details-mono">{item.signature}</span>
+        </div>
+      )}
+    </>
+  );
+}
+
+function DataTableDetails({ item }: { item: Extract<DetailsItem, { kind: 'datatable' }> }) {
+  return (
+    <>
+      <div className="uf-details-row">
+        <span className="uf-details-label">Rows</span>
+        <span className="uf-details-value">{item.rowCount}</span>
+      </div>
+      {item.columns && item.columns.length > 0 && (
+        <CollapsibleSection title={`Columns (${item.columns.length})`}>
+          {item.columns.map((col, i) => (
+            <div key={i} className="uf-details-param-row">
+              <span className="uf-details-param-name">{col}</span>
+            </div>
+          ))}
+        </CollapsibleSection>
+      )}
+    </>
+  );
+}
+
 export const DetailsPanel: FC<DetailsPanelProps> = ({ item, onClose }) => {
   return (
     <div className="uf-details-panel">
@@ -147,6 +170,8 @@ export const DetailsPanel: FC<DetailsPanelProps> = ({ item, onClose }) => {
         {item.kind === 'function' && <FunctionDetails item={item} />}
         {item.kind === 'variable' && <VariableDetails item={item} />}
         {item.kind === 'struct' && <StructDetails item={item} />}
+        {item.kind === 'delegate' && <DelegateDetails item={item} />}
+        {item.kind === 'datatable' && <DataTableDetails item={item} />}
       </div>
     </div>
   );

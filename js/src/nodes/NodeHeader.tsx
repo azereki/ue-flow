@@ -3,6 +3,7 @@ import type { FC } from 'react';
 interface NodeHeaderProps {
   title: string;
   ueType: string;
+  isPure?: boolean;
 }
 
 // More saturated colors for better visibility against dark background
@@ -35,7 +36,7 @@ const TYPE_ICONS: Record<string, string> = {
   cast: 'C',
 };
 
-export const NodeHeader: FC<NodeHeaderProps> = ({ title, ueType }) => {
+export const NodeHeader: FC<NodeHeaderProps> = ({ title, ueType, isPure }) => {
   const color = TYPE_COLORS[ueType] ?? '#3060a0';
   const icon = TYPE_ICONS[ueType];
   return (
@@ -43,6 +44,7 @@ export const NodeHeader: FC<NodeHeaderProps> = ({ title, ueType }) => {
       className="ueflow-node-header"
       style={{ '--header-accent': color } as React.CSSProperties}
     >
+      {isPure && <span className="ueflow-node-pure" title="Pure function">&#9671;</span>}
       {icon && <span className="ueflow-node-icon">{icon}</span>}
       <span className="ueflow-node-title">{title}</span>
     </div>

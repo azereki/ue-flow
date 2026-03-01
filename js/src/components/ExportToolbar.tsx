@@ -202,22 +202,28 @@ export const ExportToolbar: FC<ExportToolbarProps> = ({ nodes, edges }) => {
   return (
     <div className="ueflow-export-toolbar">
       <button className="ueflow-toolbar-btn" onClick={handleCopyT3D} title="Copy T3D to clipboard">
-        Copy T3D
+        <span className="ueflow-toolbar-icon">&#9113;</span>
+        <span className="ueflow-toolbar-label">Copy T3D</span>
       </button>
       <button className="ueflow-toolbar-btn" onClick={handleDownloadT3D} title="Download as .txt file">
-        Download
+        <span className="ueflow-toolbar-icon">&#8615;</span>
+        <span className="ueflow-toolbar-label">Download</span>
       </button>
       <button className="ueflow-toolbar-btn" onClick={handlePushToEditor} title="Push to UE Editor via bridge">
-        {pushStatus === 'sent' ? 'Sent!' : pushStatus === 'failed' ? 'Failed' : 'Push to Editor'}
+        <span className="ueflow-toolbar-icon">&#9654;</span>
+        <span className="ueflow-toolbar-label">{pushStatus === 'sent' ? 'Sent!' : pushStatus === 'failed' ? 'Failed' : 'Push'}</span>
       </button>
       <button className="ueflow-toolbar-btn" onClick={handleCopyContext} title="Copy LLM context summary">
-        Copy as Context
+        <span className="ueflow-toolbar-icon">&#9998;</span>
+        <span className="ueflow-toolbar-label">Context</span>
       </button>
       <button className="ueflow-toolbar-btn" onClick={handleCopyMarkdown} title="Copy markdown documentation">
-        Copy as Markdown
+        <span className="ueflow-toolbar-icon">&#9776;</span>
+        <span className="ueflow-toolbar-label">Markdown</span>
       </button>
       <button className="ueflow-toolbar-btn ueflow-toolbar-btn--secondary" onClick={handleCopyJSON} title="Copy graph JSON">
-        Copy JSON
+        <span className="ueflow-toolbar-icon">{'{}'}</span>
+        <span className="ueflow-toolbar-label">JSON</span>
       </button>
     </div>
   );

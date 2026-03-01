@@ -64,5 +64,6 @@ export default defineConfig({
     },
     outDir: 'dist',
     cssCodeSplit: false,
+    assetsInlineLimit: 5 * 1024 * 1024, // 5MB — inline woff2 fonts as base64 in IIFE
   },
 });

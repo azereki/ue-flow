@@ -1,16 +1,16 @@
-import { memo } from 'react';
+import { memo, useContext } from 'react';
 import type { NodeProps } from '@xyflow/react';
-import { Handle, Position, useStore } from '@xyflow/react';
+import { Handle, Position } from '@xyflow/react';
 import { NodeHeader } from './NodeHeader';
 import { PinHandle } from './PinHandle';
 import { PinValueEditor } from './PinValueEditor';
+import { PinBodyContext } from '../contexts/PinBodyContext';
 import type { FlowNodeData } from '../transform/json-to-flow';
 import { isExecPin, PIN_COLORS } from '../types/pin-types';
-import { zoomSelector } from '../utils/selectors';
 
 export const BlueprintNode = memo(({ data }: NodeProps) => {
   const { title, ueType, pins } = data as unknown as FlowNodeData;
-  const zoom = useStore(zoomSelector);
+  const showPinBody = useContext(PinBodyContext);
 
   // Reroute nodes: minimal 16px dot
   if (ueType === 'reroute') {
@@ -27,12 +27,11 @@ export const BlueprintNode = memo(({ data }: NodeProps) => {
 
   const inputPins = pins.filter((p) => p.direction === 'input' && !p.hidden);
   const outputPins = pins.filter((p) => p.direction === 'output' && !p.hidden);
-
-  const showPinBody = zoom >= 0.15;
+  const isPure = !pins.some((p) => isExecPin(p.category));
 
   return (
-    <div className="ueflow-node" data-ue-type={ueType}>
-      <NodeHeader title={title} ueType={ueType} />
+    <div className="ueflow-node" data-ue-type={ueType} aria-label={`${ueType} node: ${title}`}>
+      <NodeHeader title={title} ueType={ueType} isPure={isPure} />
       {showPinBody && (
         <div className="ueflow-node-body">
           <div className="ueflow-pins-column ueflow-pins--input">

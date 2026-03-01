@@ -7,8 +7,28 @@ name = "ue-flow"
 version = "0.1.0"
 description = "Open-source UE Blueprint rendering suite"
 license = "MIT"
+readme = "README.md"
 requires-python = ">=3.11"
 dependencies = []
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Documentation",
+    "Topic :: Games/Entertainment",
+]
+
+[project.urls]
+Homepage = "https://github.com/azereki/ue-flow"
+Repository = "https://github.com/azereki/ue-flow"
+Issues = "https://github.com/azereki/ue-flow/issues"
+
+[project.scripts]
+ue-flow = "ue_flow.cli:main"
 
 [project.optional-dependencies]
 png = ["playwright"]

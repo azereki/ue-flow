@@ -22,6 +22,16 @@ _CLASS_TO_TYPE = {
     "K2Node_SwitchEnum": "switch",
     "K2Node_SwitchInteger": "switch",
     "K2Node_SwitchString": "switch",
+    "K2Node_SwitchName": "switch",
+    "K2Node_ExecutionSequence": "function",
+    "K2Node_ForEachElementInEnum": "macro",
+    "K2Node_MakeStruct": "function",
+    "K2Node_BreakStruct": "function",
+    "K2Node_Timeline": "function",
+    "K2Node_SpawnActorFromClass": "call_function",
+    "K2Node_GetArrayItem": "function",
+    "K2Node_CommutativeAssociativeBinaryOperator": "function",
+    "K2Node_PromotableOperator": "function",
 }
 
 
@@ -89,28 +99,93 @@ def _extract_edges(nodes: list[BlueprintNode]) -> list[dict]:
     return edges
 
 
+_FRIENDLY_TITLES: dict[str, str] = {
+    "K2Node_IfThenElse": "Branch",
+    "K2Node_Knot": "Reroute",
+    "K2Node_MakeArray": "Make Array",
+    "K2Node_FunctionResult": "Return Node",
+    "K2Node_SwitchEnum": "Switch on Enum",
+    "K2Node_SwitchInteger": "Switch on Int",
+    "K2Node_SwitchString": "Switch on String",
+    "K2Node_SwitchName": "Switch on Name",
+    "K2Node_ExecutionSequence": "Sequence",
+    "K2Node_MakeStruct": "Make Struct",
+    "K2Node_BreakStruct": "Break Struct",
+    "K2Node_Timeline": "Timeline",
+    "K2Node_GetArrayItem": "Get",
+}
+
+
+def _extract_member_name(ref: object) -> str | None:
+    """Extract MemberName from a FunctionReference/EventReference/VariableReference value."""
+    if isinstance(ref, dict) and "MemberName" in ref:
+        return ref["MemberName"]
+    if isinstance(ref, str) and "MemberName=" in ref:
+        import re
+        m = re.search(r'MemberName="([^"]+)"', ref)
+        if m:
+            return m.group(1)
+    return None
+
+
 def _infer_title(node: BlueprintNode) -> str:
     """Infer display title from node properties or class name."""
-    props = node.properties
-    if "FunctionReference" in props:
-        ref = props["FunctionReference"]
-        if isinstance(ref, str) and "MemberName=" in ref:
-            # Parse MemberName from string like (MemberParent=...,MemberName="PrintString")
-            import re
-            m = re.search(r'MemberName="([^"]+)"', ref)
-            if m:
-                return m.group(1)
-        elif isinstance(ref, dict) and "MemberName" in ref:
-            return ref["MemberName"]
-    if "EventReference" in props:
-        ref = props["EventReference"]
-        if isinstance(ref, str) and "MemberName=" in ref:
-            import re
-            m = re.search(r'MemberName="([^"]+)"', ref)
-            if m:
-                return f"Event {m.group(1)}"
-    # Fallback: clean up class name
     short_name = node.node_class.rsplit(".", 1)[-1] if "." in node.node_class else node.node_class
+    props = node.properties
+
+    # Static friendly name lookup
+    if short_name in _FRIENDLY_TITLES:
+        return _FRIENDLY_TITLES[short_name]
+
+    # Function calls → extract function name
+    if "FunctionReference" in props:
+        name = _extract_member_name(props["FunctionReference"])
+        if name:
+            return name
+
+    # Events → extract event name with prefix
+    if "EventReference" in props:
+        name = _extract_member_name(props["EventReference"])
+        if name:
+            return f"Event {name}"
+
+    # Variable get/set → extract variable name
+    if "VariableReference" in props:
+        name = _extract_member_name(props["VariableReference"])
+        if name:
+            prefix = "Set " if short_name == "K2Node_VariableSet" else ""
+            return f"{prefix}{name}"
+
+    # Comments → use NodeComment text
+    if short_name == "EdGraphNode_Comment":
+        comment = props.get("NodeComment", "")
+        if isinstance(comment, str) and comment:
+            return comment[:80]
+        return "Comment"
+
+    # Dynamic cast → "Cast To ClassName"
+    if short_name == "K2Node_DynamicCast" and "TargetType" in props:
+        target = props["TargetType"]
+        if isinstance(target, str):
+            # Extract class name from path like /Script/Engine.Actor
+            cls = target.rsplit(".", 1)[-1] if "." in target else target
+            return f"Cast To {cls}"
+
+    # Macro → extract macro name
+    if "MacroGraphReference" in props:
+        ref = props["MacroGraphReference"]
+        name = _extract_member_name(ref)
+        if name:
+            return name
+
+    # Function entry → use graph name or "Function Entry"
+    if short_name == "K2Node_FunctionEntry":
+        sig = props.get("SignatureName", "")
+        if isinstance(sig, str) and sig:
+            return sig
+        return "Function Entry"
+
+    # Fallback: clean up class name
     name = short_name.replace("K2Node_", "").replace("EdGraphNode_", "")
     return name
 

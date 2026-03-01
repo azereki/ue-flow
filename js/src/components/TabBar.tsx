@@ -31,14 +31,13 @@ export const TabBar: FC<TabBarProps> = ({ openTabs, activeGraph, onSelectGraph, 
               </span>
             )}
             {!isPinned && (
-              <span
+              <button
                 className="ueflow-tab-close"
-                role="button"
                 aria-label={`Close ${name}`}
                 onClick={(e) => { e.stopPropagation(); onCloseTab(name); }}
               >
                 ×
-              </span>
+              </button>
             )}
           </button>
         );

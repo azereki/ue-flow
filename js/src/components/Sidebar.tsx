@@ -1,5 +1,6 @@
-import { useState, type FC } from 'react';
+import { useState, useMemo, type FC } from 'react';
 import type { UEMultiGraphJSON, SidebarParam } from '../types/ue-graph';
+import { classifyPinType } from '../types/pin-types';
 import type { DetailsItem } from './DetailsPanel';
 
 interface SidebarProps {
@@ -112,27 +113,39 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
   const dtKeys = Object.keys(dataTables || {});
 
   const q = search.toLowerCase();
-  const matchName = (name: string) => !q || name.toLowerCase().includes(q);
 
-  const eventNodes = (events?.length > 0 ? events : []).filter((e: SidebarEvent) => matchName(e.name));
-  const filteredFunctions = functions.filter((f: SidebarFunction) => matchName(f.name));
-  const filteredVariables = variables.filter((v: SidebarVariable) => matchName(v.name));
-  const filteredStructs = structs.filter((s: SidebarStruct) => matchName(s.name));
-  const filteredDelegates = delegates.filter((d: SidebarDelegate) => matchName(d.name));
-  const filteredDtKeys = dtKeys.filter((k) => matchName(k));
+  const eventNodes = useMemo(() =>
+    (events?.length > 0 ? events : []).filter((e: SidebarEvent) => !q || e.name.toLowerCase().includes(q)),
+    [events, q]);
+  const filteredFunctions = useMemo(() =>
+    functions.filter((f: SidebarFunction) => !q || f.name.toLowerCase().includes(q)),
+    [functions, q]);
+  const filteredVariables = useMemo(() =>
+    variables.filter((v: SidebarVariable) => !q || v.name.toLowerCase().includes(q)),
+    [variables, q]);
+  const filteredStructs = useMemo(() =>
+    structs.filter((s: SidebarStruct) => !q || s.name.toLowerCase().includes(q)),
+    [structs, q]);
+  const filteredDelegates = useMemo(() =>
+    delegates.filter((d: SidebarDelegate) => !q || d.name.toLowerCase().includes(q)),
+    [delegates, q]);
+  const filteredDtKeys = useMemo(() =>
+    dtKeys.filter((k) => !q || k.toLowerCase().includes(q)),
+    [dtKeys, q]);
 
-  const funcGroups = groupByCategory(filteredFunctions);
-  const varGroups = groupByCategory(filteredVariables);
+  const funcGroups = useMemo(() => groupByCategory(filteredFunctions), [filteredFunctions]);
+  const varGroups = useMemo(() => groupByCategory(filteredVariables), [filteredVariables]);
 
   return (
-    <div className="uf-sidebar">
+    <nav className="uf-sidebar" aria-label="Blueprint explorer">
       <div className="uf-sidebar-search">
         <input
           className="uf-search-input"
           type="text"
-          placeholder="Search..."
+          placeholder="Search sidebar..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          aria-label="Search sidebar"
         />
         {search && (
           <button className="uf-search-clear" onClick={() => setSearch('')} aria-label="Clear search">&times;</button>
@@ -149,7 +162,7 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
               .join(', ');
             const evtClass = eventColorClass(evt.name);
             return (
-              <div
+              <button
                 key={evt.name}
                 className={`uf-sidebar-item uf-sidebar-item--clickable ${evtClass}`}
                 title={params || undefined}
@@ -163,7 +176,7 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
               >
                 <span className={`uf-icon uf-icon--event ${evtClass ? 'uf-icon--' + evtClass.replace('uf-evt--', '') : ''}`}>E</span>
                 <span className="uf-item-name">{evt.name}</span>
-              </div>
+              </button>
             );
           })}
         </Section>
@@ -179,7 +192,7 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
                 const hasGraph = graphNames.includes(fn.name);
                 const sig = formatSignature(fn);
                 return (
-                  <div
+                  <button
                     key={fn.name}
                     className={`uf-sidebar-item ${hasGraph ? 'uf-sidebar-item--clickable' : ''}`}
                     title={sig}
@@ -192,7 +205,7 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
                   >
                     <span className="uf-icon uf-icon--function">f</span>
                     <span className="uf-item-name">{fn.name}</span>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -209,12 +222,12 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
               {vars.map((v: SidebarVariable) => {
                 const typeStr = shortType(v.type || '');
                 return (
-                  <div key={v.name} className="uf-sidebar-item uf-sidebar-item--clickable" title={v.type} onClick={() => onShowDetails?.({ kind: 'variable', name: v.name, type: v.type, category: v.category, default: v.default, replication: v.replicated ? 'Replicated' : undefined })}>
+                  <button key={v.name} className="uf-sidebar-item uf-sidebar-item--clickable" title={v.type} onClick={() => onShowDetails?.({ kind: 'variable', name: v.name, type: v.type, category: v.category, default: v.default, replication: v.replicated ? 'Replicated' : undefined })}>
                     <span className={`uf-icon uf-icon--type-${typeClass(v.type)}`} />
                     <span className="uf-item-name">{v.name}</span>
                     <span className="uf-item-type">{typeStr}</span>
                     {v.replicated && <span className="uf-badge-rep">R</span>}
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -228,11 +241,11 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
           {filteredStructs.map((s: SidebarStruct) => {
             const fieldCount = s.fields?.length ?? 0;
             return (
-              <div key={s.name} className="uf-sidebar-item uf-sidebar-item--clickable" title={`${fieldCount} fields`} onClick={() => onShowDetails?.({ kind: 'struct', name: s.name, fields: s.fields || [] })}>
+              <button key={s.name} className="uf-sidebar-item uf-sidebar-item--clickable" title={`${fieldCount} fields`} onClick={() => onShowDetails?.({ kind: 'struct', name: s.name, fields: s.fields || [] })}>
                 <span className="uf-icon uf-icon--struct">S</span>
                 <span className="uf-item-name">{s.name}</span>
                 <span className="uf-item-type">{fieldCount}f</span>
-              </div>
+              </button>
             );
           })}
         </Section>
@@ -242,10 +255,10 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
       {filteredDelegates.length > 0 && (
         <Section title="DELEGATES" count={filteredDelegates.length} defaultOpen={true}>
           {filteredDelegates.map((d: SidebarDelegate) => (
-            <div key={d.name} className="uf-sidebar-item" title={d.signature || ''}>
+            <button key={d.name} className="uf-sidebar-item uf-sidebar-item--clickable" title={d.signature || ''} onClick={() => onShowDetails?.({ kind: 'delegate', name: d.name, signature: d.signature })}>
               <span className="uf-icon uf-icon--delegate">D</span>
               <span className="uf-item-name">{d.name}</span>
-            </div>
+            </button>
           ))}
         </Section>
       )}
@@ -256,30 +269,27 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
           {filteredDtKeys.map((name) => {
             const dt = dataTables[name];
             const rowCount = dt?.sampleRows?.length ?? 0;
+            const columns = dt?.columns as string[] | undefined;
             return (
-              <div key={name} className="uf-sidebar-item" title={`${rowCount} rows`}>
+              <button key={name} className="uf-sidebar-item uf-sidebar-item--clickable" title={`${rowCount} rows`} onClick={() => onShowDetails?.({ kind: 'datatable', name, rowCount, columns })}>
                 <span className="uf-icon uf-icon--table">T</span>
                 <span className="uf-item-name">{name}</span>
                 {rowCount > 0 && <span className="uf-item-type">{rowCount}r</span>}
-              </div>
+              </button>
             );
           })}
         </Section>
       )}
-    </div>
+    </nav>
   );
 };
 
 function typeClass(type: string): string {
-  if (!type) return 'object';
+  // Container types aren't pin categories — handle before classifyPinType
   const t = type.toLowerCase();
-  if (t.includes('bool')) return 'bool';
-  if (t.includes('float') || t.includes('real') || t.includes('double')) return 'float';
-  if (t.includes('int')) return 'int';
-  if (t.includes('string') || t.includes('text') || t.includes('name')) return 'string';
-  if (t.includes('struct') || t.includes('tag') || t.includes('vector') || t.includes('rotator')) return 'struct';
-  if (t.includes('delegate')) return 'delegate';
-  if (t.includes('enum')) return 'enum';
   if (t.includes('array') || t.includes('map') || t.includes('set')) return 'array';
-  return 'object';
+  const cat = classifyPinType(type);
+  if (cat === 'name' || cat === 'text') return 'string';
+  if (cat === 'wildcard' || cat === 'class' || cat === 'softclass' || cat === 'softobject' || cat === 'interface' || cat === 'object' || cat === 'byte') return 'object';
+  return cat;
 }

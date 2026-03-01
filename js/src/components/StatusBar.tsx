@@ -7,6 +7,7 @@ interface StatusBarProps {
   functionCount: number;
   graphCount: number;
   comparison?: Record<string, { before: number; after: number }>;
+  selectedNode?: string | null;
 }
 
 export const StatusBar: FC<StatusBarProps> = ({
@@ -16,6 +17,7 @@ export const StatusBar: FC<StatusBarProps> = ({
   functionCount,
   graphCount,
   comparison,
+  selectedNode,
 }) => {
   // Compute overall reduction if comparison data exists
   const reductionPercent = comparison ? (() => {
@@ -31,6 +33,7 @@ export const StatusBar: FC<StatusBarProps> = ({
     <div className="ueflow-statusbar">
       <span className="ueflow-statusbar-left">
         Graph: {activeGraph} | Nodes: {nodeCount}
+        {selectedNode && <> | Selected: {selectedNode}</>}
       </span>
       <span className="ueflow-statusbar-right">
         Variables: {variableCount} | Functions: {functionCount} | Graphs: {graphCount}
