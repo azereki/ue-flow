@@ -40,7 +40,7 @@ function shouldShow(search: string, ...labels: string[]): boolean {
 // ─── Shared Sub-Components ───────────────────────────────────────────────────
 
 const TypeDot: FC<{ type: string }> = ({ type }) => (
-  <span className="ueflow-details-type-dot" style={{ background: typeColor(type) }} />
+  <span className="ueflow-details-type-dot" style={{ background: typeColor(type) }} title={type} aria-label={`Type: ${type}`} role="img" />
 );
 
 const CollapsibleSection: FC<{ title: string; defaultOpen?: boolean; children: React.ReactNode }> = ({ title, defaultOpen = true, children }) => {

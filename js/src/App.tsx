@@ -460,7 +460,7 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
             comparison={multiGraph.comparison}
           />
           <Breadcrumbs items={breadcrumbs} onNavigate={navigateBreadcrumb} />
-          <div id="ueflow-graph" className="ueflow-graph-container">
+          <div id="ueflow-graph" className="ueflow-graph-container" role="tabpanel" aria-label={activeGraph}>
             {activeTabInfo.type === 'datatable' ? (
               (() => {
                 const dt = multiGraph.dataTables?.[activeTabInfo.name];

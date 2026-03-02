@@ -45,7 +45,7 @@ export const CommentNode = memo(({ data, selected }: NodeProps<CommentFlowNode>)
           style={{ background: headerBg }}
           onContextMenu={(e) => e.preventDefault()}
         >
-          <span className="ueflow-comment-title">{title}</span>
+          <span className="ueflow-comment-title" role="heading" aria-level={3}>{title}</span>
         </div>
         <div className="ueflow-comment-body" style={{ background: bodyBg }} />
       </div>
