@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sprint 4+5 Feature Showcase - ue-flow</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #0f1117; }
+    #ue-flow-root { width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="ue-flow-root"></div>
+  <script type="application/json" id="ue-flow-multi-data">
+{
+  "metadata": {
+    "title": "BP_Sprint4Showcase",
+    "blueprintName": "BP_Sprint4Showcase",
+    "assetPath": "/Game/Blueprints/BP_Sprint4Showcase"
+  },
+  "events": [
+    { "name": "BeginPlay", "params": [], "accessSpecifier": "Public" },
+    { "name": "Tick", "params": [{"name": "DeltaTime", "type": "float"}], "accessSpecifier": "Public" },
+    { "name": "OnDamageReceived", "params": [{"name": "Damage", "type": "float"}, {"name": "Instigator", "type": "Object"}], "replicates": "RunOnServer", "reliable": true, "accessSpecifier": "Public" },
+    { "name": "OnComponentHit", "params": [{"name": "HitResult", "type": "FHitResult"}], "accessSpecifier": "Public" }
+  ],
+  "functions": [
+    { "name": "CalculateDamage", "category": "Combat", "inputs": [{"name": "BaseDamage", "type": "float"}, {"name": "Multiplier", "type": "float"}], "outputs": [{"name": "Result", "type": "float"}], "pure": true, "accessSpecifier": "Public", "compactTitle": "Damage" },
+    { "name": "GetHealth", "category": "Stats", "outputs": [{"name": "Health", "type": "float"}], "pure": true, "accessSpecifier": "Public" },
+    { "name": "SpawnProjectile", "category": "Combat", "inputs": [{"name": "Class", "type": "class"}, {"name": "Transform", "type": "Transform"}], "outputs": [{"name": "Actor", "type": "Object"}], "accessSpecifier": "Public" },
+    { "name": "ProcessTimeline", "category": "Animation", "inputs": [{"name": "Alpha", "type": "float"}], "accessSpecifier": "Public" }
+  ],
+  "variables": [
+    { "name": "Health", "type": "Float", "category": "Stats", "replicated": true, "replicationMode": "RepNotify", "default": "100.0", "instanceEditable": true },
+    { "name": "MaxHealth", "type": "Float", "category": "Stats", "default": "100.0" },
+    { "name": "IsAlive", "type": "Boolean", "category": "Stats", "default": "true" },
+    { "name": "PlayerName", "type": "String", "category": "Info", "default": "Player" },
+    { "name": "Inventory", "type": "Array<AActor>", "category": "Items", "containerType": "Array", "innerType": "AActor" },
+    { "name": "ActiveBuffs", "type": "Set<FName>", "category": "Combat", "containerType": "Set", "innerType": "FName" },
+    { "name": "DamageMultiplier", "type": "Float", "category": "Combat", "default": "1.5" },
+    { "name": "TargetActor", "type": "Object", "category": "Combat" }
+  ],
+  "components": [],
+  "macros": [],
+  "structs": [
+    { "name": "FDamageEvent", "fields": [{"name": "Damage", "type": "float"}, {"name": "Type", "type": "Name"}, {"name": "bCritical", "type": "bool"}] }
+  ],
+  "delegates": [
+    { "name": "OnHealthChanged", "signature": "void(float NewHealth, float OldHealth)", "params": [{"name": "NewHealth", "type": "float"}, {"name": "OldHealth", "type": "float"}] }
+  ],
+  "dataTables": {},
+  "comparison": {
+    "VisualFidelity": { "before": 0, "after": 18 },
+    "NodeTypes": { "before": 0, "after": 14 },
+    "PinShowcase": { "before": 0, "after": 10 }
+  },
+  "graphs": {
+    "VisualFidelity": {
+      "metadata": { "title": "Visual Fidelity Showcase", "assetPath": "/Game/Blueprints/BP_Sprint4Showcase" },
+      "nodes": [
+        {
+          "id": "ev1", "type": "event", "nodeClass": "K2Node_Event", "nodeGuid": "EV000001",
+          "position": { "x": 0, "y": 0 }, "title": "Event BeginPlay", "properties": {},
+          "pins": [
+            { "id": "ev1_exec_out", "name": "exec", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "tl1", "type": "timeline", "nodeClass": "K2Node_Timeline", "nodeGuid": "TL000001",
+          "position": { "x": 300, "y": 0 }, "title": "Timeline", "properties": {},
+          "pins": [
+            { "id": "tl1_ei", "name": "Play", "friendlyName": "Play", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "tl1_stop", "name": "Stop", "friendlyName": "Stop", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "tl1_reverse", "name": "Reverse", "friendlyName": "Reverse", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "tl1_update", "name": "Update", "friendlyName": "Update", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "tl1_finish", "name": "Finished", "friendlyName": "Finished", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "tl1_alpha", "name": "Alpha", "friendlyName": "Alpha", "direction": "output", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "tl1_dir", "name": "Direction", "friendlyName": "Direction", "direction": "output", "category": "enum", "subCategory": "", "subCategoryObject": "ETimelineDirection", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "pure1", "type": "call_function", "nodeClass": "K2Node_CallFunction", "nodeGuid": "PF000001",
+          "position": { "x": 300, "y": 300 }, "title": "Get Actor Location", "description": "Returns the location of this actor",
+          "properties": { "bIsPureFunc": true },
+          "pins": [
+            { "id": "pure1_self", "name": "self", "friendlyName": "Target", "direction": "input", "category": "object", "subCategory": "", "subCategoryObject": "Actor", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pure1_ret", "name": "ReturnValue", "friendlyName": "Return Value", "direction": "output", "category": "struct", "subCategory": "", "subCategoryObject": "Vector", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "vget1", "type": "variable_get", "nodeClass": "K2Node_VariableGet", "nodeGuid": "VG000001",
+          "position": { "x": 0, "y": 180 }, "title": "Get Health", "properties": {},
+          "pins": [
+            { "id": "vget1_out", "name": "Health", "friendlyName": "Health", "direction": "output", "category": "real", "subCategory": "double", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "vget2", "type": "variable_get", "nodeClass": "K2Node_VariableGet", "nodeGuid": "VG000002",
+          "position": { "x": 0, "y": 300 }, "title": "Get IsAlive", "properties": {},
+          "pins": [
+            { "id": "vget2_out", "name": "IsAlive", "friendlyName": "Is Alive", "direction": "output", "category": "bool", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "vget3", "type": "variable_get", "nodeClass": "K2Node_VariableGet", "nodeGuid": "VG000003",
+          "position": { "x": 0, "y": 420 }, "title": "Get PlayerName", "properties": {},
+          "pins": [
+            { "id": "vget3_out", "name": "PlayerName", "friendlyName": "Player Name", "direction": "output", "category": "string", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "vget4", "type": "variable_get", "nodeClass": "K2Node_VariableGet", "nodeGuid": "VG000004",
+          "position": { "x": 0, "y": 540 }, "title": "Get TargetActor", "properties": {},
+          "pins": [
+            { "id": "vget4_out", "name": "TargetActor", "friendlyName": "Target Actor", "direction": "output", "category": "object", "subCategory": "", "subCategoryObject": "Actor", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "vset1", "type": "variable_set", "nodeClass": "K2Node_VariableSet", "nodeGuid": "VS000001",
+          "position": { "x": 700, "y": 0 }, "title": "Set Health", "properties": {},
+          "pins": [
+            { "id": "vset1_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "vset1_eo", "name": "then", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "vset1_val", "name": "Health", "friendlyName": "Health", "direction": "input", "category": "real", "subCategory": "double", "subCategoryObject": "", "containerType": "", "defaultValue": "100.0", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "vset1_ret", "name": "Health", "friendlyName": "Health", "direction": "output", "category": "real", "subCategory": "double", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "add1", "type": "call_function", "nodeClass": "K2Node_PromotableOperator", "nodeGuid": "OP000001",
+          "position": { "x": 400, "y": 180 }, "title": "Add", "properties": { "bIsPureFunc": true },
+          "pins": [
+            { "id": "add1_a", "name": "A", "friendlyName": "A", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "0.0", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "add1_b", "name": "B", "friendlyName": "B", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "0.0", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "add1_ret", "name": "ReturnValue", "friendlyName": "Return Value", "direction": "output", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "mul1", "type": "call_function", "nodeClass": "K2Node_PromotableOperator", "nodeGuid": "OP000002",
+          "position": { "x": 550, "y": 180 }, "title": "Multiply", "properties": { "bIsPureFunc": true },
+          "pins": [
+            { "id": "mul1_a", "name": "A", "friendlyName": "A", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "0.0", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "mul1_b", "name": "B", "friendlyName": "B", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "1.0", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "mul1_ret", "name": "ReturnValue", "friendlyName": "Return Value", "direction": "output", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "gt1", "type": "call_function", "nodeClass": "K2Node_PromotableOperator", "nodeGuid": "OP000003",
+          "position": { "x": 550, "y": 300 }, "title": "Greater", "properties": { "bIsPureFunc": true },
+          "pins": [
+            { "id": "gt1_a", "name": "A", "friendlyName": "A", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "0.0", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "gt1_b", "name": "B", "friendlyName": "B", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "0.0", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "gt1_ret", "name": "ReturnValue", "friendlyName": "Return Value", "direction": "output", "category": "bool", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "br1", "type": "branch", "nodeClass": "K2Node_IfThenElse", "nodeGuid": "BR000001",
+          "position": { "x": 700, "y": 250 }, "title": "Branch", "properties": {},
+          "pins": [
+            { "id": "br1_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "br1_cond", "name": "Condition", "friendlyName": "Condition", "direction": "input", "category": "bool", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "false", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "br1_true", "name": "True", "friendlyName": "True", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "br1_false", "name": "False", "friendlyName": "False", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "print1", "type": "call_function", "nodeClass": "K2Node_CallFunction", "nodeGuid": "CF000001",
+          "position": { "x": 1000, "y": 200 }, "title": "Print String", "properties": {},
+          "pins": [
+            { "id": "print1_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "print1_eo", "name": "then", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "print1_str", "name": "InString", "friendlyName": "In String", "direction": "input", "category": "string", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "Alive!", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "print2", "type": "call_function", "nodeClass": "K2Node_CallFunction", "nodeGuid": "CF000002",
+          "position": { "x": 1000, "y": 380 }, "title": "Print String", "properties": {},
+          "pins": [
+            { "id": "print2_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "print2_eo", "name": "then", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "print2_str", "name": "InString", "friendlyName": "In String", "direction": "input", "category": "string", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "Dead!", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "nc1", "type": "comment", "nodeClass": "EdGraphNode_Comment", "nodeGuid": "NC000001",
+          "position": { "x": -40, "y": -80 }, "title": "Sprint 4 showcase: timeline, pure badge, variable tinting, compact math operators",
+          "properties": { "NodeWidth": 1200, "NodeHeight": 600, "CommentColor": "(R=0.2,G=0.3,B=0.5,A=0.25)" },
+          "pins": []
+        }
+      ],
+      "edges": [
+        { "id": "e1", "source": "ev1", "sourcePin": "exec", "target": "tl1", "targetPin": "Play", "category": "exec" },
+        { "id": "e2", "source": "tl1", "sourcePin": "Update", "target": "vset1", "targetPin": "execute", "category": "exec" },
+        { "id": "e3", "source": "tl1", "sourcePin": "Alpha", "target": "add1", "targetPin": "A", "category": "real" },
+        { "id": "e4", "source": "vget1", "sourcePin": "Health", "target": "add1", "targetPin": "B", "category": "real" },
+        { "id": "e5", "source": "add1", "sourcePin": "ReturnValue", "target": "mul1", "targetPin": "A", "category": "real" },
+        { "id": "e6", "source": "mul1", "sourcePin": "ReturnValue", "target": "vset1", "targetPin": "Health", "category": "real" },
+        { "id": "e7", "source": "mul1", "sourcePin": "ReturnValue", "target": "gt1", "targetPin": "A", "category": "real" },
+        { "id": "e8", "source": "tl1", "sourcePin": "Finished", "target": "br1", "targetPin": "execute", "category": "exec" },
+        { "id": "e9", "source": "gt1", "sourcePin": "ReturnValue", "target": "br1", "targetPin": "Condition", "category": "bool" },
+        { "id": "e10", "source": "br1", "sourcePin": "True", "target": "print1", "targetPin": "execute", "category": "exec" },
+        { "id": "e11", "source": "br1", "sourcePin": "False", "target": "print2", "targetPin": "execute", "category": "exec" },
+        { "id": "e12", "source": "vget3", "sourcePin": "PlayerName", "target": "print1", "targetPin": "InString", "category": "string" }
+      ]
+    },
+    "NodeTypes": {
+      "metadata": { "title": "Node Type Gallery", "assetPath": "/Game/Blueprints/BP_Sprint4Showcase" },
+      "nodes": [
+        {
+          "id": "nt_ev", "type": "event", "nodeClass": "K2Node_Event", "nodeGuid": "NT000001",
+          "position": { "x": 0, "y": 0 }, "title": "Event BeginPlay", "properties": {},
+          "pins": [
+            { "id": "nt_ev_eo", "name": "exec", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "nt_ce", "type": "component_event", "nodeClass": "K2Node_ComponentBoundEvent", "nodeGuid": "NT000002",
+          "position": { "x": 0, "y": 150 }, "title": "On Component Hit", "properties": {},
+          "pins": [
+            { "id": "nt_ce_eo", "name": "exec", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "nt_ce_hit", "name": "HitResult", "friendlyName": "Hit Result", "direction": "output", "category": "struct", "subCategory": "", "subCategoryObject": "HitResult", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "nt_input", "type": "input", "nodeClass": "K2Node_InputAction", "nodeGuid": "NT000003",
+          "position": { "x": 0, "y": 320 }, "title": "InputAction Fire", "properties": {},
+          "pins": [
+            { "id": "nt_inp_pressed", "name": "Pressed", "friendlyName": "Pressed", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "nt_inp_released", "name": "Released", "friendlyName": "Released", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "nt_tl", "type": "timeline", "nodeClass": "K2Node_Timeline", "nodeGuid": "NT000004",
+          "position": { "x": 350, "y": 0 }, "title": "Timeline", "properties": {},
+          "pins": [
+            { "id": "nt_tl_play", "name": "Play", "friendlyName": "Play", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "nt_tl_upd", "name": "Update", "friendlyName": "Update", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "nt_tl_fin", "name": "Finished", "friendlyName": "Finished", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "nt_tl_alpha", "name": "Alpha", "friendlyName": "Alpha", "direction": "output", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "nt_del", "type": "delegate_call", "nodeClass": "K2Node_CallDelegate", "nodeGuid": "NT000005",
+          "position": { "x": 350, "y": 200 }, "title": "Call OnHealthChanged", "properties": {},
+          "pins": [
+            { "id": "nt_del_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "nt_del_eo", "name": "then", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "nt_del_new", "name": "NewHealth", "friendlyName": "New Health", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "nt_del_old", "name": "OldHealth", "friendlyName": "Old Health", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "nt_async", "type": "async_action", "nodeClass": "K2Node_AsyncAction", "nodeGuid": "NT000006",
+          "position": { "x": 350, "y": 400 }, "title": "Async Load Asset", "properties": {},
+          "pins": [
+            { "id": "nt_async_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "nt_async_done", "name": "Completed", "friendlyName": "Completed", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "nt_async_asset", "name": "Asset", "friendlyName": "Loaded Asset", "direction": "input", "category": "softobject", "subCategory": "", "subCategoryObject": "Object", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": true, "hidden": false, "advancedView": false },
+            { "id": "nt_async_result", "name": "Result", "friendlyName": "Result", "direction": "output", "category": "object", "subCategory": "", "subCategoryObject": "Object", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "nt_constr", "type": "construct", "nodeClass": "K2Node_ConstructObjectFromClass", "nodeGuid": "NT000007",
+          "position": { "x": 700, "y": 0 }, "title": "Construct Object", "properties": {},
+          "pins": [
+            { "id": "nt_constr_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "nt_constr_eo", "name": "then", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "nt_constr_cls", "name": "Class", "friendlyName": "Class", "direction": "input", "category": "class", "subCategory": "", "subCategoryObject": "Object", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "nt_constr_ret", "name": "ReturnValue", "friendlyName": "Return Value", "direction": "output", "category": "object", "subCategory": "", "subCategoryObject": "Object", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "nt_sub", "type": "subsystem_get", "nodeClass": "K2Node_GetSubsystem", "nodeGuid": "NT000008",
+          "position": { "x": 700, "y": 200 }, "title": "Get Game Instance Subsystem", "properties": {},
+          "pins": [
+            { "id": "nt_sub_ret", "name": "ReturnValue", "friendlyName": "Return Value", "direction": "output", "category": "object", "subCategory": "", "subCategoryObject": "GameInstanceSubsystem", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "nt_struct", "type": "struct_op", "nodeClass": "K2Node_MakeStruct", "nodeGuid": "NT000009",
+          "position": { "x": 700, "y": 350 }, "title": "Make FDamageEvent", "properties": {},
+          "pins": [
+            { "id": "nt_struct_dmg", "name": "Damage", "friendlyName": "Damage", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "0.0", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "nt_struct_type", "name": "Type", "friendlyName": "Type", "direction": "input", "category": "name", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "Physical", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "nt_struct_crit", "name": "bCritical", "friendlyName": "Critical", "direction": "input", "category": "bool", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "false", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "nt_struct_ret", "name": "FDamageEvent", "friendlyName": "FDamageEvent", "direction": "output", "category": "struct", "subCategory": "", "subCategoryObject": "FDamageEvent", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "nt_cast", "type": "cast", "nodeClass": "K2Node_ClassDynamicCast", "nodeGuid": "NT000010",
+          "position": { "x": 1050, "y": 0 }, "title": "Cast to ACharacter", "properties": {},
+          "pins": [
+            { "id": "nt_cast_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "nt_cast_obj", "name": "Object", "friendlyName": "Object", "direction": "input", "category": "object", "subCategory": "", "subCategoryObject": "Object", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "nt_cast_ok", "name": "Success", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "nt_cast_fail", "name": "CastFailed", "friendlyName": "Cast Failed", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "nt_cast_res", "name": "AsCharacter", "friendlyName": "As Character", "direction": "output", "category": "object", "subCategory": "", "subCategoryObject": "ACharacter", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "nc_types", "type": "comment", "nodeClass": "EdGraphNode_Comment", "nodeGuid": "NCT00001",
+          "position": { "x": -30, "y": -80 }, "title": "All supported node types: event, input, component_event, timeline, delegate, async, construct, subsystem, struct_op, cast",
+          "properties": { "NodeWidth": 720, "NodeHeight": 650, "CommentColor": "(R=0.3,G=0.2,B=0.4,A=0.2)" },
+          "pins": []
+        }
+      ],
+      "edges": [
+        { "id": "nte1", "source": "nt_ev", "sourcePin": "exec", "target": "nt_tl", "targetPin": "Play", "category": "exec" },
+        { "id": "nte2", "source": "nt_tl", "sourcePin": "Update", "target": "nt_del", "targetPin": "execute", "category": "exec" },
+        { "id": "nte3", "source": "nt_del", "sourcePin": "then", "target": "nt_constr", "targetPin": "execute", "category": "exec" },
+        { "id": "nte4", "source": "nt_constr", "sourcePin": "then", "target": "nt_cast", "targetPin": "execute", "category": "exec" },
+        { "id": "nte5", "source": "nt_constr", "sourcePin": "ReturnValue", "target": "nt_cast", "targetPin": "Object", "category": "object" }
+      ]
+    },
+    "PinShowcase": {
+      "metadata": { "title": "Pin Type & Container Showcase", "assetPath": "/Game/Blueprints/BP_Sprint4Showcase" },
+      "nodes": [
+        {
+          "id": "ps_fn1", "type": "call_function", "nodeClass": "K2Node_CallFunction", "nodeGuid": "PS000001",
+          "position": { "x": 0, "y": 0 }, "title": "Pin Type Showcase", "properties": {},
+          "pins": [
+            { "id": "ps_fn1_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ps_fn1_eo", "name": "then", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ps_fn1_bool", "name": "BoolParam", "friendlyName": "Bool", "direction": "input", "category": "bool", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "true", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ps_fn1_int", "name": "IntParam", "friendlyName": "Integer", "direction": "input", "category": "int", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "42", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ps_fn1_float", "name": "FloatParam", "friendlyName": "Float", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "3.14", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ps_fn1_str", "name": "StringParam", "friendlyName": "String", "direction": "input", "category": "string", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "Hello", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ps_fn1_name", "name": "NameParam", "friendlyName": "Name", "direction": "input", "category": "name", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "MyName", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ps_fn1_obj", "name": "ObjectOut", "friendlyName": "Object", "direction": "output", "category": "object", "subCategory": "", "subCategoryObject": "Actor", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ps_fn1_cls", "name": "ClassOut", "friendlyName": "Class", "direction": "output", "category": "class", "subCategory": "", "subCategoryObject": "Actor", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ps_fn1_vec", "name": "VectorOut", "friendlyName": "Vector", "direction": "output", "category": "struct", "subCategory": "", "subCategoryObject": "Vector", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ps_fn1_rot", "name": "RotatorOut", "friendlyName": "Rotator", "direction": "output", "category": "struct", "subCategory": "", "subCategoryObject": "Rotator", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ps_fn1_enum", "name": "EnumOut", "friendlyName": "Enum", "direction": "output", "category": "enum", "subCategory": "", "subCategoryObject": "ECollisionChannel", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "ps_fn2", "type": "call_function", "nodeClass": "K2Node_CallFunction", "nodeGuid": "PS000002",
+          "position": { "x": 400, "y": 0 }, "title": "Container & Modifier Showcase", "properties": {},
+          "pins": [
+            { "id": "ps_fn2_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ps_fn2_eo", "name": "then", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ps_fn2_arr", "name": "ArrayIn", "friendlyName": "Array of Actors", "direction": "input", "category": "object", "subCategory": "", "subCategoryObject": "Actor", "containerType": "Array", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ps_fn2_set", "name": "SetIn", "friendlyName": "Set of Names", "direction": "input", "category": "name", "subCategory": "", "subCategoryObject": "", "containerType": "Set", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ps_fn2_map", "name": "MapIn", "friendlyName": "Map of Strings", "direction": "input", "category": "string", "subCategory": "", "subCategoryObject": "", "containerType": "Map", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ps_fn2_ref", "name": "RefParam", "friendlyName": "By Reference", "direction": "input", "category": "int", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": true, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ps_fn2_weak", "name": "WeakPtr", "friendlyName": "Soft Object Ref", "direction": "input", "category": "softobject", "subCategory": "", "subCategoryObject": "Actor", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": true, "hidden": false, "advancedView": false },
+            { "id": "ps_fn2_weak2", "name": "WeakClass", "friendlyName": "Soft Class Ref", "direction": "input", "category": "softclass", "subCategory": "", "subCategoryObject": "Actor", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": true, "hidden": false, "advancedView": false },
+            { "id": "ps_fn2_dlg", "name": "DelegateOut", "friendlyName": "Delegate", "direction": "output", "category": "delegate", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ps_fn2_iface", "name": "InterfaceOut", "friendlyName": "Interface", "direction": "output", "category": "interface", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ps_fn2_arr_out", "name": "ArrayOut", "friendlyName": "Array Result", "direction": "output", "category": "struct", "subCategory": "", "subCategoryObject": "Vector", "containerType": "Array", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "ps_fn3", "type": "call_function", "nodeClass": "K2Node_CallFunction", "nodeGuid": "PS000003",
+          "position": { "x": 200, "y": 350 }, "title": "Struct Sub-Type Colors", "properties": { "bIsPureFunc": true },
+          "pins": [
+            { "id": "ps_fn3_vec", "name": "Location", "friendlyName": "Location", "direction": "input", "category": "struct", "subCategory": "", "subCategoryObject": "Vector", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ps_fn3_rot", "name": "Rotation", "friendlyName": "Rotation", "direction": "input", "category": "struct", "subCategory": "", "subCategoryObject": "Rotator", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ps_fn3_xform", "name": "Transform", "friendlyName": "Transform", "direction": "input", "category": "struct", "subCategory": "", "subCategoryObject": "Transform", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ps_fn3_color", "name": "Color", "friendlyName": "Linear Color", "direction": "input", "category": "struct", "subCategory": "", "subCategoryObject": "LinearColor", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ps_fn3_tag", "name": "Tag", "friendlyName": "Gameplay Tag", "direction": "input", "category": "struct", "subCategory": "", "subCategoryObject": "GameplayTag", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ps_fn3_out", "name": "ReturnValue", "friendlyName": "Return Value", "direction": "output", "category": "bool", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "nc_pins", "type": "comment", "nodeClass": "EdGraphNode_Comment", "nodeGuid": "NCP00001",
+          "position": { "x": -30, "y": -80 }, "title": "Pin types, containers (array/set/map), soft pointers (dashed), references, struct sub-type colors",
+          "properties": { "NodeWidth": 850, "NodeHeight": 300, "CommentColor": "(R=0.15,G=0.35,B=0.3,A=0.2)" },
+          "pins": []
+        }
+      ],
+      "edges": [
+        { "id": "pse1", "source": "ps_fn1", "sourcePin": "then", "target": "ps_fn2", "targetPin": "execute", "category": "exec" },
+        { "id": "pse2", "source": "ps_fn1", "sourcePin": "ObjectOut", "target": "ps_fn2", "targetPin": "RefParam", "category": "object" }
+      ]
+    }
+  }
+}
+  </script>
+  <script src="../js/dist/ue-flow.iife.js"></script>
+</body>
+</html>
