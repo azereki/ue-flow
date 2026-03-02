@@ -1,0 +1,10 @@
+{
+  "name": "ue-flow",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix js",
+    "build": "npm run build --prefix js && node js/scripts/build-paste-tool.cjs",
+    "test": "npm test --prefix js",
+    "test:e2e": "npm run test:e2e --prefix js"
+  }
+}

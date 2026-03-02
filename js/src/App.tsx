@@ -34,6 +34,7 @@ import { useTabNavigation, parseTabName } from './hooks/useTabNavigation';
 import { DataTableView } from './components/DataTableView';
 import { StructView } from './components/StructView';
 import { useUndoRedo } from './hooks/useUndoRedo';
+import { PasteLanding } from './components/PasteLanding';
 
 const nodeTypes = {
   blueprintNode: BlueprintNode,
@@ -504,28 +505,41 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
 }
 
 export function App({ graphJSON, multiGraphJSON }: AppProps) {
+  const [pastedGraph, setPastedGraph] = useState<UEGraphJSON | null>(null);
+  const [pasteCount, setPasteCount] = useState(0);
+
+  const handleGraphParsed = useCallback((graph: UEGraphJSON) => {
+    setPastedGraph(graph);
+    setPasteCount(c => c + 1);
+  }, []);
+
+  const handleBackToPaste = useCallback(() => {
+    setPastedGraph(null);
+  }, []);
+
   // Multi-graph mode takes precedence
   if (multiGraphJSON && Object.keys(multiGraphJSON.graphs).length > 0) {
     return <MultiGraphView multiGraph={multiGraphJSON} />;
   }
 
-  // Single-graph mode
-  if (graphJSON) {
+  // Single-graph mode — embedded JSON takes precedence over pasted graph
+  const activeGraph = graphJSON ?? pastedGraph;
+  if (activeGraph) {
     return (
       <div style={{ width: '100vw', height: '100vh' }}>
-        <SingleGraphView graphJSON={graphJSON} />
+        {pastedGraph && !graphJSON && (
+          <button className="ueflow-back-btn" onClick={handleBackToPaste}>
+            &#8592; New Paste
+          </button>
+        )}
+        <SingleGraphView
+          key={pastedGraph ? `paste-${pasteCount}` : 'embedded'}
+          graphJSON={activeGraph}
+        />
       </div>
     );
   }
 
-  // Empty state
-  return (
-    <div className="ueflow-empty-state">
-      <div className="ueflow-empty-icon">&#9670;</div>
-      <div className="ueflow-empty-title">No Blueprint Loaded</div>
-      <div className="ueflow-empty-text">
-        Provide graph JSON data to render an interactive Blueprint graph.
-      </div>
-    </div>
-  );
+  // Empty state — paste landing
+  return <PasteLanding onGraphParsed={handleGraphParsed} />;
 }
