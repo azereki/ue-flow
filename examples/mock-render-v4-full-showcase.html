@@ -116,21 +116,21 @@
         },
         {
           "id": "vget_hp", "type": "variable_get", "nodeClass": "K2Node_VariableGet", "nodeGuid": "VG000001",
-          "position": { "x": 300, "y": 220 }, "title": "Health", "properties": {},
+          "position": { "x": 300, "y": 200 }, "title": "Health", "properties": {},
           "pins": [
             { "id": "vget_hp_out", "name": "Health", "friendlyName": "Health", "direction": "output", "category": "real", "subCategory": "double", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
           ]
         },
         {
           "id": "vget_maxhp", "type": "variable_get", "nodeClass": "K2Node_VariableGet", "nodeGuid": "VG000002",
-          "position": { "x": 300, "y": 310 }, "title": "MaxHealth", "properties": {},
+          "position": { "x": 300, "y": 360 }, "title": "MaxHealth", "properties": {},
           "pins": [
             { "id": "vget_maxhp_out", "name": "MaxHealth", "friendlyName": "Max Health", "direction": "output", "category": "real", "subCategory": "double", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
           ]
         },
         {
           "id": "div1", "type": "call_function", "nodeClass": "K2Node_PromotableOperator", "nodeGuid": "OP000001",
-          "position": { "x": 550, "y": 250 }, "title": "Divide", "properties": { "bIsPureFunc": true },
+          "position": { "x": 550, "y": 270 }, "title": "Divide", "properties": { "bIsPureFunc": true },
           "pins": [
             { "id": "div1_a", "name": "A", "friendlyName": "A", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "0.0", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
             { "id": "div1_b", "name": "B", "friendlyName": "B", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "1.0", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
@@ -190,13 +190,38 @@
           ]
         },
         {
-          "id": "async1", "type": "async_action", "nodeClass": "K2Node_AsyncAction", "nodeGuid": "AA000001",
-          "position": { "x": 650, "y": 540 }, "title": "Async Load Primary Asset", "properties": {},
+          "id": "vget_cd", "type": "variable_get", "nodeClass": "K2Node_VariableGet", "nodeGuid": "VG000003",
+          "position": { "x": 150, "y": 720 }, "title": "bOnCooldown", "properties": {},
           "pins": [
-            { "id": "async1_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
-            { "id": "async1_done", "name": "Completed", "friendlyName": "Completed", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
-            { "id": "async1_asset", "name": "Asset", "friendlyName": "Asset to Load", "direction": "input", "category": "softobject", "subCategory": "", "subCategoryObject": "Object", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": true, "hidden": false, "advancedView": false },
-            { "id": "async1_ret", "name": "Loaded", "friendlyName": "Loaded Object", "direction": "output", "category": "object", "subCategory": "", "subCategoryObject": "Object", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+            { "id": "vget_cd_out", "name": "bOnCooldown", "friendlyName": "On Cooldown", "direction": "output", "category": "bool", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "false", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "branch1", "type": "branch", "nodeClass": "K2Node_IfThenElse", "nodeGuid": "BR000001",
+          "position": { "x": 350, "y": 600 }, "title": "Branch", "properties": {},
+          "pins": [
+            { "id": "branch1_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "branch1_cond", "name": "Condition", "friendlyName": "Condition", "direction": "input", "category": "bool", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "false", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "branch1_true", "name": "then", "friendlyName": "true", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "branch1_false", "name": "else", "friendlyName": "false", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "print_cd", "type": "call_function", "nodeClass": "K2Node_CallFunction", "nodeGuid": "CF000020",
+          "position": { "x": 650, "y": 540 }, "title": "Print String", "properties": {},
+          "pins": [
+            { "id": "print_cd_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "print_cd_eo", "name": "then", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "print_cd_str", "name": "InString", "friendlyName": "In String", "direction": "input", "category": "string", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "On Cooldown", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "print_cdover", "type": "call_function", "nodeClass": "K2Node_CallFunction", "nodeGuid": "CF000021",
+          "position": { "x": 650, "y": 720 }, "title": "Print String", "properties": {},
+          "pins": [
+            { "id": "print_cdover_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "print_cdover_eo", "name": "then", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "print_cdover_str", "name": "InString", "friendlyName": "In String", "direction": "input", "category": "string", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "Cooldown Over", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
           ]
         },
         {
@@ -211,8 +236,8 @@
         },
         {
           "id": "nc_main", "type": "comment", "nodeClass": "EdGraphNode_Comment", "nodeGuid": "NC000001",
-          "position": { "x": -50, "y": -130 }, "title": "Main event graph — timeline, variable tinting, delegate calls, cast, spawn, async load",
-          "properties": { "NodeWidth": 1500, "NodeHeight": 800, "CommentColor": "(R=0.15,G=0.25,B=0.45,A=0.2)" },
+          "position": { "x": -50, "y": -130 }, "title": "Main event graph — timeline, variable tinting, delegate calls, cast, spawn, cooldown branch",
+          "properties": { "NodeWidth": 1700, "NodeHeight": 1000, "CommentColor": "(R=0.15,G=0.25,B=0.45,A=0.2)" },
           "pins": []
         }
       ],
@@ -229,7 +254,10 @@
         { "id": "e10", "source": "del_call", "sourcePin": "then", "target": "print_alive", "targetPin": "execute", "category": "exec" },
         { "id": "e11", "source": "ev_input", "sourcePin": "Triggered", "target": "cast1", "targetPin": "execute", "category": "exec" },
         { "id": "e12", "source": "cast1", "sourcePin": "Success", "target": "spawn1", "targetPin": "execute", "category": "exec" },
-        { "id": "e13", "source": "ev_tick", "sourcePin": "exec", "target": "async1", "targetPin": "execute", "category": "exec" }
+        { "id": "e13", "source": "ev_tick", "sourcePin": "exec", "target": "branch1", "targetPin": "execute", "category": "exec" },
+        { "id": "e14", "source": "vget_cd", "sourcePin": "bOnCooldown", "target": "branch1", "targetPin": "Condition", "category": "bool" },
+        { "id": "e15", "source": "branch1", "sourcePin": "then", "target": "print_cd", "targetPin": "execute", "category": "exec" },
+        { "id": "e16", "source": "branch1", "sourcePin": "else", "target": "print_cdover", "targetPin": "execute", "category": "exec" }
       ]
     },
     "Sprint8Features": {
