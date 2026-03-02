@@ -7,6 +7,7 @@ BlueprintPin instances.
 from __future__ import annotations
 
 import re
+import urllib.parse
 
 from ue_flow.t3d_models import (
     BlueprintGraph,
@@ -199,6 +200,7 @@ def _parse_pin(content: str) -> BlueprintPin:
     default_text_value = ""
     not_connectable = False
     default_value_is_ignored = False
+    description = ""
 
     for key, value in tokens:
         if key == "PinId":
@@ -269,6 +271,8 @@ def _parse_pin(content: str) -> BlueprintPin:
             default_value_is_ignored = _parse_bool(value)
         elif key == "bAdvancedView":
             advanced_view = _parse_bool(value)
+        elif key == "PinToolTip":
+            description = urllib.parse.unquote(value)
         # All other keys (PersistentGuid, bDefaultValueIsReadOnly, etc.) are ignored
 
     return BlueprintPin(
@@ -294,6 +298,7 @@ def _parse_pin(content: str) -> BlueprintPin:
         default_text_value=default_text_value,
         not_connectable=not_connectable,
         default_value_is_ignored=default_value_is_ignored,
+        description=description,
     )
 
 

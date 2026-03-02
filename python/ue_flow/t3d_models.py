@@ -67,6 +67,7 @@ class BlueprintPin:
     default_text_value: str = ""            # DefaultTextValue
     not_connectable: bool = False           # bNotConnectable
     default_value_is_ignored: bool = False  # bDefaultValueIsIgnored
+    description: str = ""                   # PinToolTip (URL-decoded)
 
 
 @dataclass

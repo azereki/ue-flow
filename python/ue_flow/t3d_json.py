@@ -78,7 +78,7 @@ def _infer_type(node_class: str) -> str:
 
 
 def _serialize_pin(pin: BlueprintPin) -> dict:
-    return {
+    result: dict = {
         "id": pin.pin_id,
         "name": pin.pin_name,
         "friendlyName": pin.friendly_name,
@@ -94,6 +94,9 @@ def _serialize_pin(pin: BlueprintPin) -> dict:
         "hidden": pin.hidden,
         "advancedView": pin.advanced_view,
     }
+    if pin.description:
+        result["description"] = pin.description
+    return result
 
 
 def _extract_edges(nodes: list[BlueprintNode]) -> list[dict]:
@@ -112,7 +115,7 @@ def _extract_edges(nodes: list[BlueprintNode]) -> list[dict]:
         for pin in node.pins:
             if pin.direction == PinDirection.OUTPUT and pin.linked_to:
                 for target_node_name, target_pin_id in pin.linked_to:
-                    key = (node.node_name, pin.pin_name, target_node_name, target_pin_id)
+                    key = (node.node_name, pin.pin_id, target_node_name, target_pin_id)
                     if key not in seen:
                         seen.add(key)
                         # Resolve target pin name
@@ -233,6 +236,41 @@ def _infer_title(node: BlueprintNode) -> str:
         if isinstance(sig, str) and sig:
             return sig
         return "Function Entry"
+
+    # InputAction → "InputAction ActionName"
+    if short_name == "K2Node_InputAction":
+        action_name = props.get("InputActionName", "")
+        if isinstance(action_name, str) and action_name:
+            return f"InputAction {action_name}"
+        return "InputAction"
+
+    # InputAxisEvent → "InputAxis AxisName"
+    if short_name == "K2Node_InputAxisEvent":
+        axis_name = props.get("InputAxisName", "")
+        if isinstance(axis_name, str) and axis_name:
+            return f"InputAxis {axis_name}"
+        return "InputAxis"
+
+    # InputAxisKeyEvent / InputKey → use InputAxisKey or InputKey property
+    if short_name in ("K2Node_InputAxisKeyEvent", "K2Node_InputKey", "K2Node_InputTouch"):
+        key_name = props.get("InputAxisKey", props.get("InputKey", props.get("InputKeyName", "")))
+        if isinstance(key_name, str) and key_name:
+            # Key value may be a plain name like "Gamepad_LeftX" or a struct "(KeyName=...)"
+            if key_name.startswith("("):
+                import re as _re
+                m = _re.search(r'KeyName="?([^",)]+)"?', key_name)
+                key_name = m.group(1) if m else key_name
+            return key_name
+        return short_name.replace("K2Node_", "")
+
+    # EnhancedInputAction → use InputAction asset reference
+    if short_name == "K2Node_EnhancedInputAction":
+        action = props.get("InputAction", "")
+        if isinstance(action, str) and action:
+            # Asset path like /Game/Input/IA_Jump.IA_Jump — take last segment before dot
+            base = action.rsplit(".", 1)[-1] if "." in action else action.rsplit("/", 1)[-1]
+            return f"IA {base}"
+        return "Enhanced InputAction"
 
     # Fallback: clean up class name
     name = short_name.replace("K2Node_", "").replace("EdGraphNode_", "")
