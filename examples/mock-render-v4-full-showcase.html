@@ -96,7 +96,7 @@
         },
         {
           "id": "ev_input", "type": "event", "nodeClass": "K2Node_EnhancedInputAction", "nodeGuid": "EV000003",
-          "position": { "x": 0, "y": 350 }, "title": "IA Attack", "properties": { "InputAction": "/Game/Input/IA_Attack.IA_Attack" },
+          "position": { "x": 0, "y": 430 }, "title": "IA Attack", "properties": { "InputAction": "/Game/Input/IA_Attack.IA_Attack" },
           "pins": [
             { "id": "ev_input_trig", "name": "Triggered", "friendlyName": "Triggered", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
             { "id": "ev_input_val", "name": "ActionValue", "friendlyName": "Action Value", "direction": "output", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
@@ -116,21 +116,21 @@
         },
         {
           "id": "vget_hp", "type": "variable_get", "nodeClass": "K2Node_VariableGet", "nodeGuid": "VG000001",
-          "position": { "x": 300, "y": 200 }, "title": "Health", "properties": {},
+          "position": { "x": 300, "y": 190 }, "title": "Health", "properties": {},
           "pins": [
             { "id": "vget_hp_out", "name": "Health", "friendlyName": "Health", "direction": "output", "category": "real", "subCategory": "double", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
           ]
         },
         {
           "id": "vget_maxhp", "type": "variable_get", "nodeClass": "K2Node_VariableGet", "nodeGuid": "VG000002",
-          "position": { "x": 300, "y": 360 }, "title": "MaxHealth", "properties": {},
+          "position": { "x": 300, "y": 310 }, "title": "MaxHealth", "properties": {},
           "pins": [
             { "id": "vget_maxhp_out", "name": "MaxHealth", "friendlyName": "Max Health", "direction": "output", "category": "real", "subCategory": "double", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
           ]
         },
         {
           "id": "div1", "type": "call_function", "nodeClass": "K2Node_PromotableOperator", "nodeGuid": "OP000001",
-          "position": { "x": 550, "y": 270 }, "title": "Divide", "properties": { "bIsPureFunc": true },
+          "position": { "x": 550, "y": 240 }, "title": "Divide", "properties": { "bIsPureFunc": true },
           "pins": [
             { "id": "div1_a", "name": "A", "friendlyName": "A", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "0.0", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
             { "id": "div1_b", "name": "B", "friendlyName": "B", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "1.0", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
@@ -169,7 +169,7 @@
         },
         {
           "id": "cast1", "type": "cast", "nodeClass": "K2Node_DynamicCast", "nodeGuid": "DC000002",
-          "position": { "x": 350, "y": 350 }, "title": "Cast To ACharacter", "properties": { "TargetType": "/Script/Engine.Character" },
+          "position": { "x": 350, "y": 430 }, "title": "Cast To ACharacter", "properties": { "TargetType": "/Script/Engine.Character" },
           "pins": [
             { "id": "cast1_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
             { "id": "cast1_obj", "name": "Object", "friendlyName": "Object", "direction": "input", "category": "object", "subCategory": "", "subCategoryObject": "Object", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
@@ -180,7 +180,7 @@
         },
         {
           "id": "spawn1", "type": "call_function", "nodeClass": "K2Node_SpawnActorFromClass", "nodeGuid": "SA000001",
-          "position": { "x": 650, "y": 350 }, "title": "Spawn Actor From Class", "properties": {},
+          "position": { "x": 650, "y": 430 }, "title": "Spawn Actor From Class", "properties": {},
           "pins": [
             { "id": "spawn1_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
             { "id": "spawn1_eo", "name": "then", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
