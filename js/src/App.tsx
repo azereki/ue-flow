@@ -476,7 +476,15 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
                 <SingleGraphView key={activeGraph} graphJSON={currentGraphJSON} focusNodeTitle={focusNodeTitle} onSelectedNodeChange={setSelectedNode} />
               </ErrorBoundary>
             ) : (
-              <div className="ueflow-empty-graph">No graph selected</div>
+              <div className="ueflow-empty-graph">
+                <div className="ueflow-empty-graph-card">
+                  <div className="ueflow-empty-graph-icon">&#9670;</div>
+                  <div className="ueflow-empty-graph-title">No Graph Selected</div>
+                  <div className="ueflow-empty-graph-subtitle">
+                    Select a graph from the sidebar or open a tab to view its Blueprint.
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         </main>

@@ -46,8 +46,19 @@
   /* Typography */
   --uf-font-body: 'Geist', system-ui, sans-serif;
   --uf-font-mono: 'JetBrainsMono Nerd Font', 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  --uf-text-xl: 24px;
   /* Transitions */
   --uf-transition: 0.15s ease;
+  /* Border radius */
+  --uf-radius-node: 15px;
+  --uf-radius-pill: 6px;
+  /* Chrome heights */
+  --uf-topbar-h: 36px;
+  --uf-statusbar-h: 24px;
+  /* Vector axis colors */
+  --uf-axis-x: #c44;
+  --uf-axis-y: #4a4;
+  --uf-axis-z: #48c;
   /* Noise overlay */
   --uf-noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.28' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.22'/%3E%3C/svg%3E");
 }
@@ -57,7 +68,7 @@
 .ueflow-node {
   background: var(--uf-node-bg);
   border: 1px solid var(--uf-node-border);
-  border-radius: 6px;
+  border-radius: var(--uf-radius-pill);
   min-width: 160px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.03);
   font-family: var(--uf-font-body);
@@ -84,7 +95,7 @@
   opacity: 0.2;
   pointer-events: none;
   z-index: 1;
-  border-radius: 6px 0 0 6px;
+  border-radius: var(--uf-radius-pill) 0 0 var(--uf-radius-pill);
 }
 
 .ueflow-node-header {
@@ -99,7 +110,7 @@
   );
   border-top: 1px solid rgba(255, 255, 255, 0.12);
   border-bottom: 1px solid rgba(0, 0, 0, 0.3);
-  border-radius: 5px 5px 0 0;
+  border-radius: calc(var(--uf-radius-pill) - 1px) calc(var(--uf-radius-pill) - 1px) 0 0;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
   font-weight: 600;
   font-size: 11px;
@@ -211,7 +222,7 @@
 
 .ueflow-advanced-arrow {
   font-size: 6px;
-  transition: transform 0.2s;
+  transition: transform var(--uf-transition);
 }
 
 .ueflow-advanced-arrow.ueflow-collapsed {
@@ -342,7 +353,7 @@
 /* Variable Get/Set: rounded pill shape (matches UE SGraphNodeK2Var) */
 .ueflow-node[data-ue-type="variable_get"],
 .ueflow-node[data-ue-type="variable_set"] {
-  border-radius: 15px;
+  border-radius: var(--uf-radius-node);
   min-width: 130px;
 }
 /* Variable pill: brighter body tint to distinguish from function/event nodes.
@@ -377,7 +388,7 @@
    Same treatment as variable pills: header tint baked into node background,
    ::after hidden to avoid accent stripe overflow at rounded corners. */
 .ueflow-node[data-compact] {
-  border-radius: 15px;
+  border-radius: var(--uf-radius-node);
   min-width: 80px;
   background:
     linear-gradient(
@@ -420,9 +431,9 @@
   position: absolute;
   bottom: 60px;
   right: 20px;
-  font-size: 72px;
+  font-size: calc(72px * var(--uf-scale, 1));
   font-weight: 900;
-  letter-spacing: 8px;
+  letter-spacing: calc(8px * var(--uf-scale, 1));
   color: rgba(255, 255, 255, 0.03);
   pointer-events: none;
   user-select: none;
@@ -589,7 +600,7 @@
 
 .ueflow-comment-title {
   color: #ffffff;
-  font-size: 16px;
+  font-size: var(--uf-text-xl);
   font-weight: 700;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
   white-space: nowrap;
@@ -671,7 +682,7 @@
   overflow: hidden;
   max-width: 0;
   opacity: 0;
-  transition: max-width 0.2s ease, opacity 0.15s ease;
+  transition: max-width var(--uf-transition), opacity var(--uf-transition);
 }
 
 .ueflow-export-toolbar:hover .ueflow-toolbar-label,
@@ -719,7 +730,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 36px;
+  height: var(--uf-topbar-h);
   padding: 0 16px;
   background: linear-gradient(180deg, var(--uf-chrome-bg-solid) 0%, var(--uf-chrome-bg) 100%);
   border-bottom: 1px solid var(--uf-subtle-border);
@@ -751,7 +762,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 24px;
+  height: var(--uf-statusbar-h);
   padding: 0 16px;
   background: linear-gradient(0deg, var(--uf-chrome-bg-solid) 0%, var(--uf-chrome-bg) 100%);
   border-top: 1px solid var(--uf-subtle-border);
@@ -798,8 +809,39 @@
   align-items: center;
   justify-content: center;
   height: 100%;
+  background: var(--uf-bg);
+}
+
+.ueflow-empty-graph-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 48px;
+  background: var(--uf-surface);
+  border: 1px solid var(--uf-surface-border);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.ueflow-empty-graph-icon {
+  font-size: 36px;
+  color: rgba(99, 102, 241, 0.25);
+  margin-bottom: 4px;
+}
+
+.ueflow-empty-graph-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--uf-text);
+  letter-spacing: 0.02em;
+}
+
+.ueflow-empty-graph-subtitle {
+  font-size: 13px;
   color: var(--uf-text-muted);
-  font-size: 14px;
+  max-width: 300px;
+  line-height: 1.5;
 }
 
 .ueflow-empty-state {
@@ -1062,7 +1104,7 @@
 
 .ueflow-section-arrow {
   font-size: 7px;
-  transition: transform 0.2s;
+  transition: transform var(--uf-transition);
   color: #909090;
 }
 
@@ -1391,7 +1433,7 @@
 
 .ueflow-details-section-arrow {
   font-size: 7px;
-  transition: transform 0.2s;
+  transition: transform var(--uf-transition);
   color: #909090;
 }
 
@@ -1753,9 +1795,9 @@
 }
 
 /* Vector axis left-border colors (UE-style X/Y/Z) */
-.ueflow-field-vector--x { border-left-color: #c44 !important; }
-.ueflow-field-vector--y { border-left-color: #4a4 !important; }
-.ueflow-field-vector--z { border-left-color: #48c !important; }
+.ueflow-field-vector--x { border-left-color: var(--uf-axis-x) !important; }
+.ueflow-field-vector--y { border-left-color: var(--uf-axis-y) !important; }
+.ueflow-field-vector--z { border-left-color: var(--uf-axis-z) !important; }
 
 .ueflow-field-array-badge {
   font-size: 10px;
