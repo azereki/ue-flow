@@ -43,6 +43,15 @@ function parseBool(value: string): boolean {
   return value.trim().toLowerCase() === 'true';
 }
 
+/**
+ * Extract display text from NSLOCTEXT("Namespace", "Key", "DisplayText").
+ * Returns the display text (3rd argument), or the raw string if not NSLOCTEXT format.
+ */
+function parseNSLOCTEXT(value: string): string {
+  const m = value.match(/^NSLOCTEXT\s*\(\s*"[^"]*"\s*,\s*"[^"]*"\s*,\s*"([^"]*)"\s*\)/);
+  return m ? m[1] : value;
+}
+
 interface LinkedToEntry {
   nodeName: string;
   pinId: string;
@@ -132,9 +141,36 @@ export function tokenizePinContent(content: string): Array<[string, string]> {
         : content.slice(valStart, i);
       tokens.push([key, '(' + value + ')']);
     } else {
-      // Unquoted value — read until comma or end
+      // Unquoted value — read until comma or end, but track balanced parens
+      // so function-call-like values (e.g., NSLOCTEXT("K2Node","true","true"))
+      // are captured in full.
       const valStart = i;
-      while (i < len && content[i] !== ',') i++;
+      let parenDepth = 0;
+      while (i < len) {
+        if (content[i] === '(') {
+          parenDepth++;
+        } else if (content[i] === ')') {
+          if (parenDepth > 0) {
+            parenDepth--;
+            if (parenDepth === 0) {
+              i++; // include closing paren
+              break;
+            }
+          } else {
+            break;
+          }
+        } else if (content[i] === '"' && parenDepth > 0) {
+          // Skip quoted strings inside parens
+          i++;
+          while (i < len && content[i] !== '"') {
+            if (content[i] === '\\' && i + 1 < len) i++;
+            i++;
+          }
+        } else if (content[i] === ',' && parenDepth === 0) {
+          break;
+        }
+        i++;
+      }
       const value = content.slice(valStart, i).trimEnd();
       tokens.push([key, value]);
     }
@@ -180,7 +216,7 @@ function parsePin(content: string): ParsedPin {
         pinName = value;
         break;
       case 'PinFriendlyName':
-        friendlyName = value;
+        friendlyName = parseNSLOCTEXT(value);
         break;
       case 'Direction': {
         const dirStr = value.replace(/"/g, '');
