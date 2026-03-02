@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Full Feature Showcase (Sprints 1-8) - ue-flow</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #0f1117; }
+    #ue-flow-root { width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="ue-flow-root"></div>
+  <script type="application/json" id="ue-flow-multi-data">
+{
+  "metadata": {
+    "title": "BP_FeatureShowcase",
+    "blueprintName": "BP_FeatureShowcase",
+    "assetPath": "/Game/Blueprints/BP_FeatureShowcase"
+  },
+  "events": [
+    { "name": "BeginPlay", "params": [], "accessSpecifier": "Public" },
+    { "name": "Tick", "params": [{"name": "DeltaTime", "type": "float"}], "accessSpecifier": "Public" },
+    { "name": "OnHealthChanged", "params": [{"name": "NewHealth", "type": "float"}, {"name": "OldHealth", "type": "float"}], "replicates": "NotReplicated", "accessSpecifier": "Public" },
+    { "name": "Server_ApplyDamage", "params": [{"name": "Damage", "type": "float"}, {"name": "Instigator", "type": "Object"}], "replicates": "RunOnServer", "reliable": true, "accessSpecifier": "Public" },
+    { "name": "Multicast_PlayHitEffect", "params": [{"name": "HitLocation", "type": "Vector"}], "replicates": "Multicast", "reliable": false, "accessSpecifier": "Public" },
+    { "name": "Client_ShowDamageNumber", "params": [{"name": "Amount", "type": "float"}, {"name": "Position", "type": "Vector"}], "replicates": "RunOnClient", "reliable": false, "accessSpecifier": "Protected" },
+    { "name": "OnRep_Health", "params": [], "accessSpecifier": "Private" }
+  ],
+  "functions": [
+    { "name": "CalculateDamage", "category": "Combat", "inputs": [{"name": "BaseDamage", "type": "float"}, {"name": "Multiplier", "type": "float"}, {"name": "DamageType", "type": "Name"}], "outputs": [{"name": "FinalDamage", "type": "float"}], "pure": true, "accessSpecifier": "Public", "compactTitle": "Damage", "description": "Calculate final damage after applying multipliers and resistances" },
+    { "name": "GetHealth", "category": "Stats", "outputs": [{"name": "Health", "type": "float"}], "pure": true, "accessSpecifier": "Public" },
+    { "name": "IsAlive", "category": "Stats", "outputs": [{"name": "ReturnValue", "type": "bool"}], "pure": true, "accessSpecifier": "Public" },
+    { "name": "SpawnProjectile", "category": "Combat", "inputs": [{"name": "Class", "type": "class"}, {"name": "SpawnTransform", "type": "Transform"}, {"name": "Velocity", "type": "Vector"}], "outputs": [{"name": "Projectile", "type": "Object"}], "accessSpecifier": "Public" },
+    { "name": "SelectAbility", "category": "Abilities", "inputs": [{"name": "AbilityIndex", "type": "int"}], "outputs": [{"name": "AbilityActor", "type": "Object"}], "accessSpecifier": "Public" },
+    { "name": "ProcessTimeline", "category": "Animation", "inputs": [{"name": "Alpha", "type": "float"}], "accessSpecifier": "Public" },
+    { "name": "UpdateUI", "category": "UI", "inputs": [{"name": "Health", "type": "float"}, {"name": "MaxHealth", "type": "float"}], "accessSpecifier": "Private" }
+  ],
+  "variables": [
+    { "name": "Health", "type": "Float", "category": "Stats", "replicated": true, "replicationMode": "RepNotify", "default": "100.0", "instanceEditable": true, "exposeOnSpawn": true, "saveGame": true },
+    { "name": "MaxHealth", "type": "Float", "category": "Stats", "default": "200.0", "instanceEditable": true },
+    { "name": "Armor", "type": "Float", "category": "Stats", "default": "25.0" },
+    { "name": "bIsAlive", "type": "Boolean", "category": "Stats", "default": "true", "transient": true },
+    { "name": "PlayerName", "type": "String", "category": "Info", "default": "Hero", "instanceEditable": true },
+    { "name": "Level", "type": "Integer", "category": "Stats", "default": "1", "replicated": true, "replicationMode": "Replicated", "saveGame": true },
+    { "name": "CurrentWeapon", "type": "Object", "category": "Combat", "private": true },
+    { "name": "Inventory", "type": "Array<AActor>", "category": "Items", "containerType": "Array", "innerType": "AActor", "default": "(Sword,Shield,Potion)" },
+    { "name": "AbilityMap", "type": "Map<FName, Object>", "category": "Abilities", "containerType": "Map", "innerType": "Object", "keyType": "FName", "default": "(Fireball:AbilityBP_Fire,IceBlast:AbilityBP_Ice)" },
+    { "name": "ActiveTags", "type": "Set<Gameplay Tag>", "category": "Gameplay", "containerType": "Set", "innerType": "Gameplay Tag", "default": "(Combat.Active,Status.Alive)" },
+    { "name": "DamageMultiplier", "type": "Float", "category": "Combat", "default": "1.5" },
+    { "name": "TeamID", "type": "Integer", "category": "Info", "replicated": true, "default": "0" }
+  ],
+  "components": [
+    { "name": "DefaultSceneRoot", "class": "USceneComponent" },
+    { "name": "CharacterMesh", "class": "USkeletalMeshComponent", "parent": "DefaultSceneRoot" },
+    { "name": "HealthBar", "class": "UWidgetComponent", "parent": "DefaultSceneRoot" },
+    { "name": "HitBox", "class": "UCapsuleComponent", "parent": "DefaultSceneRoot" }
+  ],
+  "macros": [
+    { "name": "ClampHealth", "category": "Stats", "inputs": [{"name": "Value", "type": "float"}], "outputs": [{"name": "Clamped", "type": "float"}] }
+  ],
+  "structs": [
+    { "name": "FDamageEvent", "fields": [{"name": "Damage", "type": "float"}, {"name": "DamageType", "type": "Name"}, {"name": "bCritical", "type": "bool"}, {"name": "HitLocation", "type": "Vector"}] },
+    { "name": "FAbilityInfo", "fields": [{"name": "Name", "type": "Name"}, {"name": "Cooldown", "type": "float"}, {"name": "ManaCost", "type": "int"}, {"name": "Icon", "type": "Object"}] }
+  ],
+  "delegates": [
+    { "name": "OnHealthChanged", "signature": "void(float NewHealth, float OldHealth)", "params": [{"name": "NewHealth", "type": "float"}, {"name": "OldHealth", "type": "float"}] },
+    { "name": "OnDeath", "signature": "void(AActor* Killer)", "params": [{"name": "Killer", "type": "Object"}] }
+  ],
+  "dataTables": {},
+  "comparison": {
+    "EventGraph": { "before": 0, "after": 20 },
+    "Sprint8Features": { "before": 0, "after": 16 },
+    "AllPinTypes": { "before": 0, "after": 4 },
+    "ControlFlow": { "before": 0, "after": 14 }
+  },
+  "graphs": {
+    "EventGraph": {
+      "metadata": { "title": "Event Graph", "assetPath": "/Game/Blueprints/BP_FeatureShowcase" },
+      "nodes": [
+        {
+          "id": "ev_begin", "type": "event", "nodeClass": "K2Node_Event", "nodeGuid": "EV000001",
+          "position": { "x": 0, "y": 0 }, "title": "Event BeginPlay", "properties": {},
+          "pins": [
+            { "id": "ev_begin_eo", "name": "exec", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "ev_tick", "type": "event", "nodeClass": "K2Node_Event", "nodeGuid": "EV000002",
+          "position": { "x": 0, "y": 600 }, "title": "Event Tick", "properties": {},
+          "pins": [
+            { "id": "ev_tick_eo", "name": "exec", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ev_tick_dt", "name": "DeltaSeconds", "friendlyName": "Delta Seconds", "direction": "output", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "ev_input", "type": "event", "nodeClass": "K2Node_EnhancedInputAction", "nodeGuid": "EV000003",
+          "position": { "x": 0, "y": 350 }, "title": "IA Attack", "properties": { "InputAction": "/Game/Input/IA_Attack.IA_Attack" },
+          "pins": [
+            { "id": "ev_input_trig", "name": "Triggered", "friendlyName": "Triggered", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "ev_input_val", "name": "ActionValue", "friendlyName": "Action Value", "direction": "output", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "tl_fade", "type": "timeline", "nodeClass": "K2Node_Timeline", "nodeGuid": "TL000001",
+          "position": { "x": 300, "y": 0 }, "title": "Timeline", "properties": {},
+          "pins": [
+            { "id": "tl_play", "name": "Play", "friendlyName": "Play", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "tl_stop", "name": "Stop", "friendlyName": "Stop", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "tl_reverse", "name": "Reverse", "friendlyName": "Reverse", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "tl_upd", "name": "Update", "friendlyName": "Update", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "tl_fin", "name": "Finished", "friendlyName": "Finished", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "tl_alpha", "name": "Alpha", "friendlyName": "Alpha", "direction": "output", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "vget_hp", "type": "variable_get", "nodeClass": "K2Node_VariableGet", "nodeGuid": "VG000001",
+          "position": { "x": 300, "y": 220 }, "title": "Health", "properties": {},
+          "pins": [
+            { "id": "vget_hp_out", "name": "Health", "friendlyName": "Health", "direction": "output", "category": "real", "subCategory": "double", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "vget_maxhp", "type": "variable_get", "nodeClass": "K2Node_VariableGet", "nodeGuid": "VG000002",
+          "position": { "x": 300, "y": 310 }, "title": "MaxHealth", "properties": {},
+          "pins": [
+            { "id": "vget_maxhp_out", "name": "MaxHealth", "friendlyName": "Max Health", "direction": "output", "category": "real", "subCategory": "double", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "div1", "type": "call_function", "nodeClass": "K2Node_PromotableOperator", "nodeGuid": "OP000001",
+          "position": { "x": 550, "y": 250 }, "title": "Divide", "properties": { "bIsPureFunc": true },
+          "pins": [
+            { "id": "div1_a", "name": "A", "friendlyName": "A", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "0.0", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "div1_b", "name": "B", "friendlyName": "B", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "1.0", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "div1_ret", "name": "ReturnValue", "friendlyName": "Return Value", "direction": "output", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "lerp1", "type": "call_function", "nodeClass": "K2Node_CallFunction", "nodeGuid": "CF000001",
+          "position": { "x": 700, "y": 60 }, "title": "Lerp", "properties": { "bIsPureFunc": true },
+          "pins": [
+            { "id": "lerp1_a", "name": "A", "friendlyName": "A", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "0.0", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "lerp1_b", "name": "B", "friendlyName": "B", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "1.0", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "lerp1_t", "name": "Alpha", "friendlyName": "Alpha", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "0.0", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "lerp1_ret", "name": "ReturnValue", "friendlyName": "Return Value", "direction": "output", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "vset_hp", "type": "variable_set", "nodeClass": "K2Node_VariableSet", "nodeGuid": "VS000001",
+          "position": { "x": 700, "y": -60 }, "title": "Set Health", "properties": {},
+          "pins": [
+            { "id": "vset_hp_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "vset_hp_eo", "name": "then", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "vset_hp_val", "name": "Health", "friendlyName": "Health", "direction": "input", "category": "real", "subCategory": "double", "subCategoryObject": "", "containerType": "", "defaultValue": "100.0", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "vset_hp_ret", "name": "Health", "friendlyName": "Health", "direction": "output", "category": "real", "subCategory": "double", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "del_call", "type": "delegate_call", "nodeClass": "K2Node_CallDelegate", "nodeGuid": "DC000001",
+          "position": { "x": 1000, "y": -60 }, "title": "Call OnHealthChanged", "properties": {},
+          "pins": [
+            { "id": "del_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "del_eo", "name": "then", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "del_new", "name": "NewHealth", "friendlyName": "New Health", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "del_old", "name": "OldHealth", "friendlyName": "Old Health", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "cast1", "type": "cast", "nodeClass": "K2Node_DynamicCast", "nodeGuid": "DC000002",
+          "position": { "x": 350, "y": 350 }, "title": "Cast To ACharacter", "properties": { "TargetType": "/Script/Engine.Character" },
+          "pins": [
+            { "id": "cast1_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cast1_obj", "name": "Object", "friendlyName": "Object", "direction": "input", "category": "object", "subCategory": "", "subCategoryObject": "Object", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cast1_ok", "name": "Success", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cast1_fail", "name": "CastFailed", "friendlyName": "Cast Failed", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cast1_as", "name": "AsCharacter", "friendlyName": "As Character", "direction": "output", "category": "object", "subCategory": "", "subCategoryObject": "Character", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "spawn1", "type": "call_function", "nodeClass": "K2Node_SpawnActorFromClass", "nodeGuid": "SA000001",
+          "position": { "x": 650, "y": 350 }, "title": "Spawn Actor From Class", "properties": {},
+          "pins": [
+            { "id": "spawn1_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "spawn1_eo", "name": "then", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "spawn1_cls", "name": "Class", "friendlyName": "Class", "direction": "input", "category": "class", "subCategory": "", "subCategoryObject": "Actor", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "spawn1_xform", "name": "SpawnTransform", "friendlyName": "Spawn Transform", "direction": "input", "category": "struct", "subCategory": "", "subCategoryObject": "Transform", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "spawn1_ret", "name": "ReturnValue", "friendlyName": "Return Value", "direction": "output", "category": "object", "subCategory": "", "subCategoryObject": "Actor", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "async1", "type": "async_action", "nodeClass": "K2Node_AsyncAction", "nodeGuid": "AA000001",
+          "position": { "x": 650, "y": 540 }, "title": "Async Load Primary Asset", "properties": {},
+          "pins": [
+            { "id": "async1_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "async1_done", "name": "Completed", "friendlyName": "Completed", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "async1_asset", "name": "Asset", "friendlyName": "Asset to Load", "direction": "input", "category": "softobject", "subCategory": "", "subCategoryObject": "Object", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": true, "hidden": false, "advancedView": false },
+            { "id": "async1_ret", "name": "Loaded", "friendlyName": "Loaded Object", "direction": "output", "category": "object", "subCategory": "", "subCategoryObject": "Object", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "print_alive", "type": "call_function", "nodeClass": "K2Node_CallFunction", "nodeGuid": "CF000010",
+          "position": { "x": 1300, "y": -60 }, "title": "Print String", "properties": {},
+          "pins": [
+            { "id": "print_alive_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "print_alive_eo", "name": "then", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "print_alive_str", "name": "InString", "friendlyName": "In String", "direction": "input", "category": "string", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "Health Updated", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "print_alive_dur", "name": "Duration", "friendlyName": "Duration", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "2.0", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "nc_main", "type": "comment", "nodeClass": "EdGraphNode_Comment", "nodeGuid": "NC000001",
+          "position": { "x": -50, "y": -130 }, "title": "Main event graph — timeline, variable tinting, delegate calls, cast, spawn, async load",
+          "properties": { "NodeWidth": 1500, "NodeHeight": 800, "CommentColor": "(R=0.15,G=0.25,B=0.45,A=0.2)" },
+          "pins": []
+        }
+      ],
+      "edges": [
+        { "id": "e1", "source": "ev_begin", "sourcePin": "exec", "target": "tl_fade", "targetPin": "Play", "category": "exec" },
+        { "id": "e2", "source": "tl_fade", "sourcePin": "Update", "target": "vset_hp", "targetPin": "execute", "category": "exec" },
+        { "id": "e3", "source": "tl_fade", "sourcePin": "Alpha", "target": "lerp1", "targetPin": "Alpha", "category": "real" },
+        { "id": "e4", "source": "vget_hp", "sourcePin": "Health", "target": "div1", "targetPin": "A", "category": "real" },
+        { "id": "e5", "source": "vget_maxhp", "sourcePin": "MaxHealth", "target": "div1", "targetPin": "B", "category": "real" },
+        { "id": "e6", "source": "div1", "sourcePin": "ReturnValue", "target": "lerp1", "targetPin": "B", "category": "real" },
+        { "id": "e7", "source": "lerp1", "sourcePin": "ReturnValue", "target": "vset_hp", "targetPin": "Health", "category": "real" },
+        { "id": "e8", "source": "vset_hp", "sourcePin": "then", "target": "del_call", "targetPin": "execute", "category": "exec" },
+        { "id": "e9", "source": "vset_hp", "sourcePin": "Health", "target": "del_call", "targetPin": "NewHealth", "category": "real" },
+        { "id": "e10", "source": "del_call", "sourcePin": "then", "target": "print_alive", "targetPin": "execute", "category": "exec" },
+        { "id": "e11", "source": "ev_input", "sourcePin": "Triggered", "target": "cast1", "targetPin": "execute", "category": "exec" },
+        { "id": "e12", "source": "cast1", "sourcePin": "Success", "target": "spawn1", "targetPin": "execute", "category": "exec" },
+        { "id": "e13", "source": "ev_tick", "sourcePin": "exec", "target": "async1", "targetPin": "execute", "category": "exec" }
+      ]
+    },
+    "Sprint8Features": {
+      "metadata": { "title": "Sprint 8 Features", "assetPath": "/Game/Blueprints/BP_FeatureShowcase" },
+      "nodes": [
+        {
+          "id": "s8_ev", "type": "event", "nodeClass": "K2Node_Event", "nodeGuid": "S8EV0001",
+          "position": { "x": 0, "y": 0 }, "title": "Event BeginPlay", "properties": {},
+          "pins": [
+            { "id": "s8_ev_eo", "name": "exec", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "s8_select", "type": "select", "nodeClass": "K2Node_Select", "nodeGuid": "S8SE0001",
+          "position": { "x": 350, "y": 0 }, "title": "Select", "properties": {},
+          "pins": [
+            { "id": "s8_sel_idx", "name": "Index", "friendlyName": "Index", "direction": "input", "category": "int", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "0", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "s8_sel_0", "name": "Option 0", "friendlyName": "Option 0", "direction": "input", "category": "string", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "Fire", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "s8_sel_1", "name": "Option 1", "friendlyName": "Option 1", "direction": "input", "category": "string", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "Ice", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "s8_sel_2", "name": "Option 2", "friendlyName": "Option 2", "direction": "input", "category": "string", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "Lightning", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "s8_sel_3", "name": "Option 3", "friendlyName": "Option 3", "direction": "input", "category": "string", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "Earth", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "s8_sel_ret", "name": "ReturnValue", "friendlyName": "Return Value", "direction": "output", "category": "string", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "s8_const_fn", "type": "call_function", "nodeClass": "K2Node_CallFunction", "nodeGuid": "S8CF0001",
+          "position": { "x": 350, "y": 300 }, "title": "Get World Settings", "properties": { "bIsPureFunc": true },
+          "pins": [
+            { "id": "s8_const_world", "name": "WorldContext", "friendlyName": "World Context", "direction": "input", "category": "object", "subCategory": "", "subCategoryObject": "Object", "containerType": "", "defaultValue": "", "isReference": false, "isConst": true, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "s8_const_gravity", "name": "Gravity", "friendlyName": "Gravity", "direction": "output", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": true, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "s8_const_name", "name": "LevelName", "friendlyName": "Level Name", "direction": "output", "category": "string", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": true, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "s8_const_ret", "name": "ReturnValue", "friendlyName": "Return Value", "direction": "output", "category": "object", "subCategory": "", "subCategoryObject": "WorldSettings", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "s8_numeric", "type": "call_function", "nodeClass": "K2Node_CallFunction", "nodeGuid": "S8CF0002",
+          "position": { "x": 700, "y": 0 }, "title": "Clamp", "properties": { "bIsPureFunc": true },
+          "pins": [
+            { "id": "s8_num_val", "name": "Value", "friendlyName": "Value", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "50.0", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "s8_num_min", "name": "Min", "friendlyName": "Min", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "0.0", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "s8_num_max", "name": "Max", "friendlyName": "Max", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "100.0", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "s8_num_int", "name": "Count", "friendlyName": "Count", "direction": "input", "category": "int", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "5", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "s8_num_ret", "name": "ReturnValue", "friendlyName": "Return Value", "direction": "output", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "s8_print", "type": "call_function", "nodeClass": "K2Node_CallFunction", "nodeGuid": "S8CF0003",
+          "position": { "x": 700, "y": 200 }, "title": "Print String", "properties": {},
+          "pins": [
+            { "id": "s8_print_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "s8_print_eo", "name": "then", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "s8_print_str", "name": "InString", "friendlyName": "In String", "direction": "input", "category": "string", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "Element Selected", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "s8_print_dur", "name": "Duration", "friendlyName": "Duration", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "5.0", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "s8_memref", "type": "call_function", "nodeClass": "K2Node_CallFunction", "nodeGuid": "S8CF0004",
+          "position": { "x": 350, "y": 500 }, "title": "Get Actor Of Class", "properties": { "bIsPureFunc": true },
+          "pins": [
+            { "id": "s8_memref_cls", "name": "ActorClass", "friendlyName": "Actor Class", "direction": "input", "category": "class", "subCategory": "", "subCategoryObject": "Actor", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false, "pinSubCategoryMemberReference": "(MemberParent=\"/Script/Engine.GameplayStatics\",MemberName=\"GetActorOfClass\")" },
+            { "id": "s8_memref_ret", "name": "ReturnValue", "friendlyName": "Return Value", "direction": "output", "category": "object", "subCategory": "", "subCategoryObject": "Actor", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "s8_edge_thick", "type": "call_function", "nodeClass": "K2Node_PromotableOperator", "nodeGuid": "S8OP0001",
+          "position": { "x": 0, "y": 200 }, "title": "Add", "properties": { "bIsPureFunc": true },
+          "pins": [
+            { "id": "s8_edge_a", "name": "A", "friendlyName": "A", "direction": "input", "category": "int", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "10", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "s8_edge_b", "name": "B", "friendlyName": "B", "direction": "input", "category": "int", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "20", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "s8_edge_ret", "name": "ReturnValue", "friendlyName": "Return Value", "direction": "output", "category": "int", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "nc_s8_sel", "type": "comment", "nodeClass": "EdGraphNode_Comment", "nodeGuid": "NCS80001",
+          "position": { "x": 300, "y": -90 }, "title": "F-06: Select node shows '1 options' pin count badge",
+          "properties": { "NodeWidth": 430, "NodeHeight": 380, "CommentColor": "(R=0.1,G=0.4,B=0.3,A=0.2)" },
+          "pins": []
+        },
+        {
+          "id": "nc_s8_const", "type": "comment", "nodeClass": "EdGraphNode_Comment", "nodeGuid": "NCS80002",
+          "position": { "x": 300, "y": 220 }, "title": "P-05: isConst pins have lighter tinted borders",
+          "properties": { "NodeWidth": 400, "NodeHeight": 230, "CommentColor": "(R=0.4,G=0.2,B=0.1,A=0.2)" },
+          "pins": []
+        },
+        {
+          "id": "nc_s8_numeric", "type": "comment", "nodeClass": "EdGraphNode_Comment", "nodeGuid": "NCS80003",
+          "position": { "x": 650, "y": -90 }, "title": "P-06: Numeric defaults show '50.0' not '= 50.0'. E-02: Edge stroke 3:2 ratio",
+          "properties": { "NodeWidth": 430, "NodeHeight": 200, "CommentColor": "(R=0.3,G=0.15,B=0.4,A=0.2)" },
+          "pins": []
+        },
+        {
+          "id": "nc_s8_memref", "type": "comment", "nodeClass": "EdGraphNode_Comment", "nodeGuid": "NCS80004",
+          "position": { "x": 300, "y": 430 }, "title": "T-04: PinSubCategoryMemberReference preserved in round-trip",
+          "properties": { "NodeWidth": 430, "NodeHeight": 170, "CommentColor": "(R=0.2,G=0.2,B=0.4,A=0.2)" },
+          "pins": []
+        }
+      ],
+      "edges": [
+        { "id": "s8e1", "source": "s8_ev", "sourcePin": "exec", "target": "s8_print", "targetPin": "execute", "category": "exec" },
+        { "id": "s8e2", "source": "s8_select", "sourcePin": "ReturnValue", "target": "s8_print", "targetPin": "InString", "category": "string" },
+        { "id": "s8e3", "source": "s8_edge_thick", "sourcePin": "ReturnValue", "target": "s8_select", "targetPin": "Index", "category": "int" },
+        { "id": "s8e4", "source": "s8_numeric", "sourcePin": "ReturnValue", "target": "s8_print", "targetPin": "Duration", "category": "real" }
+      ]
+    },
+    "ControlFlow": {
+      "metadata": { "title": "Control Flow Gallery", "assetPath": "/Game/Blueprints/BP_FeatureShowcase" },
+      "nodes": [
+        {
+          "id": "cf_ev", "type": "event", "nodeClass": "K2Node_Event", "nodeGuid": "CFEV0001",
+          "position": { "x": 0, "y": 0 }, "title": "Event BeginPlay", "properties": {},
+          "pins": [
+            { "id": "cf_ev_eo", "name": "exec", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "cf_doonce", "type": "branch", "nodeClass": "K2Node_DoOnce", "nodeGuid": "CFDO0001",
+          "position": { "x": 300, "y": 0 }, "title": "Do Once", "properties": {},
+          "pins": [
+            { "id": "cf_doonce_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_doonce_reset", "name": "Reset", "friendlyName": "Reset", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_doonce_eo", "name": "Completed", "friendlyName": "Completed", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_doonce_start", "name": "StartClosed", "friendlyName": "Start Closed", "direction": "input", "category": "bool", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "false", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "cf_gate", "type": "branch", "nodeClass": "K2Node_Gate", "nodeGuid": "CFGT0001",
+          "position": { "x": 300, "y": 200 }, "title": "Gate", "properties": {},
+          "pins": [
+            { "id": "cf_gate_enter", "name": "Enter", "friendlyName": "Enter", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_gate_open", "name": "Open", "friendlyName": "Open", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_gate_close", "name": "Close", "friendlyName": "Close", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_gate_toggle", "name": "Toggle", "friendlyName": "Toggle", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_gate_eo", "name": "Exit", "friendlyName": "Exit", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_gate_start", "name": "StartClosed", "friendlyName": "Start Closed", "direction": "input", "category": "bool", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "false", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "cf_flipflop", "type": "branch", "nodeClass": "K2Node_FlipFlop", "nodeGuid": "CFFF0001",
+          "position": { "x": 600, "y": 0 }, "title": "FlipFlop", "properties": {},
+          "pins": [
+            { "id": "cf_ff_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_ff_a", "name": "A", "friendlyName": "A", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_ff_b", "name": "B", "friendlyName": "B", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_ff_isA", "name": "IsA", "friendlyName": "Is A", "direction": "output", "category": "bool", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "cf_multigate", "type": "sequence", "nodeClass": "K2Node_MultiGate", "nodeGuid": "CFMG0001",
+          "position": { "x": 600, "y": 200 }, "title": "MultiGate", "properties": {},
+          "pins": [
+            { "id": "cf_mg_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_mg_reset", "name": "Reset", "friendlyName": "Reset", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_mg_0", "name": "Out 0", "friendlyName": "Out 0", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_mg_1", "name": "Out 1", "friendlyName": "Out 1", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_mg_2", "name": "Out 2", "friendlyName": "Out 2", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_mg_loop", "name": "IsRandom", "friendlyName": "Is Random", "direction": "input", "category": "bool", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "false", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "cf_seq", "type": "sequence", "nodeClass": "K2Node_ExecutionSequence", "nodeGuid": "CFSQ0001",
+          "position": { "x": 900, "y": 0 }, "title": "Sequence", "properties": {},
+          "pins": [
+            { "id": "cf_seq_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_seq_0", "name": "Then 0", "friendlyName": "Then 0", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_seq_1", "name": "Then 1", "friendlyName": "Then 1", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_seq_2", "name": "Then 2", "friendlyName": "Then 2", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "cf_foreach", "type": "foreach", "nodeClass": "K2Node_ForEachLoopWithBreak", "nodeGuid": "CFFL0001",
+          "position": { "x": 900, "y": 220 }, "title": "ForEachLoop With Break", "properties": {},
+          "pins": [
+            { "id": "cf_fe_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_fe_break", "name": "Break", "friendlyName": "Break", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_fe_arr", "name": "Array", "friendlyName": "Array", "direction": "input", "category": "wildcard", "subCategory": "", "subCategoryObject": "", "containerType": "Array", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_fe_body", "name": "LoopBody", "friendlyName": "Loop Body", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_fe_elem", "name": "ArrayElement", "friendlyName": "Array Element", "direction": "output", "category": "wildcard", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_fe_idx", "name": "ArrayIndex", "friendlyName": "Array Index", "direction": "output", "category": "int", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_fe_done", "name": "Completed", "friendlyName": "Completed", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "cf_switch", "type": "switch", "nodeClass": "K2Node_SwitchInteger", "nodeGuid": "CFSW0001",
+          "position": { "x": 600, "y": 430 }, "title": "Switch on Int", "properties": {},
+          "pins": [
+            { "id": "cf_sw_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_sw_sel", "name": "Selection", "friendlyName": "Selection", "direction": "input", "category": "int", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "0", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_sw_0", "name": "Case 0", "friendlyName": "0", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_sw_1", "name": "Case 1", "friendlyName": "1", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_sw_def", "name": "Default", "friendlyName": "Default", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "cf_branch", "type": "branch", "nodeClass": "K2Node_IfThenElse", "nodeGuid": "CFBR0001",
+          "position": { "x": 300, "y": 430 }, "title": "Branch", "properties": {},
+          "pins": [
+            { "id": "cf_br_ei", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_br_cond", "name": "Condition", "friendlyName": "Condition", "direction": "input", "category": "bool", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "true", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_br_true", "name": "True", "friendlyName": "True", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "cf_br_false", "name": "False", "friendlyName": "False", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "nc_cf", "type": "comment", "nodeClass": "EdGraphNode_Comment", "nodeGuid": "NCCF0001",
+          "position": { "x": -40, "y": -80 }, "title": "Control flow: DoOnce, Gate, FlipFlop, MultiGate, Sequence, ForEachLoopWithBreak, Switch, Branch",
+          "properties": { "NodeWidth": 1230, "NodeHeight": 650, "CommentColor": "(R=0.35,G=0.2,B=0.35,A=0.2)" },
+          "pins": []
+        }
+      ],
+      "edges": [
+        { "id": "cfe1", "source": "cf_ev", "sourcePin": "exec", "target": "cf_doonce", "targetPin": "execute", "category": "exec" },
+        { "id": "cfe2", "source": "cf_doonce", "sourcePin": "Completed", "target": "cf_flipflop", "targetPin": "execute", "category": "exec" },
+        { "id": "cfe3", "source": "cf_flipflop", "sourcePin": "A", "target": "cf_seq", "targetPin": "execute", "category": "exec" },
+        { "id": "cfe4", "source": "cf_gate", "sourcePin": "Exit", "target": "cf_multigate", "targetPin": "execute", "category": "exec" },
+        { "id": "cfe5", "source": "cf_multigate", "sourcePin": "Out 0", "target": "cf_foreach", "targetPin": "execute", "category": "exec" },
+        { "id": "cfe6", "source": "cf_branch", "sourcePin": "True", "target": "cf_switch", "targetPin": "execute", "category": "exec" }
+      ]
+    },
+    "AllPinTypes": {
+      "metadata": { "title": "Pin Type & Modifier Showcase", "assetPath": "/Game/Blueprints/BP_FeatureShowcase" },
+      "nodes": [
+        {
+          "id": "pt_fn1", "type": "call_function", "nodeClass": "K2Node_CallFunction", "nodeGuid": "PT000001",
+          "position": { "x": 0, "y": 0 }, "title": "Pin Type Rainbow", "properties": {},
+          "pins": [
+            { "id": "pt_exec_i", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pt_exec_o", "name": "then", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pt_bool", "name": "Bool", "friendlyName": "Bool", "direction": "input", "category": "bool", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "true", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pt_byte", "name": "Byte", "friendlyName": "Byte", "direction": "input", "category": "byte", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "255", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pt_int", "name": "Integer", "friendlyName": "Integer", "direction": "input", "category": "int", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "42", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pt_int64", "name": "Int64", "friendlyName": "Int64", "direction": "input", "category": "int64", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "999999", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pt_float", "name": "Float", "friendlyName": "Float", "direction": "input", "category": "real", "subCategory": "float", "subCategoryObject": "", "containerType": "", "defaultValue": "3.14", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pt_double", "name": "Double", "friendlyName": "Double", "direction": "input", "category": "real", "subCategory": "double", "subCategoryObject": "", "containerType": "", "defaultValue": "6.28", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pt_str", "name": "String", "friendlyName": "String", "direction": "input", "category": "string", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "Hello", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pt_name", "name": "Name", "friendlyName": "Name", "direction": "input", "category": "name", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "MyName", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pt_text", "name": "Text", "friendlyName": "Text", "direction": "input", "category": "text", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "Localized", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pt_obj_o", "name": "Object", "friendlyName": "Object", "direction": "output", "category": "object", "subCategory": "", "subCategoryObject": "Actor", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pt_cls_o", "name": "Class", "friendlyName": "Class", "direction": "output", "category": "class", "subCategory": "", "subCategoryObject": "Actor", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pt_enum_o", "name": "Enum", "friendlyName": "Enum", "direction": "output", "category": "enum", "subCategory": "", "subCategoryObject": "ECollisionChannel", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pt_struct_o", "name": "Struct", "friendlyName": "Vector", "direction": "output", "category": "struct", "subCategory": "", "subCategoryObject": "Vector", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pt_dlg_o", "name": "Delegate", "friendlyName": "Delegate", "direction": "output", "category": "delegate", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pt_iface_o", "name": "Interface", "friendlyName": "Interface", "direction": "output", "category": "interface", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "pt_fn2", "type": "call_function", "nodeClass": "K2Node_CallFunction", "nodeGuid": "PT000002",
+          "position": { "x": 450, "y": 0 }, "title": "Containers & Modifiers", "properties": {},
+          "pins": [
+            { "id": "pt2_exec_i", "name": "execute", "friendlyName": "", "direction": "input", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pt2_exec_o", "name": "then", "friendlyName": "", "direction": "output", "category": "exec", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pt2_arr", "name": "Array", "friendlyName": "Array<Actor>", "direction": "input", "category": "object", "subCategory": "", "subCategoryObject": "Actor", "containerType": "Array", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pt2_set", "name": "Set", "friendlyName": "Set<Name>", "direction": "input", "category": "name", "subCategory": "", "subCategoryObject": "", "containerType": "Set", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pt2_map", "name": "Map", "friendlyName": "Map<String>", "direction": "input", "category": "string", "subCategory": "", "subCategoryObject": "", "containerType": "Map", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pt2_ref", "name": "ByRef", "friendlyName": "By Reference", "direction": "input", "category": "int", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": true, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pt2_const", "name": "Const", "friendlyName": "Const Param", "direction": "input", "category": "object", "subCategory": "", "subCategoryObject": "Actor", "containerType": "", "defaultValue": "", "isReference": false, "isConst": true, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pt2_weak", "name": "Weak", "friendlyName": "Soft Object", "direction": "input", "category": "softobject", "subCategory": "", "subCategoryObject": "Actor", "containerType": "", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": true, "hidden": false, "advancedView": false },
+            { "id": "pt2_constref", "name": "ConstRef", "friendlyName": "Const + Ref", "direction": "input", "category": "struct", "subCategory": "", "subCategoryObject": "Vector", "containerType": "", "defaultValue": "", "isReference": true, "isConst": true, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pt2_arr_o", "name": "ArrayOut", "friendlyName": "Array Result", "direction": "output", "category": "struct", "subCategory": "", "subCategoryObject": "Vector", "containerType": "Array", "defaultValue": "", "isReference": false, "isConst": false, "isWeak": false, "hidden": false, "advancedView": false },
+            { "id": "pt2_const_o", "name": "ConstOut", "friendlyName": "Const Output", "direction": "output", "category": "string", "subCategory": "", "subCategoryObject": "", "containerType": "", "defaultValue": "", "isReference": false, "isConst": true, "isWeak": false, "hidden": false, "advancedView": false }
+          ]
+        },
+        {
+          "id": "nc_pins", "type": "comment", "nodeClass": "EdGraphNode_Comment", "nodeGuid": "NCPT0001",
+          "position": { "x": -30, "y": -80 }, "title": "Every pin type, container variant, and modifier (const, reference, weak/soft pointer)",
+          "properties": { "NodeWidth": 880, "NodeHeight": 500, "CommentColor": "(R=0.15,G=0.35,B=0.3,A=0.2)" },
+          "pins": []
+        }
+      ],
+      "edges": [
+        { "id": "pte1", "source": "pt_fn1", "sourcePin": "then", "target": "pt_fn2", "targetPin": "execute", "category": "exec" },
+        { "id": "pte2", "source": "pt_fn1", "sourcePin": "Object", "target": "pt_fn2", "targetPin": "Const", "category": "object" }
+      ]
+    }
+  }
+}
+  </script>
+  <script src="../js/dist/ue-flow.iife.js"></script>
+</body>
+</html>

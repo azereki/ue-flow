@@ -48,10 +48,8 @@ interface AppProps {
 
 function FitViewOnMount({ focusNode }: { focusNode?: { x: number; y: number; w: number; h: number } }) {
   const { fitView, setCenter } = useReactFlow();
-  const ranRef = useRef(false);
+  const isInitialMount = useRef(true);
   useEffect(() => {
-    if (ranRef.current) return;
-    ranRef.current = true;
     const id = requestAnimationFrame(() => {
       if (focusNode) {
         setCenter(
@@ -59,9 +57,10 @@ function FitViewOnMount({ focusNode }: { focusNode?: { x: number; y: number; w: 
           focusNode.y + focusNode.h / 2,
           { zoom: 1.0 },
         );
-      } else {
+      } else if (isInitialMount.current) {
         fitView({ padding: 0.15, minZoom: 0.5, maxZoom: 1.5 });
       }
+      isInitialMount.current = false;
     });
     return () => cancelAnimationFrame(id);
   }, [focusNode, fitView, setCenter]);
@@ -373,7 +372,7 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
   const [sidebarWidth, setSidebarWidth] = useState<number | null>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
-  const [detailsWidth, setDetailsWidth] = useState<number | null>(null);
+  const [detailsWidth, setDetailsWidth] = useState(340);
   const detailsRef = useRef<HTMLDivElement>(null);
 
   // Pin sidebar width on mount (fires before paint → no flash)
@@ -382,12 +381,6 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
       setSidebarWidth(sidebarRef.current.offsetWidth);
     }
   }, [sidebarWidth]);
-
-  // Reset details panel to auto-sizing when a different item is selected.
-  // Width only becomes fixed when the user manually drags the resize handle.
-  useLayoutEffect(() => {
-    if (detailsItem) setDetailsWidth(null);
-  }, [detailsItem]);
 
   const handleShowDetails = useCallback((item: DetailsItem) => {
     setDetailsItem(item);
@@ -491,7 +484,7 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
         {detailsItem && (
           <>
             <div className="ueflow-details-resize" onMouseDown={handleDetailsResize} />
-            <div ref={detailsRef} style={{ width: detailsWidth ?? 'max-content', minWidth: 260, maxWidth: 600, flexShrink: 0 }}>
+            <div ref={detailsRef} style={{ width: detailsWidth, minWidth: 260, maxWidth: 600, flexShrink: 0 }}>
               <DetailsPanel item={detailsItem} onClose={() => setDetailsItem(null)} structs={multiGraph.structs} />
             </div>
           </>

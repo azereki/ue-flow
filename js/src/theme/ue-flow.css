@@ -197,6 +197,16 @@
   white-space: nowrap;
 }
 
+/* ===== Select Node Pin Count ===== */
+
+.ueflow-select-count {
+  text-align: center;
+  font-size: 10px;
+  color: var(--uf-text-muted);
+  padding: 2px 0;
+  letter-spacing: 0.5px;
+}
+
 /* ===== Advanced Pin Toggle ===== */
 
 .ueflow-advanced-toggle {
@@ -416,9 +426,14 @@
   line-height: 1;
 }
 
-/* Edge hover */
+/* Edge hover — pointer cursor + opacity/brightness bump */
+.react-flow__edge {
+  cursor: pointer;
+}
+
 .react-flow__edge:hover .react-flow__edge-path {
   stroke-opacity: 1 !important;
+  filter: brightness(1.3);
 }
 
 /* Attribution hide for self-contained */
@@ -1272,6 +1287,11 @@
 /* Weak (soft pointer) pins: dashed border (matches UE Graph.SoftPin brush) */
 .ueflow-handle--weak {
   border-style: dashed !important;
+}
+
+/* Const pins: lighter tinted border to distinguish from mutable pins */
+.ueflow-handle--const {
+  border: 1.5px solid color-mix(in srgb, var(--pin-color) 70%, white) !important;
 }
 
 /* Delegate pins: small rectangle (matches UE Graph.DelegatePin brush) */

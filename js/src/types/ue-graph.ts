@@ -17,6 +17,7 @@ export interface UEPin {
   hidden: boolean;
   advancedView: boolean;
   description?: string;
+  pinSubCategoryMemberReference?: string;
 }
 
 export interface UENode {

@@ -27,8 +27,8 @@ function pinTooltip(pin: UEPin): string {
 }
 
 /** Format a default value hint for inline display on unconnected pins. */
-function formatDefaultHint(pin: UEPin): string {
-  const v = pin.defaultValue;
+function formatDefaultHint(pin: UEPin, valueOverride?: string): string {
+  const v = valueOverride ?? pin.defaultValue;
   if (!v) return '';
   // Booleans
   if (pin.category === 'bool') return v.toLowerCase() === 'true' ? 'true' : 'false';
@@ -76,15 +76,20 @@ export const PinHandle: FC<PinHandleProps> = memo(({ pin, isConnected = false, e
           containerClass,
           pin.isReference && 'ueflow-handle--reference',
           pin.isWeak && 'ueflow-handle--weak',
+          pin.isConst && 'ueflow-handle--const',
           pin.category === 'delegate' && 'ueflow-handle--delegate',
         ].filter(Boolean).join(' ')}
         style={{ '--pin-color': color } as React.CSSProperties}
         isConnectable={false}
       />
       {label && <span className="ueflow-pin-label">{label}</span>}
-      {isInput && pin.defaultValue && !isExec && !isConnected && (
-        <span className="ueflow-pin-default-hint">= {formatDefaultHint(editedValue !== undefined ? { ...pin, defaultValue: editedValue } : pin)}</span>
-      )}
+      {isInput && pin.defaultValue && !isExec && !isConnected && (() => {
+        const hint = formatDefaultHint(pin, editedValue);
+        if (!hint) return null;
+        const numericCategories = new Set(['int', 'int64', 'float', 'double', 'byte']);
+        const prefix = numericCategories.has(pin.category) ? '' : '= ';
+        return <span className="ueflow-pin-default-hint">{prefix}{hint}</span>;
+      })()}
     </div>
   );
 });

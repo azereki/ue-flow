@@ -35,7 +35,7 @@ function serializePinWithLinks(
   }
 
   parts.push(
-    'PinType.PinSubCategoryMemberReference=()',
+    `PinType.PinSubCategoryMemberReference=${pin.pinSubCategoryMemberReference || '()'}`,
     'PinType.PinValueType=()',
     `PinType.ContainerType=${pin.containerType || 'None'}`,
     `PinType.bIsReference=${pin.isReference ? 'True' : 'False'}`,

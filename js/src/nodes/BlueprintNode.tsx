@@ -79,11 +79,13 @@ export const BlueprintNode = memo(({ data, id }: NodeProps<BlueprintFlowNode>) =
   if (ueType === 'reroute') {
     const pin = pins[0];
     const color = pin ? (PIN_COLORS[pin.category] ?? '#808080') : '#808080';
+    const inputPin = pins.find(p => p.direction === 'input');
+    const outputPin = pins.find(p => p.direction === 'output');
     return (
       <div className="ueflow-reroute-node">
-        <Handle type="target" position={Position.Left} id={pins.find(p => p.direction === 'input')?.id} className="ueflow-handle" style={{ '--pin-color': color, opacity: 0 } as React.CSSProperties} />
+        <Handle type="target" position={Position.Left} id={inputPin?.id} className="ueflow-handle" style={{ '--pin-color': color, opacity: 0 } as React.CSSProperties} />
         <div className="ueflow-reroute-dot" style={{ background: color }} />
-        <Handle type="source" position={Position.Right} id={pins.find(p => p.direction === 'output')?.id} className="ueflow-handle" style={{ '--pin-color': color, opacity: 0 } as React.CSSProperties} />
+        <Handle type="source" position={Position.Right} id={outputPin?.id} className="ueflow-handle" style={{ '--pin-color': color, opacity: 0 } as React.CSSProperties} />
       </div>
     );
   }
@@ -111,6 +113,11 @@ export const BlueprintNode = memo(({ data, id }: NodeProps<BlueprintFlowNode>) =
   return (
     <div className="ueflow-node" data-ue-type={ueType} data-compact={isCompact ? '' : undefined} aria-label={`${ueType} node: ${title}`}>
       <NodeHeader title={title} ueType={ueType} isPure={isPure} headerAccent={headerAccent} />
+      {ueType === 'select' && showPinBody && (
+        <div className="ueflow-select-count">
+          {outputPins.filter(p => !isExecPin(p.category)).length} options
+        </div>
+      )}
       {showPinBody && (
         <div className="ueflow-node-body">
           <div className="ueflow-pins-column ueflow-pins--input">

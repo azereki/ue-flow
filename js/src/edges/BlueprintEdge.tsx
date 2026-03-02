@@ -24,7 +24,7 @@ export const BlueprintEdge = memo((props: EdgeProps<BlueprintFlowEdge>) => {
 
   // Selected edges: brighten stroke and amplify glow
   const strokeColor = selected ? lightenHex(color, 0.45) : color;
-  const strokeWidth = selected ? (isExec ? 5 : 3.5) : (isExec ? 4 : 2.5);
+  const strokeWidth = selected ? (isExec ? 4 : 3) : (isExec ? 3 : 2);
   const strokeOpacity = selected ? 1 : (isExec ? 0.85 : 0.75);
 
   // Suppress glow at low zoom (imperceptible, saves GPU filter ops)

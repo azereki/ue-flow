@@ -1,4 +1,4 @@
-import { useState, useMemo, type FC } from 'react';
+import { useState, useMemo, useDeferredValue, type FC } from 'react';
 import type { UEMultiGraphJSON, SidebarParam } from '../types/ue-graph';
 import { classifyPinType } from '../types/pin-types';
 import type { DetailsItem } from './DetailsPanel';
@@ -144,11 +144,12 @@ function findGraphForEvent(graphs: Record<string, { nodes: Array<{ title: string
 
 export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onShowDetails, onOpenSpecialTab }) => {
   const [search, setSearch] = useState('');
+  const deferredSearch = useDeferredValue(search);
   const { events, functions, variables, structs, delegates, dataTables, graphs, components, macros } = multiGraph;
   const graphNames = Object.keys(graphs);
   const dtKeys = Object.keys(dataTables || {});
 
-  const q = search.toLowerCase();
+  const q = deferredSearch.toLowerCase();
 
   const eventNodes = useMemo(() =>
     (events?.length > 0 ? events : []).filter((e: SidebarEvent) => !q || e.name.toLowerCase().includes(q)),

@@ -96,6 +96,8 @@ def _serialize_pin(pin: BlueprintPin) -> dict:
     }
     if pin.description:
         result["description"] = pin.description
+    if pin.pin_sub_category_member_ref:
+        result["pinSubCategoryMemberReference"] = f"({pin.pin_sub_category_member_ref})"
     return result
 
 
@@ -271,6 +273,16 @@ def _infer_title(node: BlueprintNode) -> str:
             base = action.rsplit(".", 1)[-1] if "." in action else action.rsplit("/", 1)[-1]
             return f"IA {base}"
         return "Enhanced InputAction"
+
+    # Tunnel nodes — "Inputs" if mostly output pins (entering macro), "Outputs" if mostly input (exiting)
+    if short_name == "K2Node_Tunnel":
+        input_count = sum(1 for p in node.pins if p.direction == PinDirection.INPUT)
+        output_count = sum(1 for p in node.pins if p.direction == PinDirection.OUTPUT)
+        if output_count > input_count:
+            return "Inputs"
+        elif input_count > output_count:
+            return "Outputs"
+        return "Tunnel"
 
     # Fallback: clean up class name
     name = short_name.replace("K2Node_", "").replace("EdGraphNode_", "")
