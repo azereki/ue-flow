@@ -14,7 +14,7 @@ function lightenHex(hex: string, amount = 0.4): string {
 }
 
 export const BlueprintEdge = memo((props: EdgeProps<BlueprintFlowEdge>) => {
-  const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data } = props;
+  const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data, selected } = props;
   const category = data?.category ?? 'wildcard';
   const color = PIN_COLORS[category] ?? '#808080';
   const isExec = isExecPin(category);
@@ -22,10 +22,16 @@ export const BlueprintEdge = memo((props: EdgeProps<BlueprintFlowEdge>) => {
 
   const [edgePath] = getSmoothStepPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, borderRadius: 16 });
 
+  // Selected edges: brighten stroke and amplify glow
+  const strokeColor = selected ? lightenHex(color, 0.45) : color;
+  const strokeWidth = selected ? (isExec ? 5 : 3.5) : (isExec ? 4 : 2.5);
+  const strokeOpacity = selected ? 1 : (isExec ? 0.85 : 0.75);
+
   // Suppress glow at low zoom (imperceptible, saves GPU filter ops)
-  const glowColor = lightenHex(color, 0.35);
+  const glowColor = lightenHex(color, selected ? 0.55 : 0.35);
+  const glowSize = selected ? (isExec ? '10px' : '7px') : (isExec ? '6px' : '4px');
   const filter = showDetail
-    ? `drop-shadow(0 0 ${isExec ? '6px' : '4px'} ${glowColor})`
+    ? `drop-shadow(0 0 ${glowSize} ${glowColor})`
     : undefined;
 
   return (
@@ -33,9 +39,9 @@ export const BlueprintEdge = memo((props: EdgeProps<BlueprintFlowEdge>) => {
       {...props}
       path={edgePath}
       style={{
-        stroke: color,
-        strokeWidth: isExec ? 4 : 2.5,
-        strokeOpacity: isExec ? 0.85 : 0.75,
+        stroke: strokeColor,
+        strokeWidth,
+        strokeOpacity,
         filter,
       }}
     />

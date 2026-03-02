@@ -69,7 +69,15 @@ export const PinHandle: FC<PinHandleProps> = memo(({ pin, isConnected = false, e
         type={type}
         position={isInput ? Position.Left : Position.Right}
         id={pin.id}
-        className={`ueflow-handle ${isExec ? 'ueflow-handle--exec' : 'ueflow-handle--data'} ${isConnected ? 'ueflow-handle--connected' : ''} ${containerClass} ${pin.isReference ? 'ueflow-handle--reference' : ''} ${pin.category === 'delegate' ? 'ueflow-handle--delegate' : ''}`}
+        className={[
+          'ueflow-handle',
+          isExec ? 'ueflow-handle--exec' : 'ueflow-handle--data',
+          isConnected && 'ueflow-handle--connected',
+          containerClass,
+          pin.isReference && 'ueflow-handle--reference',
+          pin.isWeak && 'ueflow-handle--weak',
+          pin.category === 'delegate' && 'ueflow-handle--delegate',
+        ].filter(Boolean).join(' ')}
         style={{ '--pin-color': color } as React.CSSProperties}
         isConnectable={false}
       />

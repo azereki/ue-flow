@@ -4,6 +4,8 @@ interface NodeHeaderProps {
   title: string;
   ueType: string;
   isPure?: boolean;
+  /** Override header accent color (e.g. variable getters tinted by pin type). */
+  headerAccent?: string;
 }
 
 // More saturated colors for better visibility against dark background
@@ -37,6 +39,7 @@ export const TYPE_COLORS: Record<string, string> = {
   subsystem_get: '#1060A8',
   input: '#B40000',
   component_event: '#B40000',
+  timeline: '#d4a017',
 };
 
 const TYPE_ICONS: Record<string, string> = {
@@ -56,6 +59,7 @@ const TYPE_ICONS: Record<string, string> = {
   construct: '\u2726',
   input: '\u25C6',
   component_event: '\u25C6',
+  timeline: '\u23F1',
 };
 
 /** UE5 compact title icons — K2Node_CallFunction::GetCompactNodeTitle() symbol map. */
@@ -80,8 +84,8 @@ export const COMPACT_TITLE_ICONS: Record<string, string> = {
   'NOT Boolean':    '!',
 };
 
-export const NodeHeader: FC<NodeHeaderProps> = ({ title, ueType, isPure }) => {
-  const color = TYPE_COLORS[ueType] ?? TYPE_COLORS.call_function;
+export const NodeHeader: FC<NodeHeaderProps> = ({ title, ueType, isPure, headerAccent }) => {
+  const color = headerAccent ?? TYPE_COLORS[ueType] ?? TYPE_COLORS.call_function;
   const icon = TYPE_ICONS[ueType];
   const compactIcon = COMPACT_TITLE_ICONS[title];
 

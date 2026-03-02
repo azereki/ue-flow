@@ -60,7 +60,7 @@ function useConnectedPins(pins: Array<{ id: string; direction: string }>) {
 }
 
 export const BlueprintNode = memo(({ data, id }: NodeProps<BlueprintFlowNode>) => {
-  const { title, ueType, pins } = data;
+  const { title, ueType, pins, headerAccent } = data;
   const showPinBody = useContext(PinBodyContext);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const connectedPinIds = useConnectedPins(pins);
@@ -110,7 +110,7 @@ export const BlueprintNode = memo(({ data, id }: NodeProps<BlueprintFlowNode>) =
 
   return (
     <div className="ueflow-node" data-ue-type={ueType} data-compact={isCompact ? '' : undefined} aria-label={`${ueType} node: ${title}`}>
-      <NodeHeader title={title} ueType={ueType} isPure={isPure} />
+      <NodeHeader title={title} ueType={ueType} isPure={isPure} headerAccent={headerAccent} />
       {showPinBody && (
         <div className="ueflow-node-body">
           <div className="ueflow-pins-column ueflow-pins--input">

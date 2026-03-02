@@ -109,8 +109,8 @@
 }
 
 .ueflow-node-pure {
-  font-size: 9px;
-  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  color: #4ae04a;
   flex-shrink: 0;
   line-height: 1;
 }
@@ -246,7 +246,7 @@
   box-shadow: none;
 }
 
-/* Right-pointing arrow: all exec pins point in flow direction (→), centered on node edge */
+/* Right-pointing arrow (output): exec pin flow direction (→), centered on node edge */
 .ueflow-handle--exec::after {
   content: '';
   position: absolute;
@@ -257,6 +257,11 @@
   transform: translate(-50%, -50%);
   clip-path: path('M 0 2.4 Q 0 0 2.4 0 L 8.4 3.6 Q 12 6 8.4 8.4 L 2.4 12 Q 0 12 0 9.6 Z');
   background: rgba(255, 255, 255, 0.2);
+}
+
+/* Left-pointing arrow (input): mirrored exec chevron (←) */
+.ueflow-pin--input .ueflow-handle--exec::after {
+  clip-path: path('M 12 2.4 Q 12 0 9.6 0 L 3.6 3.6 Q 0 6 3.6 8.4 L 9.6 12 Q 12 12 12 9.6 Z');
 }
 
 .ueflow-handle--exec.ueflow-handle--connected::after {
@@ -584,14 +589,13 @@
 
 .ueflow-comment-title {
   color: #ffffff;
-  font-size: 24px;
+  font-size: 16px;
   font-weight: 700;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.3px;
 }
 
 .ueflow-comment-title-input {
@@ -1221,6 +1225,11 @@
   height: 8px !important;
   transform: translate(-50%, -50%) rotate(45deg) !important;
   margin-inline: 3px !important;
+}
+
+/* Weak (soft pointer) pins: dashed border (matches UE Graph.SoftPin brush) */
+.ueflow-handle--weak {
+  border-style: dashed !important;
 }
 
 /* Delegate pins: small rectangle (matches UE Graph.DelegatePin brush) */

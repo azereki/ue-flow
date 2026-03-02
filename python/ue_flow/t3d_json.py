@@ -31,11 +31,11 @@ _CLASS_TO_TYPE = {
     "K2Node_MakeStruct": "struct_op",
     "K2Node_BreakStruct": "struct_op",
     "K2Node_SetFieldsInStruct": "struct_op",
-    "K2Node_Timeline": "function",
+    "K2Node_Timeline": "timeline",
     "K2Node_SpawnActorFromClass": "call_function",
     "K2Node_GetArrayItem": "function",
-    "K2Node_CommutativeAssociativeBinaryOperator": "function",
-    "K2Node_PromotableOperator": "function",
+    "K2Node_CommutativeAssociativeBinaryOperator": "call_function",
+    "K2Node_PromotableOperator": "call_function",
     "K2Node_DoOnce": "branch",
     "K2Node_Gate": "branch",
     "K2Node_FlipFlop": "branch",
@@ -62,6 +62,7 @@ _CLASS_TO_TYPE = {
     "K2Node_InputAxisKeyEvent": "event",
     "K2Node_EnhancedInputAction": "event",
     "K2Node_ComponentBoundEvent": "component_event",
+    "K2Node_ActorBoundEvent": "event",
 }
 
 
@@ -160,6 +161,7 @@ _FRIENDLY_TITLES: dict[str, str] = {
     "K2Node_GenericCreateObject": "Create Object",
     "K2Node_GetSubsystem": "Get Subsystem",
     "K2Node_ComponentBoundEvent": "Component Event",
+    "K2Node_ActorBoundEvent": "Actor Event",
 }
 
 

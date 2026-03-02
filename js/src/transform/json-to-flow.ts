@@ -1,5 +1,6 @@
 import type { UEGraphJSON } from '../types/ue-graph';
 import type { BlueprintFlowNode, CommentFlowNode, AnyFlowNode, BlueprintFlowEdge, FlowNodeData, CommentNodeData } from '../types/flow-types';
+import { getExtendedPinColor, isExecPin } from '../types/pin-types';
 
 // Re-export FlowNodeData so existing importers don't need to change their import paths.
 export type { FlowNodeData } from '../types/flow-types';
@@ -65,6 +66,19 @@ export function graphJsonToFlow(graph: UEGraphJSON): { nodes: AnyFlowNode[]; edg
       return commentNode;
     }
 
+    // Variable get/set: tint header accent from the primary value pin's type color.
+    // Getter: first non-exec output pin. Setter: first non-exec input pin (the value pin).
+    let headerAccent: string | undefined;
+    if (ueNode.type === 'variable_get' || ueNode.type === 'variable_set') {
+      const valuePins = ueNode.pins.filter(p =>
+        !isExecPin(p.category as Parameters<typeof isExecPin>[0]) &&
+        (ueNode.type === 'variable_get' ? p.direction === 'output' : p.direction === 'input')
+      );
+      if (valuePins.length > 0) {
+        headerAccent = getExtendedPinColor(valuePins[0] as Parameters<typeof getExtendedPinColor>[0]);
+      }
+    }
+
     const nodeData: FlowNodeData = {
       ueType: ueNode.type,
       nodeClass: ueNode.nodeClass,
@@ -74,6 +88,7 @@ export function graphJsonToFlow(graph: UEGraphJSON): { nodes: AnyFlowNode[]; edg
       category: ueNode.category,
       properties: ueNode.properties,
       pins: ueNode.pins,
+      headerAccent,
       // __setPinValue is injected by SingleGraphView after construction
     };
     const bpNode: BlueprintFlowNode = {
