@@ -2,7 +2,7 @@
 
 An open-source Unreal Engine 5 Blueprint rendering suite. Parses UE5 T3D clipboard paste text and renders interactive Blueprint graph visualizations as self-contained HTML files or PNG screenshots.
 
-![Blueprint Renderer](examples/BP_PlayerCharacter-preview.png)
+![Blueprint Renderer](examples/preview.png)
 
 ## Features
 
