@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback, type FC, type KeyboardEvent } from 'react';
 import { useAIChat } from '../hooks/useAIChat';
+import { useAIProvider } from '../contexts/AIProviderContext';
 import { usePuterAuth } from '../hooks/usePuterAuth';
 
 interface ChatPanelProps {
@@ -15,13 +16,13 @@ const SUGGESTED_PROMPTS = [
 ];
 
 export const ChatPanel: FC<ChatPanelProps> = ({ graphContext, onClose, floating }) => {
+  const { provider } = useAIProvider();
   const { authState, authError, signIn } = usePuterAuth();
   const { messages, isStreaming, error, sendMessage, clearChat } = useAIChat(graphContext);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-scroll to bottom on new messages or when streaming starts
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isStreaming]);
@@ -55,7 +56,8 @@ export const ChatPanel: FC<ChatPanelProps> = ({ graphContext, onClose, floating 
 
   const panelClass = `ueflow-chat-panel${floating ? ' ueflow-chat-panel--floating' : ''}`;
 
-  const needsAuth = authState !== 'signed-in';
+  // OpenRouter users skip auth entirely
+  const needsAuth = provider === 'puter' && authState !== 'signed-in';
 
   return (
     <div className={panelClass}>
@@ -77,7 +79,7 @@ export const ChatPanel: FC<ChatPanelProps> = ({ graphContext, onClose, floating 
         </div>
       </div>
 
-      {/* Auth gate */}
+      {/* Auth gate — only for Puter.js provider */}
       {needsAuth ? (
         <div className="ueflow-chat-messages">
           <div className="ueflow-chat-auth">
@@ -87,8 +89,8 @@ export const ChatPanel: FC<ChatPanelProps> = ({ graphContext, onClose, floating 
               {authState === 'checking'
                 ? 'Checking connection...'
                 : authState === 'unavailable'
-                  ? 'Puter.js is not available. Check your internet connection and try refreshing.'
-                  : 'Connect a free Puter account to chat with AI about this Blueprint. One-time setup — your session is cached.'}
+                  ? 'Puter.js is not available. Set an OpenRouter API key in AI Settings for instant access.'
+                  : 'Connect a free Puter account to chat, or set an OpenRouter API key in AI Settings for instant access.'}
             </div>
             {(authState === 'signed-out' || authState === 'error') && (
               <button className="ueflow-chat-auth-btn" onClick={signIn}>
@@ -143,7 +145,6 @@ export const ChatPanel: FC<ChatPanelProps> = ({ graphContext, onClose, floating 
               </div>
             ))}
 
-            {/* Thinking indicator */}
             {isStreaming && (
               <div className="ueflow-chat-bubble ueflow-chat-bubble--assistant">
                 <div className="ueflow-chat-thinking">

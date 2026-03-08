@@ -1,16 +1,15 @@
 import { useState, useCallback, useRef } from 'react';
-import { MODEL, TIMEOUT_MS, extractResponseText, withTimeout } from '../utils/puter-helpers';
+import { useAIProvider } from '../contexts/AIProviderContext';
+import type { ChatMessage } from '../utils/openrouter';
 
-export interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
+export type { ChatMessage };
 
 const SYSTEM_PROMPT = `You are a UE Blueprint analyst. You directly answer questions about Unreal Engine Blueprint graphs based on the provided context. Never ask clarifying questions — always give your best answer using the graph data you have. Be specific: reference node titles, pin names, and connection paths. Use UE terminology. Keep answers concise but substantive.`;
 
 const MAX_HISTORY = 10;
 
 export function useAIChat(graphContext: string) {
+  const { chatCompletion } = useAIProvider();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,38 +30,23 @@ export function useAIChat(graphContext: string) {
     streamingRef.current = true;
 
     try {
-      const apiMessages: PuterAIChatMessage[] = [
+      const apiMessages: ChatMessage[] = [
         {
           role: 'system',
           content: `${SYSTEM_PROMPT}\n\nHere is the Blueprint context:\n${graphContext}`,
         },
-        ...messagesRef.current.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+        ...messagesRef.current,
       ];
 
-      // Use non-streaming for reliability — wrap with timeout to catch auth hangs
-      const response = await withTimeout(
-        puter.ai.chat(apiMessages, { model: MODEL }),
-        TIMEOUT_MS,
-        'AI chat',
-      );
+      const text = await chatCompletion(apiMessages);
 
-      const text = extractResponseText(response);
-      if (text) {
-        const updated = [...messagesRef.current, { role: 'assistant' as const, content: text }];
-        messagesRef.current = updated;
-        setMessages(updated);
-      } else {
-        console.error('[ue-flow AI] Empty response:', JSON.stringify(response).slice(0, 500));
-        const fallback = `(Empty response from model. Raw: ${JSON.stringify(response).slice(0, 200)})`;
-        const updated = [...messagesRef.current, { role: 'assistant' as const, content: fallback }];
-        messagesRef.current = updated;
-        setMessages(updated);
-      }
+      const updated = [...messagesRef.current, { role: 'assistant' as const, content: text }];
+      messagesRef.current = updated;
+      setMessages(updated);
     } catch (err: unknown) {
       console.error('[ue-flow AI] Error:', err);
       const message = err instanceof Error ? err.message : String(err);
       setError(message);
-      // Remove empty trailing assistant message if present
       const cleaned = messagesRef.current.filter(
         (m, i) => !(i === messagesRef.current.length - 1 && m.role === 'assistant' && m.content === ''),
       );
@@ -72,7 +56,7 @@ export function useAIChat(graphContext: string) {
       setIsStreaming(false);
       streamingRef.current = false;
     }
-  }, [graphContext]);
+  }, [graphContext, chatCompletion]);
 
   const clearChat = useCallback(() => {
     messagesRef.current = [];

@@ -1,11 +1,12 @@
 import { useState, useCallback, type FC } from 'react';
+import { useAIProvider } from '../contexts/AIProviderContext';
 import { usePuterAuth } from '../hooks/usePuterAuth';
 import { useAIAction } from '../hooks/useAIAction';
 import { AIResultModal } from './AIResultModal';
+import { AISettings } from './AISettings';
 
 interface AIToolbarProps {
   graphContext: string;
-  /** Callback when AI search finds nodes — receives graph name + node title to navigate to. */
   onNavigateToNode?: (graphName: string, nodeTitle: string) => void;
 }
 
@@ -58,20 +59,27 @@ Rules:
 type ModalType = 'document' | 'review' | 'search' | null;
 
 export const AIToolbar: FC<AIToolbarProps> = ({ graphContext, onNavigateToNode }) => {
-  const { authState, authError, signIn } = usePuterAuth();
+  const { provider, ready } = useAIProvider();
+  const { authState, signIn } = usePuterAuth();
   const { loading, result, error, execute, clear } = useAIAction();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
 
+  // For OpenRouter, always ready. For Puter, need auth.
+  const isReady = provider === 'openrouter' || (ready && authState === 'signed-in');
+
   const requireAuth = useCallback(async (action: () => void) => {
+    if (provider === 'openrouter') {
+      action();
+      return;
+    }
     if (authState === 'signed-in') {
       action();
     } else if (authState === 'signed-out' || authState === 'error') {
       await signIn();
-      // After sign-in, let the caller re-trigger on next click
     }
-  }, [authState, signIn]);
+  }, [provider, authState, signIn]);
 
   const handleDocument = useCallback(() => {
     requireAuth(async () => {
@@ -92,7 +100,6 @@ export const AIToolbar: FC<AIToolbarProps> = ({ graphContext, onNavigateToNode }
     requireAuth(async () => {
       setActiveModal('search');
       const text = await execute(SEARCH_SYSTEM_PROMPT, `Query: "${searchQuery}"\n\nBlueprint Context:\n${graphContext}`);
-      // Try to parse navigation targets from the response
       if (text && onNavigateToNode) {
         try {
           const jsonMatch = text.match(/```json\s*\n?([\s\S]*?)\n?\s*```/);
@@ -130,7 +137,8 @@ export const AIToolbar: FC<AIToolbarProps> = ({ graphContext, onNavigateToNode }
     : activeModal === 'search' ? 'Search Results'
     : '';
 
-  const isAuthing = authState === 'signing-in' || authState === 'checking';
+  const isAuthing = provider === 'puter' && (authState === 'signing-in' || authState === 'checking');
+  const disableActions = isAuthing || loading || (!isReady && provider === 'puter');
 
   return (
     <>
@@ -138,7 +146,7 @@ export const AIToolbar: FC<AIToolbarProps> = ({ graphContext, onNavigateToNode }
         <button
           className="ueflow-ai-toolbar-btn"
           onClick={handleDocument}
-          disabled={isAuthing || loading}
+          disabled={disableActions}
           title="Generate documentation for this Blueprint"
         >
           &#128196; Document
@@ -146,7 +154,7 @@ export const AIToolbar: FC<AIToolbarProps> = ({ graphContext, onNavigateToNode }
         <button
           className="ueflow-ai-toolbar-btn"
           onClick={handleReview}
-          disabled={isAuthing || loading}
+          disabled={disableActions}
           title="Review this Blueprint for issues"
         >
           &#128269; Review
@@ -166,7 +174,7 @@ export const AIToolbar: FC<AIToolbarProps> = ({ graphContext, onNavigateToNode }
             <button
               className="ueflow-ai-toolbar-btn"
               onClick={handleSearch}
-              disabled={!searchQuery.trim() || isAuthing || loading}
+              disabled={!searchQuery.trim() || disableActions}
             >
               Go
             </button>
@@ -181,22 +189,13 @@ export const AIToolbar: FC<AIToolbarProps> = ({ graphContext, onNavigateToNode }
           <button
             className="ueflow-ai-toolbar-btn"
             onClick={() => setShowSearch(true)}
-            disabled={isAuthing || loading}
+            disabled={disableActions}
             title="Search Blueprint with natural language"
           >
             &#128270; Search
           </button>
         )}
-        {authState !== 'signed-in' && authState !== 'checking' && (
-          <button
-            className="ueflow-ai-toolbar-btn ueflow-ai-toolbar-btn--auth"
-            onClick={signIn}
-            disabled={isAuthing}
-          >
-            {isAuthing ? 'Connecting...' : 'Connect to Puter'}
-          </button>
-        )}
-        {authError && <span className="ueflow-ai-toolbar-error">{authError}</span>}
+        <AISettings />
       </div>
 
       {activeModal && (

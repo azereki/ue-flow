@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
-import { MODEL, extractResponseText, withTimeout } from '../utils/puter-helpers';
-
-const ACTION_TIMEOUT_MS = 60_000;
+import { useAIProvider } from '../contexts/AIProviderContext';
+import type { ChatMessage } from '../utils/openrouter';
 
 export interface AIActionState {
   loading: boolean;
@@ -12,6 +11,7 @@ export interface AIActionState {
 let nextRequestId = 0;
 
 export function useAIAction() {
+  const { chatCompletion } = useAIProvider();
   const [state, setState] = useState<AIActionState>({ loading: false, result: null, error: null });
   const activeRequestRef = useRef(0);
 
@@ -21,36 +21,24 @@ export function useAIAction() {
     setState({ loading: true, result: null, error: null });
 
     try {
-      const messages: PuterAIChatMessage[] = [
+      const messages: ChatMessage[] = [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ];
 
-      const response = await withTimeout(
-        puter.ai.chat(messages, { model: MODEL }),
-        ACTION_TIMEOUT_MS,
-        'AI action',
-      );
+      const text = await chatCompletion(messages);
 
-      // Stale response — a newer request superseded this one
       if (activeRequestRef.current !== requestId) return null;
 
-      const text = extractResponseText(response);
-      if (text) {
-        setState({ loading: false, result: text, error: null });
-        return text;
-      } else {
-        setState({ loading: false, result: null, error: 'No response received from AI.' });
-        return null;
-      }
+      setState({ loading: false, result: text, error: null });
+      return text;
     } catch (err: unknown) {
-      // Only apply error if this is still the active request
       if (activeRequestRef.current !== requestId) return null;
       const message = err instanceof Error ? err.message : String(err);
       setState({ loading: false, result: null, error: message });
       return null;
     }
-  }, []);
+  }, [chatCompletion]);
 
   const clear = useCallback(() => {
     activeRequestRef.current = 0;

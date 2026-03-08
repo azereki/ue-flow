@@ -3072,6 +3072,152 @@
   gap: 12px;
 }
 
+/* ===== AI Settings Popover ===== */
+
+.ueflow-ai-settings {
+  position: relative;
+}
+
+.ueflow-ai-settings-btn--active {
+  color: var(--uf-accent) !important;
+  border-color: var(--uf-accent) !important;
+}
+
+.ueflow-ai-settings-popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 150;
+  width: 300px;
+  background: var(--uf-chrome-bg-solid);
+  border: 1px solid var(--uf-subtle-border);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.ueflow-ai-settings-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--uf-text);
+  letter-spacing: 0.02em;
+}
+
+.ueflow-ai-settings-status {
+  display: flex;
+}
+
+.ueflow-ai-settings-badge {
+  font-size: 11px;
+  color: var(--uf-text-muted);
+  padding: 2px 8px;
+  border-radius: var(--uf-radius-pill);
+  border: 1px solid var(--uf-subtle-border);
+}
+
+.ueflow-ai-settings-badge--active {
+  color: #4ade80;
+  border-color: rgba(74, 222, 128, 0.3);
+  background: rgba(74, 222, 128, 0.08);
+}
+
+.ueflow-ai-settings-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--uf-text-secondary);
+}
+
+.ueflow-ai-settings-input {
+  background: var(--uf-surface);
+  border: 1px solid var(--uf-surface-border);
+  color: var(--uf-text);
+  font-family: var(--uf-font-body);
+  font-size: 12px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  outline: none;
+  transition: border-color var(--uf-transition);
+}
+
+.ueflow-ai-settings-input:focus {
+  border-color: var(--uf-accent);
+}
+
+.ueflow-ai-settings-input::placeholder {
+  color: var(--uf-text-muted);
+}
+
+.ueflow-ai-settings-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--uf-text-secondary);
+  cursor: pointer;
+}
+
+.ueflow-ai-settings-checkbox input[type="checkbox"] {
+  accent-color: var(--uf-accent);
+}
+
+.ueflow-ai-settings-hint {
+  color: var(--uf-text-muted);
+  font-size: 10px;
+}
+
+.ueflow-ai-settings-error {
+  font-size: 11px;
+  color: #f87171;
+  padding: 4px 8px;
+  background: rgba(220, 38, 38, 0.1);
+  border-radius: 4px;
+}
+
+.ueflow-ai-settings-footer {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.ueflow-ai-settings-save-btn {
+  flex: 1;
+  background: var(--uf-accent);
+  border: none;
+  color: #fff;
+  padding: 5px 12px;
+  border-radius: 4px;
+  font-family: var(--uf-font-body);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity var(--uf-transition);
+}
+
+.ueflow-ai-settings-save-btn:hover {
+  opacity: 0.85;
+}
+
+.ueflow-ai-settings-clear-btn {
+  background: none;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  color: #f87171;
+  padding: 5px 12px;
+  border-radius: 4px;
+  font-family: var(--uf-font-body);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background var(--uf-transition);
+}
+
+.ueflow-ai-settings-clear-btn:hover {
+  background: rgba(220, 38, 38, 0.1);
+}
+
 /* ===== AI Result Modal ===== */
 
 .ueflow-ai-modal-overlay {
