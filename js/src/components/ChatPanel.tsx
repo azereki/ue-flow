@@ -19,16 +19,15 @@ export const ChatPanel: FC<ChatPanelProps> = ({ graphContext, onClose, floating 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-scroll to bottom on new messages
+  // Auto-scroll to bottom on new messages or when streaming starts
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isStreaming]);
 
   const handleSend = useCallback(() => {
     if (!input.trim() || isStreaming) return;
     sendMessage(input);
     setInput('');
-    // Reset textarea height
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
@@ -45,7 +44,6 @@ export const ChatPanel: FC<ChatPanelProps> = ({ graphContext, onClose, floating 
     sendMessage(prompt);
   }, [sendMessage]);
 
-  // Auto-resize textarea
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
     const el = e.target;
@@ -59,9 +57,12 @@ export const ChatPanel: FC<ChatPanelProps> = ({ graphContext, onClose, floating 
     <div className={panelClass}>
       {/* Header */}
       <div className="ueflow-chat-header">
-        <span className="ueflow-chat-header-title">AI Chat</span>
+        <span className="ueflow-chat-header-title">
+          AI Chat
+          {isStreaming && <span className="ueflow-chat-header-status"> — thinking...</span>}
+        </span>
         <div className="ueflow-chat-header-actions">
-          {messages.length > 0 && (
+          {messages.length > 0 && !isStreaming && (
             <button className="ueflow-chat-clear-btn" onClick={clearChat} title="Clear chat">
               &#8635;
             </button>
@@ -74,7 +75,7 @@ export const ChatPanel: FC<ChatPanelProps> = ({ graphContext, onClose, floating 
 
       {/* Messages */}
       <div className="ueflow-chat-messages">
-        {messages.length === 0 && !error && (
+        {messages.length === 0 && !error && !isStreaming && (
           <div className="ueflow-chat-empty">
             <div className="ueflow-chat-empty-title">Ask about this Blueprint</div>
             <div className="ueflow-chat-empty-hint">
@@ -100,12 +101,20 @@ export const ChatPanel: FC<ChatPanelProps> = ({ graphContext, onClose, floating 
           <div key={i} className={`ueflow-chat-bubble ueflow-chat-bubble--${msg.role}`}>
             <div className="ueflow-chat-bubble-content">
               {msg.content}
-              {msg.role === 'assistant' && isStreaming && i === messages.length - 1 && (
-                <span className="ueflow-chat-streaming" />
-              )}
             </div>
           </div>
         ))}
+
+        {/* Thinking indicator */}
+        {isStreaming && (
+          <div className="ueflow-chat-bubble ueflow-chat-bubble--assistant">
+            <div className="ueflow-chat-thinking">
+              <span className="ueflow-chat-thinking-dot" />
+              <span className="ueflow-chat-thinking-dot" />
+              <span className="ueflow-chat-thinking-dot" />
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="ueflow-chat-error">{error}</div>
@@ -122,7 +131,7 @@ export const ChatPanel: FC<ChatPanelProps> = ({ graphContext, onClose, floating 
           value={input}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          placeholder="Ask about this Blueprint..."
+          placeholder={isStreaming ? 'Waiting for response...' : 'Ask about this Blueprint...'}
           rows={1}
           disabled={isStreaming}
         />
@@ -132,7 +141,11 @@ export const ChatPanel: FC<ChatPanelProps> = ({ graphContext, onClose, floating 
           disabled={!input.trim() || isStreaming}
           title="Send message"
         >
-          &#9654;
+          {isStreaming ? (
+            <span className="ueflow-chat-send-spinner" />
+          ) : (
+            <>&#9654;</>
+          )}
         </button>
       </div>
     </div>
