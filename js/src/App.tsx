@@ -91,7 +91,7 @@ function PinBodyProvider({ children }: { children: React.ReactNode }) {
   return <PinBodyContext.Provider value={zoom >= 0.15}>{children}</PinBodyContext.Provider>;
 }
 
-function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { graphJSON: UEGraphJSON; focusNodeTitle?: string | null; onSelectedNodeChange?: (title: string | null) => void }) {
+export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange, embedded }: { graphJSON: UEGraphJSON; focusNodeTitle?: string | null; onSelectedNodeChange?: (title: string | null) => void; embedded?: boolean }) {
   const initial = useMemo(() => graphJsonToFlow(graphJSON), [graphJSON]);
   const [nodes, setNodes, onNodesChange] = useNodesState<AnyFlowNode>(initial.nodes);
   // useEdgesState is kept untyped because its OnEdgesChange generic is contravariant —
@@ -232,14 +232,19 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
   // Fix: intercept mousedown (what d3-zoom listens for) on nodes in capture phase,
   // then re-dispatch on .react-flow__pane (outside .nopan) so the filter passes.
   // d3-zoom binds mousemove/mouseup on event.view (window), so view must be set.
+  // Track which .react-flow instance is being right-click-panned so mouseup
+  // can clean up the correct one (supports multiple embeds on the same page).
+  const rpanTarget = useRef<Element | null>(null);
+
   useEffect(() => {
     const BYPASS = '__ueflow_rpan';
 
     const onMouseDown = (e: MouseEvent) => {
       if (e.button !== 2) return;
       if ((e as unknown as Record<string, unknown>)[BYPASS]) return;
-      const rf = document.querySelector('.react-flow');
-      if (!rf?.contains(e.target as Node)) return;
+      // Scope to the closest .react-flow ancestor (not document.querySelector)
+      const rf = (e.target as HTMLElement).closest('.react-flow');
+      if (!rf) return;
       const node = (e.target as HTMLElement).closest('.react-flow__node');
       if (!node) return;
 
@@ -248,6 +253,7 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
 
       // Safety: disable pointer-events on nodes so mousemove reaches pane
       rf.classList.add('ueflow-rpan');
+      rpanTarget.current = rf;
 
       // Re-dispatch on the pane — event.target will be the pane (not inside .nopan)
       // and event.view must be window so d3-zoom can bind mousemove/mouseup there
@@ -266,11 +272,12 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
     };
 
     const onMouseUp = () => {
-      document.querySelector('.react-flow')?.classList.remove('ueflow-rpan');
+      rpanTarget.current?.classList.remove('ueflow-rpan');
+      rpanTarget.current = null;
     };
 
     const onContextMenu = (e: Event) => {
-      if (document.querySelector('.react-flow')?.contains(e.target as Node)) {
+      if ((e.target as HTMLElement).closest('.react-flow')) {
         e.preventDefault();
       }
     };
@@ -322,7 +329,7 @@ function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { 
       >
         <PinBodyProvider>
           <FitViewOnMount focusNode={focusNode} />
-          <ExposeGlobalFitView />
+          {!embedded && <ExposeGlobalFitView />}
           <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.025)" gap={20} />
           <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.05)" gap={100} />
           <Controls />
