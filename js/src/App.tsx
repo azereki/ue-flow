@@ -91,7 +91,7 @@ function PinBodyProvider({ children }: { children: React.ReactNode }) {
   return <PinBodyContext.Provider value={zoom >= 0.15}>{children}</PinBodyContext.Provider>;
 }
 
-function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { graphJSON: UEGraphJSON; focusNodeTitle?: string | null; onSelectedNodeChange?: (title: string | null) => void }) {
+export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange }: { graphJSON: UEGraphJSON; focusNodeTitle?: string | null; onSelectedNodeChange?: (title: string | null) => void }) {
   const initial = useMemo(() => graphJsonToFlow(graphJSON), [graphJSON]);
   const [nodes, setNodes, onNodesChange] = useNodesState<AnyFlowNode>(initial.nodes);
   // useEdgesState is kept untyped because its OnEdgesChange generic is contravariant —
