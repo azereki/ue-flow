@@ -35,6 +35,7 @@ import { DataTableView } from './components/DataTableView';
 import { StructView } from './components/StructView';
 import { useUndoRedo } from './hooks/useUndoRedo';
 import { LandingPage } from './components/LandingPage';
+import { DEMO_MULTIGRAPH } from './data/demo-multigraph';
 
 const nodeTypes = {
   blueprintNode: BlueprintNode,
@@ -525,6 +526,7 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
 export function App({ graphJSON, multiGraphJSON }: AppProps) {
   const [pastedGraph, setPastedGraph] = useState<UEGraphJSON | null>(null);
   const [pasteCount, setPasteCount] = useState(0);
+  const [demoMode, setDemoMode] = useState(false);
 
   const handleGraphParsed = useCallback((graph: UEGraphJSON) => {
     setPastedGraph(graph);
@@ -533,11 +535,26 @@ export function App({ graphJSON, multiGraphJSON }: AppProps) {
 
   const handleBackToPaste = useCallback(() => {
     setPastedGraph(null);
+    setDemoMode(false);
   }, []);
 
-  // Multi-graph mode takes precedence
-  if (multiGraphJSON && Object.keys(multiGraphJSON.graphs).length > 0) {
-    return <MultiGraphView multiGraph={multiGraphJSON} />;
+  const handleExploreDemoBlueprint = useCallback(() => {
+    setDemoMode(true);
+  }, []);
+
+  // Multi-graph mode takes precedence (embedded or demo)
+  const activeMultiGraph = multiGraphJSON ?? (demoMode ? DEMO_MULTIGRAPH : null);
+  if (activeMultiGraph && Object.keys(activeMultiGraph.graphs).length > 0) {
+    return (
+      <>
+        {demoMode && (
+          <button className="ueflow-back-btn" onClick={handleBackToPaste}>
+            &#8592; Back to Landing
+          </button>
+        )}
+        <MultiGraphView multiGraph={activeMultiGraph} />
+      </>
+    );
   }
 
   // Single-graph mode — embedded JSON takes precedence over pasted graph
@@ -559,5 +576,5 @@ export function App({ graphJSON, multiGraphJSON }: AppProps) {
   }
 
   // Empty state — full landing page
-  return <LandingPage onGraphParsed={handleGraphParsed} />;
+  return <LandingPage onGraphParsed={handleGraphParsed} onExploreDemoBlueprint={handleExploreDemoBlueprint} />;
 }
