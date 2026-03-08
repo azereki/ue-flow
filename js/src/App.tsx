@@ -34,7 +34,7 @@ import { useTabNavigation, parseTabName } from './hooks/useTabNavigation';
 import { DataTableView } from './components/DataTableView';
 import { StructView } from './components/StructView';
 import { useUndoRedo } from './hooks/useUndoRedo';
-import { PasteLanding } from './components/PasteLanding';
+import { LandingPage } from './components/LandingPage';
 
 const nodeTypes = {
   blueprintNode: BlueprintNode,
@@ -558,6 +558,6 @@ export function App({ graphJSON, multiGraphJSON }: AppProps) {
     );
   }
 
-  // Empty state — paste landing
-  return <PasteLanding onGraphParsed={handleGraphParsed} />;
+  // Empty state — full landing page
+  return <LandingPage onGraphParsed={handleGraphParsed} />;
 }
