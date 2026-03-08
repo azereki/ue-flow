@@ -708,3 +708,53 @@ class TestGraphMetadata:
         )
         assert graph.graph_type == "FunctionGraph"
         assert graph.graph_schema == "EdGraphSchema_K2"
+
+
+class TestExportPathAutoDetection:
+    """Auto-detect asset_path and graph_name from ExportPath header field."""
+
+    def test_export_path_populates_graph_metadata(self):
+        t3d = '''\
+Begin Object Class=/Script/BlueprintGraph.K2Node_Event Name="K2Node_Event_0" ExportPath="/Game/BP_Player.BP_Player:EventGraph.K2Node_Event_0"
+   NodePosX=0
+   NodePosY=0
+   NodeGuid=AAAA0000BBBB1111CCCC2222DDDD3333
+End Object'''
+        graph = parse_paste_text(t3d)
+        assert graph.asset_path == "/Game/BP_Player.BP_Player"
+        assert graph.graph_name == "EventGraph"
+        assert len(graph.nodes) == 1
+
+    def test_function_graph_name(self):
+        t3d = '''\
+Begin Object Class=/Script/BlueprintGraph.K2Node_FunctionEntry Name="K2Node_FunctionEntry_0" ExportPath="/Game/BP_Enemy.BP_Enemy:TakeDamage.K2Node_FunctionEntry_0"
+   NodePosX=0
+   NodePosY=0
+   NodeGuid=11112222333344445555666677778888
+End Object'''
+        graph = parse_paste_text(t3d)
+        assert graph.asset_path == "/Game/BP_Enemy.BP_Enemy"
+        assert graph.graph_name == "TakeDamage"
+
+    def test_no_export_path_uses_defaults(self):
+        """Without ExportPath, graph_name defaults to EventGraph."""
+        graph = parse_paste_text(EVENT_NODE_T3D)
+        assert graph.asset_path == ""
+        assert graph.graph_name == "EventGraph"
+
+    def test_multi_node_uses_first_export_path(self):
+        t3d = '''\
+Begin Object Class=/Script/BlueprintGraph.K2Node_Event Name="K2Node_Event_0" ExportPath="/Game/MyBP.MyBP:MyGraph.K2Node_Event_0"
+   NodePosX=0
+   NodePosY=0
+   NodeGuid=AAAA0000BBBB1111CCCC2222DDDD3333
+End Object
+Begin Object Class=/Script/BlueprintGraph.K2Node_CallFunction Name="K2Node_CallFunction_0" ExportPath="/Game/MyBP.MyBP:MyGraph.K2Node_CallFunction_0"
+   NodePosX=200
+   NodePosY=0
+   NodeGuid=EEEE0000FFFF1111AAAA2222BBBB3333
+End Object'''
+        graph = parse_paste_text(t3d)
+        assert graph.asset_path == "/Game/MyBP.MyBP"
+        assert graph.graph_name == "MyGraph"
+        assert len(graph.nodes) == 2

@@ -433,11 +433,32 @@ def parse_single_node(text: str) -> BlueprintNode | None:
     return _parse_node_body(header_attrs, body)
 
 
+def _extract_export_path_info(export_path: str) -> tuple[str, str]:
+    """Extract asset_path and graph_name from a UE ExportPath.
+
+    ExportPath format: ``/Game/BP_Player.BP_Player:EventGraph.K2Node_Event_0``
+    - Before ``:`` → asset path (``/Game/BP_Player.BP_Player``)
+    - After ``:`` split on ``.`` → graph name is the first segment
+
+    Returns:
+        (asset_path, graph_name) — empty strings if parsing fails.
+    """
+    if ":" not in export_path:
+        return ("", "")
+    asset_path, remainder = export_path.split(":", 1)
+    # remainder = "EventGraph.K2Node_Event_0"
+    graph_name = remainder.split(".", 1)[0] if remainder else ""
+    return (asset_path, graph_name)
+
+
 def parse_paste_text(text: str) -> BlueprintGraph:
     """Parse UE T3D paste text into a BlueprintGraph with nodes and pins.
 
     Handles multi-node paste text with multiple Begin Object / End Object
     blocks separated by blank lines.
+
+    Auto-detects ``asset_path`` and ``graph_name`` from the first node's
+    ``ExportPath`` header field when available.
 
     Args:
         text: Full T3D clipboard paste text (one or more object blocks).
@@ -446,6 +467,8 @@ def parse_paste_text(text: str) -> BlueprintGraph:
         BlueprintGraph populated with all parsed nodes.
     """
     nodes: list[BlueprintNode] = []
+    asset_path = ""
+    graph_name = ""
 
     for match in _OBJECT_BLOCK_RE.finditer(text):
         header_line = match.group(1)
@@ -454,4 +477,14 @@ def parse_paste_text(text: str) -> BlueprintGraph:
         node = _parse_node_body(header_attrs, body)
         nodes.append(node)
 
-    return BlueprintGraph(nodes=nodes)
+        # Auto-detect from first node's ExportPath
+        if not asset_path and "ExportPath" in header_attrs:
+            asset_path, graph_name = _extract_export_path_info(
+                header_attrs["ExportPath"]
+            )
+
+    return BlueprintGraph(
+        nodes=nodes,
+        asset_path=asset_path,
+        graph_name=graph_name or "EventGraph",
+    )
