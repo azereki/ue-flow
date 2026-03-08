@@ -36,8 +36,15 @@ interface PuterAI {
   ): Promise<PuterAIChatResponse | AsyncIterable<PuterAIStreamPart>>;
 }
 
+interface PuterAuth {
+  isSignedIn(): boolean;
+  signIn(): Promise<void>;
+  signOut(): Promise<void>;
+}
+
 interface Puter {
   ai: PuterAI;
+  auth: PuterAuth;
 }
 
 declare const puter: Puter;

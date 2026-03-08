@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
+import { MODEL, TIMEOUT_MS, extractResponseText, withTimeout } from '../utils/puter-helpers';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -8,39 +9,6 @@ export interface ChatMessage {
 const SYSTEM_PROMPT = `You are a UE Blueprint analyst. You directly answer questions about Unreal Engine Blueprint graphs based on the provided context. Never ask clarifying questions — always give your best answer using the graph data you have. Be specific: reference node titles, pin names, and connection paths. Use UE terminology. Keep answers concise but substantive.`;
 
 const MAX_HISTORY = 10;
-const MODEL = 'claude-sonnet-4-6';
-const TIMEOUT_MS = 30_000;
-
-/** Extract text from a non-streaming Puter.js response. */
-function extractResponseText(resp: unknown): string {
-  if (!resp || typeof resp !== 'object') return '';
-  const r = resp as Record<string, unknown>;
-  const msg = r.message as Record<string, unknown> | undefined;
-  if (!msg) return typeof r.text === 'string' ? r.text : '';
-  const content = msg.content;
-  if (typeof content === 'string') return content;
-  if (Array.isArray(content)) {
-    return content
-      .map((c: unknown) => {
-        if (typeof c === 'string') return c;
-        if (c && typeof c === 'object' && 'text' in c) return (c as Record<string, unknown>).text;
-        return '';
-      })
-      .join('');
-  }
-  return '';
-}
-
-/** Wrap a promise with a timeout. */
-function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s — Puter auth may not have completed. Allow popups for this site and try again.`)), ms);
-    promise.then(
-      (val) => { clearTimeout(timer); resolve(val); },
-      (err) => { clearTimeout(timer); reject(err); },
-    );
-  });
-}
 
 export function useAIChat(graphContext: string) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);

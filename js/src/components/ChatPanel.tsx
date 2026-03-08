@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback, type FC, type KeyboardEvent } from 'react';
 import { useAIChat } from '../hooks/useAIChat';
+import { usePuterAuth } from '../hooks/usePuterAuth';
 
 interface ChatPanelProps {
   graphContext: string;
@@ -14,6 +15,7 @@ const SUGGESTED_PROMPTS = [
 ];
 
 export const ChatPanel: FC<ChatPanelProps> = ({ graphContext, onClose, floating }) => {
+  const { authState, authError, signIn } = usePuterAuth();
   const { messages, isStreaming, error, sendMessage, clearChat } = useAIChat(graphContext);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -53,6 +55,8 @@ export const ChatPanel: FC<ChatPanelProps> = ({ graphContext, onClose, floating 
 
   const panelClass = `ueflow-chat-panel${floating ? ' ueflow-chat-panel--floating' : ''}`;
 
+  const needsAuth = authState !== 'signed-in';
+
   return (
     <div className={panelClass}>
       {/* Header */}
@@ -73,81 +77,117 @@ export const ChatPanel: FC<ChatPanelProps> = ({ graphContext, onClose, floating 
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="ueflow-chat-messages">
-        {messages.length === 0 && !error && !isStreaming && (
-          <div className="ueflow-chat-empty">
-            <div className="ueflow-chat-empty-title">Ask about this Blueprint</div>
-            <div className="ueflow-chat-empty-hint">
-              Powered by Puter.js — a free Puter account is needed.
-              Allow popups when prompted.
+      {/* Auth gate */}
+      {needsAuth ? (
+        <div className="ueflow-chat-messages">
+          <div className="ueflow-chat-auth">
+            <div className="ueflow-chat-auth-icon">&#129302;</div>
+            <div className="ueflow-chat-auth-title">AI-Powered Blueprint Chat</div>
+            <div className="ueflow-chat-auth-desc">
+              {authState === 'checking'
+                ? 'Checking connection...'
+                : authState === 'unavailable'
+                  ? 'Puter.js is not available. Check your internet connection and try refreshing.'
+                  : 'Connect a free Puter account to chat with AI about this Blueprint. One-time setup — your session is cached.'}
             </div>
-            <div className="ueflow-chat-chips">
-              {SUGGESTED_PROMPTS.map((prompt) => (
-                <button
-                  key={prompt}
-                  className="ueflow-chat-chip"
-                  onClick={() => handleChipClick(prompt)}
-                  disabled={isStreaming}
-                >
-                  {prompt}
-                </button>
-              ))}
-            </div>
+            {(authState === 'signed-out' || authState === 'error') && (
+              <button className="ueflow-chat-auth-btn" onClick={signIn}>
+                Connect to Puter (free)
+              </button>
+            )}
+            {authState === 'signing-in' && (
+              <button className="ueflow-chat-auth-btn ueflow-chat-auth-btn--loading" disabled>
+                <span className="ueflow-chat-send-spinner" />
+                Connecting...
+              </button>
+            )}
+            {authState === 'checking' && (
+              <div className="ueflow-chat-thinking">
+                <span className="ueflow-chat-thinking-dot" />
+                <span className="ueflow-chat-thinking-dot" />
+                <span className="ueflow-chat-thinking-dot" />
+              </div>
+            )}
+            {authError && (
+              <div className="ueflow-chat-error">{authError}</div>
+            )}
           </div>
-        )}
+        </div>
+      ) : (
+        <>
+          {/* Messages */}
+          <div className="ueflow-chat-messages">
+            {messages.length === 0 && !error && !isStreaming && (
+              <div className="ueflow-chat-empty">
+                <div className="ueflow-chat-empty-title">Ask about this Blueprint</div>
+                <div className="ueflow-chat-chips">
+                  {SUGGESTED_PROMPTS.map((prompt) => (
+                    <button
+                      key={prompt}
+                      className="ueflow-chat-chip"
+                      onClick={() => handleChipClick(prompt)}
+                      disabled={isStreaming}
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
-        {messages.map((msg, i) => (
-          <div key={i} className={`ueflow-chat-bubble ueflow-chat-bubble--${msg.role}`}>
-            <div className="ueflow-chat-bubble-content">
-              {msg.content}
-            </div>
+            {messages.map((msg, i) => (
+              <div key={i} className={`ueflow-chat-bubble ueflow-chat-bubble--${msg.role}`}>
+                <div className="ueflow-chat-bubble-content">
+                  {msg.content}
+                </div>
+              </div>
+            ))}
+
+            {/* Thinking indicator */}
+            {isStreaming && (
+              <div className="ueflow-chat-bubble ueflow-chat-bubble--assistant">
+                <div className="ueflow-chat-thinking">
+                  <span className="ueflow-chat-thinking-dot" />
+                  <span className="ueflow-chat-thinking-dot" />
+                  <span className="ueflow-chat-thinking-dot" />
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div className="ueflow-chat-error">{error}</div>
+            )}
+
+            <div ref={messagesEndRef} />
           </div>
-        ))}
 
-        {/* Thinking indicator */}
-        {isStreaming && (
-          <div className="ueflow-chat-bubble ueflow-chat-bubble--assistant">
-            <div className="ueflow-chat-thinking">
-              <span className="ueflow-chat-thinking-dot" />
-              <span className="ueflow-chat-thinking-dot" />
-              <span className="ueflow-chat-thinking-dot" />
-            </div>
+          {/* Input */}
+          <div className="ueflow-chat-input-area">
+            <textarea
+              ref={textareaRef}
+              className="ueflow-chat-textarea"
+              value={input}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              placeholder={isStreaming ? 'Waiting for response...' : 'Ask about this Blueprint...'}
+              rows={1}
+              disabled={isStreaming}
+            />
+            <button
+              className="ueflow-chat-send-btn"
+              onClick={handleSend}
+              disabled={!input.trim() || isStreaming}
+              title="Send message"
+            >
+              {isStreaming ? (
+                <span className="ueflow-chat-send-spinner" />
+              ) : (
+                <>&#9654;</>
+              )}
+            </button>
           </div>
-        )}
-
-        {error && (
-          <div className="ueflow-chat-error">{error}</div>
-        )}
-
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Input */}
-      <div className="ueflow-chat-input-area">
-        <textarea
-          ref={textareaRef}
-          className="ueflow-chat-textarea"
-          value={input}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          placeholder={isStreaming ? 'Waiting for response...' : 'Ask about this Blueprint...'}
-          rows={1}
-          disabled={isStreaming}
-        />
-        <button
-          className="ueflow-chat-send-btn"
-          onClick={handleSend}
-          disabled={!input.trim() || isStreaming}
-          title="Send message"
-        >
-          {isStreaming ? (
-            <span className="ueflow-chat-send-spinner" />
-          ) : (
-            <>&#9654;</>
-          )}
-        </button>
-      </div>
+        </>
+      )}
     </div>
   );
 };

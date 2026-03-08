@@ -492,6 +492,8 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
         variableCount={multiGraph.variables?.length ?? 0}
         onToggleChat={handleToggleChat}
         chatOpen={chatOpen}
+        graphContext={chatContext}
+        onNavigateToNode={navigateToGraph}
       />
       <div className="ueflow-multi-layout">
         <div ref={sidebarRef} style={{ width: sidebarWidth ?? 'max-content', minWidth: 160, maxWidth: 400, flexShrink: 0 }}>
