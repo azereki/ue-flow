@@ -2431,6 +2431,166 @@
   color: var(--uf-text-muted);
 }
 
+/* Full Blueprint Showcase */
+.ueflow-landing-showcase {
+  border-top: 1px solid var(--uf-surface-border);
+  padding-top: 60px;
+}
+
+.ueflow-landing-showcase-sub {
+  text-align: center;
+  font-size: 15px;
+  color: var(--uf-text-secondary);
+  margin: -24px 0 36px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
+}
+
+.ueflow-landing-showcase-card {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 32px;
+  align-items: center;
+  background: var(--uf-surface);
+  border: 1px solid var(--uf-surface-border);
+  border-radius: 12px;
+  padding: 28px;
+  transition: border-color var(--uf-transition);
+}
+
+.ueflow-landing-showcase-card:hover {
+  border-color: color-mix(in srgb, var(--uf-accent) 30%, var(--uf-surface-border));
+}
+
+/* Mockup preview */
+.ueflow-landing-showcase-preview {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--uf-subtle-border);
+  background: var(--uf-bg);
+}
+
+.ueflow-landing-showcase-mockup {
+  display: flex;
+  height: 280px;
+}
+
+.ueflow-landing-showcase-sidebar-mock {
+  width: 180px;
+  background: color-mix(in srgb, var(--uf-surface) 80%, var(--uf-bg));
+  border-right: 1px solid var(--uf-subtle-border);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.ueflow-landing-showcase-mock-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--uf-text);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--uf-subtle-border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ueflow-landing-showcase-mock-section {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ueflow-landing-showcase-mock-label {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--uf-text-muted);
+  padding: 2px 0;
+}
+
+.ueflow-landing-showcase-mock-item {
+  font-size: 11px;
+  color: var(--uf-text-secondary);
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: default;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ueflow-landing-showcase-mock-item:hover {
+  background: color-mix(in srgb, var(--uf-accent) 10%, transparent);
+  color: var(--uf-text);
+}
+
+.ueflow-landing-showcase-mock-var span {
+  font-size: 9px;
+  color: var(--uf-text-muted);
+  margin-left: 4px;
+}
+
+.ueflow-landing-showcase-graph-mock {
+  flex: 1;
+  position: relative;
+  background:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.ueflow-landing-showcase-graph-dots {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 100px 100px;
+}
+
+/* Info side */
+.ueflow-landing-showcase-info {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.ueflow-landing-showcase-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ueflow-landing-showcase-list-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ueflow-landing-showcase-list-item strong {
+  font-size: 14px;
+  color: var(--uf-text);
+}
+
+.ueflow-landing-showcase-list-item span {
+  font-size: 12px;
+  color: var(--uf-text-muted);
+  line-height: 1.5;
+}
+
+.ueflow-landing-showcase-btn {
+  align-self: flex-start;
+}
+
 /* Responsive */
 @media (max-width: 900px) {
   .ueflow-landing-hero {
@@ -2447,6 +2607,12 @@
   .ueflow-landing-section {
     padding: 40px 24px;
   }
+  .ueflow-landing-showcase-card {
+    grid-template-columns: 1fr;
+  }
+  .ueflow-landing-showcase-mockup {
+    height: 220px;
+  }
 }
 
 @media (max-width: 600px) {
@@ -2459,5 +2625,8 @@
   }
   .ueflow-landing-hero-graph {
     height: 240px;
+  }
+  .ueflow-landing-showcase-sidebar-mock {
+    width: 140px;
   }
 }
