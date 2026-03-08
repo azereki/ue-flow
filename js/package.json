@@ -8,6 +8,7 @@
     "build": "vite build",
     "postbuild": "node -e \"require('fs').copyFileSync('dist/ue-flow.iife.js','../python/ue_flow/assets/ue-flow.iife.js')\"",
     "preview": "vite preview",
+    "build:pages": "vite build --config vite.config.pages.ts",
     "test": "vitest run",
     "test:e2e": "playwright test"
   },

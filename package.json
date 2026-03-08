@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "npm run dev --prefix js",
     "build": "npm run build --prefix js && node js/scripts/build-paste-tool.cjs && node js/scripts/build-embed-demo.cjs",
+    "build:pages": "npm run build:pages --prefix js",
     "test": "npm test --prefix js",
     "test:e2e": "npm run test:e2e --prefix js"
   }
