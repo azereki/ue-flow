@@ -9,10 +9,14 @@ ue-flow is an open-source UE Blueprint rendering suite. It takes Unreal Engine T
 ## Project Structure
 - `js/` — React/Vite app (TypeScript, @xyflow/react v12, React 19)
 - `js/scripts/` — Build scripts (paste-tool generator)
+- `js/src/data/` — Demo data files (`demo-graph.ts` for hero, `demo-multigraph.ts` for full Blueprint demo)
+- `js/src/components/LandingPage.tsx` — Marketing landing page with hero demo, showcase section, feature cards, paste CTA
 - `python/` — Python renderer wrapper, outputs HTML/PNG
 - `schema/` — JSON schema for UE graph data (`ue-graph.schema.json`)
 - `examples/` — mock-render.html for visual testing, paste-tool.html for standalone paste-to-render
 - `python/ue_flow/assets/ue-flow.iife.js` — built JS bundle consumed by Python renderer
+- `.github/workflows/pages.yml` — CI build & test workflow (runs on push to main/dev and PRs)
+- `wrangler.toml` — Cloudflare Pages deployment config
 
 ## Build & Test
 - `npm run build` — build JS bundle, copy IIFE to `python/ue_flow/assets/`, regenerate `examples/paste-tool.html`
@@ -51,7 +55,9 @@ The end-to-end flow has two directions:
 
 ## Key Architecture — JS (`js/src/`)
 
-- **App modes:** `App.tsx` switches between `PasteLanding` (no data, paste T3D to render), `SingleGraphView` (one graph, full viewport), and `MultiGraphView` (sidebar + tabs + details panel + breadcrumbs). Embedded JSON takes precedence over pasted graphs
+- **App modes:** `App.tsx` switches between `LandingPage` (no data — hero demo, showcase, paste CTA), `SingleGraphView` (one graph, full viewport), `MultiGraphView` (sidebar + tabs + details panel + breadcrumbs), and demo mode (loads `DEMO_MULTIGRAPH` into MultiGraphView). Embedded JSON takes precedence over pasted graphs, demo mode is toggled via "Explore Demo Blueprint" button on landing page
+- **Landing page:** `LandingPage.tsx` — hero with live 6-node demo graph, "Full Blueprint Viewer" showcase section with mockup + "Explore Demo Blueprint" button, feature cards, how-it-works steps, paste CTA section
+- **Demo data:** `data/demo-graph.ts` (simple 6-node hero graph), `data/demo-multigraph.ts` (full BP_PlayerCharacter with 3 graphs, events, functions, variables, components, structs, delegates)
 - **Nodes:** `BlueprintNode.tsx` renders header + pin columns; `PinHandle.tsx` renders individual pins with React Flow `<Handle>`; `CommentNode.tsx` renders transparent comment blocks; `NodeHeader.tsx` renders the colored header bar
 - **Edges:** `BlueprintEdge.tsx` uses `getSmoothStepPath` with `borderRadius: 16` for UE-style right-angled wire routing — do NOT switch to `getBezierPath` (produces messy curves)
 - **Theme:** `js/src/theme/ue-flow.css` — all visual styling (Blueprint Noir dark theme)
@@ -91,6 +97,16 @@ The end-to-end flow has two directions:
 - Node header glass uses `color-mix(in srgb, var(--header-accent) 25%, rgba(...))` — do not reintroduce `backdrop-filter` on node headers
 - Do not use `100vw`/`100vh` on elements that receive CSS `zoom` — use `100%` and let a non-zoomed ancestor hold viewport units
 - Example HTML files embed the IIFE inline — they go stale after rebuilds. Regenerate with the Python renderer or extract JSON + inject latest IIFE
+
+## Deployment
+- **Production:** Cloudflare Pages at `ue-flow.pages.dev` — auto-deploys from GitHub via dashboard connection
+- **CI:** `.github/workflows/pages.yml` runs build + tests on pushes to `main`/`dev` and PRs (no GitHub Pages deployment — that's handled by Cloudflare)
+- **Cloudflare config:** `wrangler.toml` — build command `npm install --prefix js && npm run build:pages --prefix js`, output dir `js/dist-pages`
+
+## Git Workflow
+- **`main`** — production branch, deploys to Cloudflare Pages
+- **`dev`** — development branch for staging changes before main
+- Work directly on `dev` for iterating; merge to `main` when ready to deploy
 
 ## Conventions
 - Commit style: `feat(ue-flow):` / `fix(ue-flow):` prefix
