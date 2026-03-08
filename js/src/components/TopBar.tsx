@@ -8,11 +8,17 @@ interface TopBarProps {
   graphContext?: string;
   onNavigateToNode?: (graphName: string, nodeTitle: string) => void;
   nodeTitles?: string[];
+  onMenuToggle?: () => void;
 }
 
-export const TopBar: FC<TopBarProps> = ({ title, onToggleChat, chatOpen, graphContext, onNavigateToNode, nodeTitles }) => {
+export const TopBar: FC<TopBarProps> = ({ title, onToggleChat, chatOpen, graphContext, onNavigateToNode, nodeTitles, onMenuToggle }) => {
   return (
     <header className="ueflow-topbar">
+      {onMenuToggle && (
+        <button className="ueflow-topbar-menu-btn" onClick={onMenuToggle} aria-label="Toggle sidebar">
+          &#9776;
+        </button>
+      )}
       <span className="ueflow-topbar-title">{title}</span>
       <div className="ueflow-topbar-right">
         {graphContext && (

@@ -40,6 +40,7 @@ import { NodeExplainer } from './components/NodeExplainer';
 import { DEMO_MULTIGRAPH } from './data/demo-multigraph';
 import { serializeGraphContext, serializeMultiGraphContext } from './utils/graph-context';
 import { offsetGraphPositions } from './utils/ai-generate';
+import { useIsMobile } from './hooks/useIsMobile';
 
 const nodeTypes = {
   blueprintNode: BlueprintNode,
@@ -403,6 +404,9 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
   const [chatWidth, setChatWidth] = useState(320);
   const chatRef = useRef<HTMLDivElement>(null);
 
+  const isMobile = useIsMobile();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
   // Pin sidebar width on mount (fires before paint → no flash)
   useLayoutEffect(() => {
     if (sidebarWidth === null && sidebarRef.current) {
@@ -500,12 +504,26 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
         graphContext={chatContext}
         onNavigateToNode={navigateToGraph}
         nodeTitles={nodeTitles}
+        onMenuToggle={isMobile ? () => setDrawerOpen(o => !o) : undefined}
       />
       <div className="ueflow-multi-layout">
-        <div ref={sidebarRef} style={{ width: sidebarWidth ?? 'max-content', minWidth: 160, maxWidth: 400, flexShrink: 0 }}>
-          <Sidebar multiGraph={multiGraph} onNavigateToGraph={navigateToGraph} onShowDetails={handleShowDetails} onOpenSpecialTab={openSpecialTab} />
-        </div>
-        <div className="ueflow-sidebar-resize" onMouseDown={handleSidebarResize} />
+        {isMobile ? (
+          drawerOpen && (
+            <>
+              <div className="ueflow-drawer-backdrop" onClick={() => setDrawerOpen(false)} />
+              <div className="ueflow-drawer">
+                <Sidebar multiGraph={multiGraph} onNavigateToGraph={(g, n) => { navigateToGraph(g, n); setDrawerOpen(false); }} onShowDetails={handleShowDetails} onOpenSpecialTab={(t) => { openSpecialTab(t); setDrawerOpen(false); }} />
+              </div>
+            </>
+          )
+        ) : (
+          <>
+            <div ref={sidebarRef} style={{ width: sidebarWidth ?? 'max-content', minWidth: 160, maxWidth: 400, flexShrink: 0 }}>
+              <Sidebar multiGraph={multiGraph} onNavigateToGraph={navigateToGraph} onShowDetails={handleShowDetails} onOpenSpecialTab={openSpecialTab} />
+            </div>
+            <div className="ueflow-sidebar-resize" onMouseDown={handleSidebarResize} />
+          </>
+        )}
         <main className="ueflow-multi-main">
           <TabBar
             openTabs={openTabs}
@@ -545,31 +563,48 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
           </div>
         </main>
         {detailsItem && (
-          <>
-            <div className="ueflow-details-resize" onMouseDown={handleDetailsResize} />
-            <div ref={detailsRef} style={{ width: detailsWidth, minWidth: 260, maxWidth: 600, flexShrink: 0 }}>
-              <DetailsPanel item={detailsItem} onClose={() => setDetailsItem(null)} structs={multiGraph.structs} />
-            </div>
-          </>
+          isMobile ? (
+            <>
+              <div className="ueflow-bottomsheet-backdrop" onClick={() => setDetailsItem(null)} />
+              <div className="ueflow-bottomsheet">
+                <DetailsPanel item={detailsItem} onClose={() => setDetailsItem(null)} structs={multiGraph.structs} />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="ueflow-details-resize" onMouseDown={handleDetailsResize} />
+              <div ref={detailsRef} style={{ width: detailsWidth, minWidth: 260, maxWidth: 600, flexShrink: 0 }}>
+                <DetailsPanel item={detailsItem} onClose={() => setDetailsItem(null)} structs={multiGraph.structs} />
+              </div>
+            </>
+          )
         )}
         {chatOpen && (
-          <>
-            <div className="ueflow-chat-resize" onMouseDown={handleChatResize} />
-            <div ref={chatRef} style={{ width: chatWidth, minWidth: 240, maxWidth: 500, flexShrink: 0 }}>
+          isMobile ? (
+            <div className="ueflow-chat-fullscreen">
               <ChatPanel graphContext={chatContext} onClose={handleToggleChat} selectedNodeTitle={selectedNode} />
             </div>
-          </>
+          ) : (
+            <>
+              <div className="ueflow-chat-resize" onMouseDown={handleChatResize} />
+              <div ref={chatRef} style={{ width: chatWidth, minWidth: 240, maxWidth: 500, flexShrink: 0 }}>
+                <ChatPanel graphContext={chatContext} onClose={handleToggleChat} selectedNodeTitle={selectedNode} />
+              </div>
+            </>
+          )
         )}
       </div>
-      <StatusBar
-        activeGraph={activeGraph}
-        nodeCount={nodeCount}
-        variableCount={multiGraph.variables?.length ?? 0}
-        functionCount={multiGraph.functions?.length ?? 0}
-        graphCount={graphNames.length}
-        comparison={multiGraph.comparison}
-        selectedNode={selectedNode}
-      />
+      {!isMobile && (
+        <StatusBar
+          activeGraph={activeGraph}
+          nodeCount={nodeCount}
+          variableCount={multiGraph.variables?.length ?? 0}
+          functionCount={multiGraph.functions?.length ?? 0}
+          graphCount={graphNames.length}
+          comparison={multiGraph.comparison}
+          selectedNode={selectedNode}
+        />
+      )}
     </div>
   );
 }
@@ -641,7 +676,7 @@ export function App({ graphJSON, multiGraphJSON }: AppProps) {
   const activeGraph = graphJSON ?? pastedGraph;
   if (activeGraph) {
     return (
-      <div style={{ width: '100vw', height: '100vh' }}>
+      <div style={{ width: '100%', height: '100vh' }}>
         {pastedGraph && !graphJSON && (
           <button className="ueflow-back-btn" onClick={handleBackToPaste}>
             &#8592; New Paste
