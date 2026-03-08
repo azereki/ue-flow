@@ -35,7 +35,9 @@ import { DataTableView } from './components/DataTableView';
 import { StructView } from './components/StructView';
 import { useUndoRedo } from './hooks/useUndoRedo';
 import { LandingPage } from './components/LandingPage';
+import { ChatPanel } from './components/ChatPanel';
 import { DEMO_MULTIGRAPH } from './data/demo-multigraph';
+import { serializeGraphContext, serializeMultiGraphContext } from './utils/graph-context';
 
 const nodeTypes = {
   blueprintNode: BlueprintNode,
@@ -395,6 +397,10 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
   const [detailsWidth, setDetailsWidth] = useState(340);
   const detailsRef = useRef<HTMLDivElement>(null);
 
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatWidth, setChatWidth] = useState(320);
+  const chatRef = useRef<HTMLDivElement>(null);
+
   // Pin sidebar width on mount (fires before paint → no flash)
   useLayoutEffect(() => {
     if (sidebarWidth === null && sidebarRef.current) {
@@ -409,9 +415,11 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
   // Separate abort controllers per resize handle — prevents one drag from cancelling the other
   const sidebarResizeAbortRef = useRef<AbortController | null>(null);
   const detailsResizeAbortRef = useRef<AbortController | null>(null);
+  const chatResizeAbortRef = useRef<AbortController | null>(null);
   useEffect(() => () => {
     sidebarResizeAbortRef.current?.abort();
     detailsResizeAbortRef.current?.abort();
+    chatResizeAbortRef.current?.abort();
   }, []);
 
   const handleSidebarResize = useCallback((e: React.MouseEvent) => {
@@ -446,6 +454,31 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
     document.addEventListener('mouseup', onUp, { signal: controller.signal });
   }, []);
 
+  const handleChatResize = useCallback((e: React.MouseEvent) => {
+    chatResizeAbortRef.current?.abort();
+    const controller = new AbortController();
+    chatResizeAbortRef.current = controller;
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = chatRef.current?.offsetWidth ?? 320;
+    const onMove = (me: MouseEvent) => {
+      const newWidth = Math.min(500, Math.max(240, startWidth - (me.clientX - startX)));
+      setChatWidth(newWidth);
+    };
+    const onUp = () => { controller.abort(); };
+    document.addEventListener('mousemove', onMove, { signal: controller.signal });
+    document.addEventListener('mouseup', onUp, { signal: controller.signal });
+  }, []);
+
+  const handleToggleChat = useCallback(() => {
+    setChatOpen((prev) => !prev);
+  }, []);
+
+  const chatContext = useMemo(
+    () => serializeMultiGraphContext(multiGraph, activeGraph),
+    [multiGraph, activeGraph],
+  );
+
   const title = multiGraph.metadata?.title || multiGraph.metadata?.blueprintName || multiGraph.metadata?.assetPath || 'Blueprint';
   const scale = useViewportScale();
 
@@ -457,6 +490,8 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
         graphCount={graphNames.length}
         functionCount={multiGraph.functions?.length ?? 0}
         variableCount={multiGraph.variables?.length ?? 0}
+        onToggleChat={handleToggleChat}
+        chatOpen={chatOpen}
       />
       <div className="ueflow-multi-layout">
         <div ref={sidebarRef} style={{ width: sidebarWidth ?? 'max-content', minWidth: 160, maxWidth: 400, flexShrink: 0 }}>
@@ -509,6 +544,14 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
             </div>
           </>
         )}
+        {chatOpen && (
+          <>
+            <div className="ueflow-chat-resize" onMouseDown={handleChatResize} />
+            <div ref={chatRef} style={{ width: chatWidth, minWidth: 240, maxWidth: 500, flexShrink: 0 }}>
+              <ChatPanel graphContext={chatContext} onClose={handleToggleChat} />
+            </div>
+          </>
+        )}
       </div>
       <StatusBar
         activeGraph={activeGraph}
@@ -527,6 +570,7 @@ export function App({ graphJSON, multiGraphJSON }: AppProps) {
   const [pastedGraph, setPastedGraph] = useState<UEGraphJSON | null>(null);
   const [pasteCount, setPasteCount] = useState(0);
   const [demoMode, setDemoMode] = useState(false);
+  const [singleChatOpen, setSingleChatOpen] = useState(false);
 
   const handleGraphParsed = useCallback((graph: UEGraphJSON) => {
     setPastedGraph(graph);
@@ -571,6 +615,21 @@ export function App({ graphJSON, multiGraphJSON }: AppProps) {
           key={pastedGraph ? `paste-${pasteCount}` : 'embedded'}
           graphJSON={activeGraph}
         />
+        {singleChatOpen && (
+          <ChatPanel
+            graphContext={serializeGraphContext(activeGraph)}
+            onClose={() => setSingleChatOpen(false)}
+            floating
+          />
+        )}
+        {!singleChatOpen && (
+          <button
+            className="ueflow-chat-fab"
+            onClick={() => setSingleChatOpen(true)}
+          >
+            &#9993; AI Chat
+          </button>
+        )}
       </div>
     );
   }
