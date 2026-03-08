@@ -1,0 +1,50 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: js/package-lock.json
+
+      - name: Install and build
+        run: |
+          cd js && npm ci
+          cd .. && npm run build
+
+      - name: Prepare site
+        run: |
+          mkdir -p _site
+          cp examples/paste-tool.html _site/index.html
+          cp examples/paste-tool.html _site/paste-tool.html
+          cp examples/embed-demo.html _site/embed-demo.html
+          cp examples/mock-render.html _site/mock-render.html
+          cp -r js/dist _site/dist
+
+      - uses: actions/upload-pages-artifact@v3
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

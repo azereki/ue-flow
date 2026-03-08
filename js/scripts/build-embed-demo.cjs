@@ -124,14 +124,48 @@ const html = `<!DOCTYPE html>
   <!-- Example 3: Programmatic API -->
   <!-- ================================================================== -->
   <div class="section">
-    <h2>3. Programmatic API</h2>
-    <p>Use <code>UEFlow.renderT3D(container, t3dText, options)</code> for full control.</p>
-    <pre><code>const instance = UEFlow.renderT3D(
-  document.getElementById('my-graph'),
-  t3dPasteText,
-  { height: '400px', title: 'My Blueprint' }
-);
-// Later: instance.destroy();</code></pre>
+    <h2>3. Minimal Embed (No Chrome)</h2>
+    <p>Hide controls, minimap, toolbar, and zoom indicator with <code>data-show-*="false"</code> attributes.</p>
+    <pre><code>&lt;div class="ueflow-embed" data-t3d="..."
+     data-show-controls="false" data-show-minimap="false"
+     data-show-export-toolbar="false" data-show-zoom-indicator="false"&gt;&lt;/div&gt;</code></pre>
+    <div class="ueflow-embed" data-t3d="${escapeAttr(SAMPLE_T3D_1)}" data-show-controls="false" data-show-minimap="false" data-show-export-toolbar="false" data-show-zoom-indicator="false" style="height:350px;"></div>
+  </div>
+
+  <!-- ================================================================== -->
+  <!-- Example 4: Custom Theme -->
+  <!-- ================================================================== -->
+  <div class="section">
+    <h2>4. Custom Theme</h2>
+    <p>Override background and accent colors with <code>data-background-color</code> and <code>data-accent-color</code>.</p>
+    <pre><code>&lt;div class="ueflow-embed" data-t3d="..."
+     data-background-color="#1a1a2e" data-accent-color="#e94560"&gt;&lt;/div&gt;</code></pre>
+    <div class="ueflow-embed" data-t3d="${escapeAttr(SAMPLE_T3D_2)}" data-background-color="#1a1a2e" data-accent-color="#e94560" style="height:400px;"></div>
+  </div>
+
+  <!-- ================================================================== -->
+  <!-- Example 5: Lazy Loading -->
+  <!-- ================================================================== -->
+  <div class="section">
+    <h2>5. Lazy Loading</h2>
+    <p>Use <code>data-lazy="true"</code> to defer rendering until the embed scrolls into view. Scroll down to see it load.</p>
+    <pre><code>&lt;div class="ueflow-embed" data-t3d="..." data-lazy="true"&gt;&lt;/div&gt;</code></pre>
+    <div class="ueflow-embed" data-t3d="${escapeAttr(SAMPLE_T3D_2)}" data-lazy="true" style="height:400px;"></div>
+  </div>
+
+  <!-- ================================================================== -->
+  <!-- Example 6: Programmatic API with Callbacks -->
+  <!-- ================================================================== -->
+  <div class="section">
+    <h2>6. Programmatic API with Callbacks</h2>
+    <p>Use <code>UEFlow.renderT3D(container, t3dText, options)</code> with event callbacks. Open the browser console to see callback logs.</p>
+    <pre><code>UEFlow.renderT3D(el, t3dText, {
+  height: '400px',
+  showMiniMap: false,
+  onLoad: (inst) =&gt; console.log('Loaded!', inst),
+  onSelectionChange: (title) =&gt; console.log('Selected:', title),
+  onError: (err) =&gt; console.error('Error:', err),
+});</code></pre>
     <div id="programmatic-graph"></div>
   </div>
 
@@ -144,7 +178,14 @@ const html = `<!DOCTYPE html>
     UEFlow.renderT3D(
       document.getElementById('programmatic-graph'),
       t3d,
-      { height: '400px', title: 'Programmatic Render' }
+      {
+        height: '400px',
+        title: 'Programmatic Render',
+        showMiniMap: false,
+        onLoad: function(inst) { console.log('[ue-flow] onLoad fired', inst); },
+        onSelectionChange: function(title) { console.log('[ue-flow] onSelectionChange:', title); },
+        onError: function(err) { console.error('[ue-flow] onError:', err); },
+      }
     );
   </script>
 </body>

@@ -47,7 +47,7 @@ interface AppProps {
   multiGraphJSON?: UEMultiGraphJSON | null;
 }
 
-function FitViewOnMount({ focusNode }: { focusNode?: { x: number; y: number; w: number; h: number } }) {
+function FitViewOnMount({ focusNode, onReady }: { focusNode?: { x: number; y: number; w: number; h: number }; onReady?: () => void }) {
   const { fitView, setCenter } = useReactFlow();
   const isInitialMount = useRef(true);
   useEffect(() => {
@@ -62,9 +62,13 @@ function FitViewOnMount({ focusNode }: { focusNode?: { x: number; y: number; w: 
         fitView({ padding: 0.15, minZoom: 0.5, maxZoom: 1.5 });
       }
       isInitialMount.current = false;
+      // Fire onReady after layout settles (second rAF ensures paint completed)
+      if (onReady) {
+        requestAnimationFrame(() => onReady());
+      }
     });
     return () => cancelAnimationFrame(id);
-  }, [focusNode, fitView, setCenter]);
+  }, [focusNode, fitView, setCenter, onReady]);
   return null;
 }
 
@@ -91,7 +95,14 @@ function PinBodyProvider({ children }: { children: React.ReactNode }) {
   return <PinBodyContext.Provider value={zoom >= 0.15}>{children}</PinBodyContext.Provider>;
 }
 
-export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange, embedded }: { graphJSON: UEGraphJSON; focusNodeTitle?: string | null; onSelectedNodeChange?: (title: string | null) => void; embedded?: boolean }) {
+export interface DisplayOptions {
+  showControls?: boolean;
+  showMiniMap?: boolean;
+  showExportToolbar?: boolean;
+  showZoomIndicator?: boolean;
+}
+
+export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange, embedded, displayOptions, onReady }: { graphJSON: UEGraphJSON; focusNodeTitle?: string | null; onSelectedNodeChange?: (title: string | null) => void; embedded?: boolean; displayOptions?: DisplayOptions; onReady?: () => void }) {
   const initial = useMemo(() => graphJsonToFlow(graphJSON), [graphJSON]);
   const [nodes, setNodes, onNodesChange] = useNodesState<AnyFlowNode>(initial.nodes);
   // useEdgesState is kept untyped because its OnEdgesChange generic is contravariant —
@@ -328,22 +339,22 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
         aria-label="Blueprint graph"
       >
         <PinBodyProvider>
-          <FitViewOnMount focusNode={focusNode} />
+          <FitViewOnMount focusNode={focusNode} onReady={onReady} />
           {!embedded && <ExposeGlobalFitView />}
           <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.025)" gap={20} />
           <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.05)" gap={100} />
-          <Controls />
-          <MiniMap nodeColor={(node) => {
+          {displayOptions?.showControls !== false && <Controls />}
+          {displayOptions?.showMiniMap !== false && <MiniMap nodeColor={(node) => {
             const t = (node as AnyFlowNode).type === 'blueprintNode'
               ? ((node as BlueprintFlowNode).data.ueType ?? '')
               : 'comment';
             return TYPE_COLORS[t] ?? '#2a2d37';
-          }} maskColor="rgba(0, 0, 0, 0.7)" />
-          <ZoomIndicator />
+          }} maskColor="rgba(0, 0, 0, 0.7)" />}
+          {displayOptions?.showZoomIndicator !== false && <ZoomIndicator />}
         </PinBodyProvider>
       </ReactFlow>
       <div className="ueflow-watermark">BLUEPRINT</div>
-      <ExportToolbar nodes={nodesWithCallback} edges={edges} />
+      {displayOptions?.showExportToolbar !== false && <ExportToolbar nodes={nodesWithCallback} edges={edges} />}
     </div>
   );
 }
