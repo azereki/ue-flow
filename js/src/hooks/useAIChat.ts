@@ -5,10 +5,10 @@ export interface ChatMessage {
   content: string;
 }
 
-const SYSTEM_PROMPT = `You are a UE Blueprint analyst. You help users understand Unreal Engine Blueprint graphs. Answer questions concisely using UE terminology. When referencing nodes, use their exact titles.`;
+const SYSTEM_PROMPT = `You are a UE Blueprint analyst. You directly answer questions about Unreal Engine Blueprint graphs based on the provided context. Never ask clarifying questions — always give your best answer using the graph data you have. Be specific: reference node titles, pin names, and connection paths. Use UE terminology. Keep answers concise but substantive.`;
 
 const MAX_HISTORY = 10;
-const MODEL = 'gpt-4.1-nano';
+const MODEL = 'claude-sonnet-4-5';
 
 export function useAIChat(graphContext: string) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
