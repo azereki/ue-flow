@@ -3,7 +3,7 @@ import { useAIProvider } from '../contexts/AIProviderContext';
 import { DEFAULT_MODEL, MODEL_OPTIONS } from '../utils/openrouter';
 
 export const AISettings: FC = () => {
-  const { provider, openRouterConfig, setOpenRouterKey, clearOpenRouterKey, remember } = useAIProvider();
+  const { provider, openRouterConfig, setOpenRouterKey, clearOpenRouterKey, remember, puterAuthState, puterAuthError, puterSignIn } = useAIProvider();
   const [open, setOpen] = useState(false);
   const [key, setKey] = useState('');
   const [model, setModel] = useState(DEFAULT_MODEL);
@@ -80,12 +80,39 @@ export const AISettings: FC = () => {
               <span className="ueflow-ai-settings-badge ueflow-ai-settings-badge--active">
                 OpenRouter connected
               </span>
+            ) : puterAuthState === 'signed-in' ? (
+              <span className="ueflow-ai-settings-badge ueflow-ai-settings-badge--active">
+                Puter.js connected (free)
+              </span>
             ) : (
               <span className="ueflow-ai-settings-badge">
-                Using Puter.js (free)
+                Not connected
               </span>
             )}
           </div>
+
+          {/* Puter.js auth section — only show when not using OpenRouter */}
+          {!isConfigured && (
+            <div className="ueflow-ai-settings-puter-section">
+              <div className="ueflow-ai-settings-section-title">Puter.js (free, no key needed)</div>
+              {puterAuthState === 'signed-in' ? (
+                <div className="ueflow-ai-settings-puter-connected">&#10003; Authorized</div>
+              ) : puterAuthState === 'signing-in' ? (
+                <button className="ueflow-ai-settings-puter-btn" disabled>
+                  <span className="ueflow-chat-send-spinner" /> Connecting...
+                </button>
+              ) : puterAuthState === 'unavailable' ? (
+                <div className="ueflow-ai-settings-hint">Puter.js unavailable — use OpenRouter below</div>
+              ) : (
+                <button className="ueflow-ai-settings-puter-btn" onClick={puterSignIn}>
+                  Authorize Puter.js
+                </button>
+              )}
+              {puterAuthError && <div className="ueflow-ai-settings-error">{puterAuthError}</div>}
+            </div>
+          )}
+
+          <div className="ueflow-ai-settings-divider" />
 
           <label className="ueflow-ai-settings-label">
             OpenRouter API Key
