@@ -82,7 +82,7 @@ export const AIResultModal: FC<AIResultModalProps> = ({ title, loading, result, 
                   onClick={handleCopy}
                   title="Copy to clipboard"
                 >
-                  {copied ? '&#10003; Copied' : '&#128203; Copy'}
+                  {copied ? <>{'\u2713'} Copied</> : <>{'\uD83D\uDCCB'} Copy</>}
                 </button>
                 <button
                   className="ueflow-ai-modal-action-btn"
