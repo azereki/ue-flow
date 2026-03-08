@@ -13,7 +13,7 @@ export const AIResultModal: FC<AIResultModalProps> = ({ title, loading, result, 
   const [copied, setCopied] = useState(false);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape' && !loading) {
+    if (e.key === 'Escape') {
       onClose();
       return;
     }
@@ -28,7 +28,7 @@ export const AIResultModal: FC<AIResultModalProps> = ({ title, loading, result, 
         selection?.addRange(range);
       }
     }
-  }, [onClose, loading]);
+  }, [onClose]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
@@ -70,8 +70,8 @@ export const AIResultModal: FC<AIResultModalProps> = ({ title, loading, result, 
   }, [result, title]);
 
   return (
-    <div className="ueflow-ai-modal-overlay" onClick={loading ? undefined : onClose}>
-      <div className="ueflow-ai-modal-card" onClick={(e) => e.stopPropagation()}>
+    <div className="ueflow-ai-modal-overlay">
+      <div className="ueflow-ai-modal-card">
         <div className="ueflow-ai-modal-header">
           <span className="ueflow-ai-modal-title">{title}</span>
           <div className="ueflow-ai-modal-actions">
