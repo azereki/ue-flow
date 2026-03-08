@@ -102,7 +102,7 @@ export const ChatPanel: FC<ChatPanelProps> = ({ graphContext, onClose, floating,
             <div className="ueflow-chat-auth-icon">&#129302;</div>
             <div className="ueflow-chat-auth-title">AI-Powered Blueprint Chat</div>
             <div className="ueflow-chat-auth-desc">
-              Add an OpenRouter API key in AI Settings to get started. Many models are free.
+              Add a free Gemini API key or an OpenRouter key in AI Settings to get started.
             </div>
           </div>
         </div>

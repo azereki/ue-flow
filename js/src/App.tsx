@@ -495,9 +495,6 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
       <a href="#ueflow-graph" className="ueflow-skip-link">Skip to graph</a>
       <TopBar
         title={title}
-        graphCount={graphNames.length}
-        functionCount={multiGraph.functions?.length ?? 0}
-        variableCount={multiGraph.variables?.length ?? 0}
         onToggleChat={handleToggleChat}
         chatOpen={chatOpen}
         graphContext={chatContext}

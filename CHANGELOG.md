@@ -13,6 +13,16 @@
 - Add `NodeExplainer` floating card — one-shot AI explanation of selected node with 800ms debounce, dismisses on deselect/Escape
 - Add generation-focused suggested prompts in chat panel: "Generate a health regen system", "Create a damage handler", "Build a simple timer"
 - Add 13 Vitest tests for ai-generate parser, normalizer, offset, and round-trip through `graphJsonToFlow()`
+- Add Google Gemini as free AI provider (30 req/min, no credit card required) with tabbed provider UI alongside OpenRouter BYOK
+- Add `gemini.ts` API client with chat completion, Gemini-format message conversion, and config storage
+- Add status dot indicator on AI Settings button — red (no key), green (connected), orange (warning/error)
+- Add friendly 429 rate limit error messages instead of raw API JSON
+- Add dual-provider `AIProviderContext` with active provider tracking, warning state, and automatic fallback
+
+### Changed
+
+- Remove free-tier OpenRouter models (unreliable rate limits) — free access now via Gemini provider
+- Remove graph/function/variable count from TopBar (kept in StatusBar only)
 
 ## [0.2.0] - 2026-03-07
 

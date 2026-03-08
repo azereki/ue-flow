@@ -6,19 +6,15 @@ const DEFAULT_MODEL = 'anthropic/claude-sonnet-4.6';
 export interface ModelOption {
   id: string;
   label: string;
-  tier: 'free' | 'budget' | 'standard' | 'premium';
+  tier: 'budget' | 'standard' | 'premium';
 }
 
 /**
  * Curated models known to perform well on UE Blueprint analysis.
- * Ordered by tier (free → premium), then by quality within each tier.
+ * Ordered by tier (budget → premium), then by quality within each tier.
+ * Free models removed — use Gemini provider for free access.
  */
 export const MODEL_OPTIONS: ModelOption[] = [
-  // Free — no cost at all
-  { id: 'meta-llama/llama-3.3-70b-instruct:free',            label: 'Llama 3.3 70B (free)',         tier: 'free' },
-  { id: 'qwen/qwen3-coder:free',                             label: 'Qwen3 Coder 480B (free)',      tier: 'free' },
-  { id: 'google/gemma-3-27b-it:free',                        label: 'Gemma 3 27B (free)',           tier: 'free' },
-  { id: 'mistralai/mistral-small-3.1-24b-instruct:free',     label: 'Mistral Small 3.1 (free)',     tier: 'free' },
   // Budget — under $1/M input tokens
   { id: 'openai/gpt-4.1-nano',                               label: 'GPT-4.1 Nano (~$0.10/M)',     tier: 'budget' },
   { id: 'google/gemini-2.0-flash-001',                       label: 'Gemini 2.0 Flash (~$0.10/M)',  tier: 'budget' },
@@ -74,6 +70,11 @@ export async function openRouterChat(
     const errorText = await response.text().catch(() => '');
     if (response.status === 401 || response.status === 403) {
       throw new Error('Invalid API key. Check your OpenRouter key and try again.');
+    }
+    if (response.status === 429) {
+      // Try to extract the model name from the error for a helpful message
+      const modelName = (config.model || DEFAULT_MODEL).split('/').pop()?.replace(/:free$/, '') ?? 'this model';
+      throw new Error(`Rate limited — ${modelName} is temporarily overloaded. Try a different model or wait a moment.`);
     }
     throw new Error(`OpenRouter error (${response.status}): ${errorText.slice(0, 200)}`);
   }

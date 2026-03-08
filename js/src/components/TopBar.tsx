@@ -3,9 +3,6 @@ import { AIToolbar } from './AIToolbar';
 
 interface TopBarProps {
   title: string;
-  graphCount: number;
-  functionCount: number;
-  variableCount: number;
   onToggleChat?: () => void;
   chatOpen?: boolean;
   graphContext?: string;
@@ -13,14 +10,11 @@ interface TopBarProps {
   nodeTitles?: string[];
 }
 
-export const TopBar: FC<TopBarProps> = ({ title, graphCount, functionCount, variableCount, onToggleChat, chatOpen, graphContext, onNavigateToNode, nodeTitles }) => {
+export const TopBar: FC<TopBarProps> = ({ title, onToggleChat, chatOpen, graphContext, onNavigateToNode, nodeTitles }) => {
   return (
     <header className="ueflow-topbar">
       <span className="ueflow-topbar-title">{title}</span>
       <div className="ueflow-topbar-right">
-        <span className="ueflow-topbar-stats">
-          {graphCount} graphs | {functionCount} functions | {variableCount} variables
-        </span>
         {graphContext && (
           <AIToolbar graphContext={graphContext} onNavigateToNode={onNavigateToNode} nodeTitles={nodeTitles} />
         )}
