@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback } from 'react';
-import { ReactFlow, Background, BackgroundVariant, useNodesState, useEdgesState, useStore } from '@xyflow/react';
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import { ReactFlow, ReactFlowProvider, Background, BackgroundVariant, useNodesState, useEdgesState, useStore, useReactFlow } from '@xyflow/react';
 import type { UEGraphJSON } from '../types/ue-graph';
 import { parseT3DToGraphJSON, isT3DText } from '../transform/t3d-to-json';
 import { graphJsonToFlow } from '../transform/json-to-flow';
@@ -8,6 +8,7 @@ import { CommentNode } from '../nodes/CommentNode';
 import { BlueprintEdge } from '../edges/BlueprintEdge';
 import { PinBodyContext } from '../contexts/PinBodyContext';
 import { DEMO_GRAPH } from '../data/demo-graph';
+import { DEMO_MULTIGRAPH } from '../data/demo-multigraph';
 import { zoomSelector } from '../utils/selectors';
 import type { AnyFlowNode, BlueprintFlowEdge } from '../types/flow-types';
 
@@ -163,12 +164,187 @@ const STEPS = [
 
 /* ---------- Full Blueprint showcase ---------- */
 
+/** Zoom to a specific node by title within the current graph. */
+function ShowcaseFocuser({ focusTitle }: { focusTitle: string | null }) {
+  const { setCenter, fitView, getNodes } = useReactFlow();
+  const prevTitle = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (focusTitle === prevTitle.current) return;
+    prevTitle.current = focusTitle;
+
+    if (!focusTitle) {
+      // Reset to fit-all when deselected
+      requestAnimationFrame(() => fitView({ padding: 0.15, duration: 400 }));
+      return;
+    }
+
+    const q = focusTitle.toLowerCase();
+    const nodes = getNodes();
+    const target = nodes.find((n) => {
+      if (n.type !== 'blueprintNode') return false;
+      const title = ((n.data as { title?: string }).title ?? '').toLowerCase();
+      return title === q || title.includes(q);
+    });
+    if (!target) return;
+
+    requestAnimationFrame(() => {
+      setCenter(
+        target.position.x + (target.initialWidth ?? 200) / 2,
+        target.position.y + (target.initialHeight ?? 100) / 2,
+        { zoom: 0.8, duration: 400 },
+      );
+    });
+  }, [focusTitle, setCenter, fitView, getNodes]);
+
+  return null;
+}
+
+function ShowcaseGraphInner({ graphKey, focusTitle }: { graphKey: string; focusTitle: string | null }) {
+  const graphJSON = DEMO_MULTIGRAPH.graphs[graphKey];
+  const initial = useMemo(() => graphJsonToFlow(graphJSON), [graphJSON]);
+  const [nodes] = useNodesState<AnyFlowNode>(initial.nodes);
+  const [edgesRaw] = useEdgesState(initial.edges);
+  const edges = edgesRaw as BlueprintFlowEdge[];
+
+  return (
+    <ReactFlow
+      key={graphKey}
+      nodes={nodes}
+      edges={edges}
+      nodeTypes={nodeTypes}
+      edgeTypes={edgeTypes}
+      colorMode="dark"
+      fitView
+      fitViewOptions={{ padding: 0.15 }}
+      nodesConnectable={false}
+      nodesDraggable={false}
+      panOnDrag={[0, 1, 2]}
+      zoomOnScroll
+      minZoom={0.1}
+      maxZoom={2}
+      proOptions={{ hideAttribution: true }}
+      aria-label="Blueprint multi-graph demo"
+    >
+      <PinBodyProvider>
+        <ShowcaseFocuser focusTitle={focusTitle} />
+        <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.025)" gap={20} />
+        <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.05)" gap={100} />
+      </PinBodyProvider>
+    </ReactFlow>
+  );
+}
+
+function ShowcaseGraph({ graphKey, focusTitle }: { graphKey: string; focusTitle: string | null }) {
+  return (
+    <ReactFlowProvider key={graphKey}>
+      <ShowcaseGraphInner graphKey={graphKey} focusTitle={focusTitle} />
+    </ReactFlowProvider>
+  );
+}
+
+/** Sidebar items that map to graph keys + node focus targets. */
+const SHOWCASE_EVENTS: { label: string; graphKey: string; focusTitle: string }[] = [
+  { label: 'BeginPlay', graphKey: 'EventGraph', focusTitle: 'Event BeginPlay' },
+  { label: 'AnyDamage', graphKey: 'EventGraph', focusTitle: 'Event AnyDamage' },
+  { label: 'Tick', graphKey: 'EventGraph', focusTitle: 'Event Tick' },
+];
+
+const SHOWCASE_FUNCTIONS: { label: string; graphKey: string; focusTitle: string }[] = [
+  { label: 'CalculateDamage', graphKey: 'CalculateDamage', focusTitle: 'Calculate Damage' },
+  { label: 'HandleDeath', graphKey: 'EventGraph', focusTitle: 'Handle Death' },
+];
+
 const SHOWCASE_FEATURES = [
   { label: 'Multiple Event Graphs', desc: 'EventGraph, ConstructionScript, and custom function graphs' },
   { label: 'Sidebar Navigation', desc: 'Browse events, functions, variables, and components' },
   { label: 'Tabbed Interface', desc: 'Open multiple graphs as tabs with breadcrumb navigation' },
   { label: 'Variables & Structs', desc: 'Inspect replicated variables, delegates, and custom structs' },
 ];
+
+function ShowcaseInteractive({ onExploreDemoBlueprint }: { onExploreDemoBlueprint?: () => void }) {
+  const [activeGraphKey, setActiveGraphKey] = useState('EventGraph');
+  const [focusTitle, setFocusTitle] = useState<string | null>(null);
+  const [activeLabel, setActiveLabel] = useState<string | null>(null);
+
+  const handleItemClick = useCallback((item: { label: string; graphKey: string; focusTitle: string }) => {
+    if (activeLabel === item.label) {
+      // Clicking the same item again → deselect, fit-all
+      setActiveLabel(null);
+      setFocusTitle(null);
+      return;
+    }
+    setActiveLabel(item.label);
+    if (item.graphKey !== activeGraphKey) {
+      // Switch graph first, then focus after mount
+      setActiveGraphKey(item.graphKey);
+      // Delay focus so the new graph mounts first
+      setTimeout(() => setFocusTitle(item.focusTitle), 50);
+    } else {
+      setFocusTitle(item.focusTitle);
+    }
+  }, [activeGraphKey, activeLabel]);
+
+  return (
+    <div className="ueflow-landing-showcase-card">
+      <div className="ueflow-landing-showcase-preview">
+        <div className="ueflow-landing-showcase-mockup">
+          <div className="ueflow-landing-showcase-sidebar-mock">
+            <div className="ueflow-landing-showcase-mock-title">BP_PlayerCharacter</div>
+            <div className="ueflow-landing-showcase-mock-section">
+              <div className="ueflow-landing-showcase-mock-label">Events</div>
+              {SHOWCASE_EVENTS.map((item) => (
+                <div
+                  key={item.label}
+                  className={`ueflow-landing-showcase-mock-item${activeLabel === item.label ? ' ueflow-landing-showcase-mock-item--active' : ''}`}
+                  onClick={() => handleItemClick(item)}
+                >
+                  {item.label}
+                </div>
+              ))}
+            </div>
+            <div className="ueflow-landing-showcase-mock-section">
+              <div className="ueflow-landing-showcase-mock-label">Functions</div>
+              {SHOWCASE_FUNCTIONS.map((item) => (
+                <div
+                  key={item.label}
+                  className={`ueflow-landing-showcase-mock-item${activeLabel === item.label ? ' ueflow-landing-showcase-mock-item--active' : ''}`}
+                  onClick={() => handleItemClick(item)}
+                >
+                  {item.label}
+                </div>
+              ))}
+            </div>
+            <div className="ueflow-landing-showcase-mock-section">
+              <div className="ueflow-landing-showcase-mock-label">Variables</div>
+              <div className="ueflow-landing-showcase-mock-item ueflow-landing-showcase-mock-var">Health <span>Float</span></div>
+              <div className="ueflow-landing-showcase-mock-item ueflow-landing-showcase-mock-var">Stamina <span>Float</span></div>
+              <div className="ueflow-landing-showcase-mock-item ueflow-landing-showcase-mock-var">IsSprinting <span>Bool</span></div>
+            </div>
+          </div>
+          <div className="ueflow-landing-showcase-graph-mock">
+            <ShowcaseGraph graphKey={activeGraphKey} focusTitle={focusTitle} />
+          </div>
+        </div>
+      </div>
+      <div className="ueflow-landing-showcase-info">
+        <ul className="ueflow-landing-showcase-list">
+          {SHOWCASE_FEATURES.map((f) => (
+            <li key={f.label} className="ueflow-landing-showcase-list-item">
+              <strong>{f.label}</strong>
+              <span>{f.desc}</span>
+            </li>
+          ))}
+        </ul>
+        {onExploreDemoBlueprint && (
+          <button className="ueflow-landing-cta ueflow-landing-showcase-btn" onClick={onExploreDemoBlueprint}>
+            Explore Demo Blueprint
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 /* ---------- Main landing page ---------- */
 
@@ -197,50 +373,7 @@ export function LandingPage({ onGraphParsed, onExploreDemoBlueprint }: LandingPa
           Not just single functions &mdash; explore entire Blueprints with the full multi-graph viewer.
           Sidebar, tabs, variables, structs, and more.
         </p>
-        <div className="ueflow-landing-showcase-card">
-          <div className="ueflow-landing-showcase-preview">
-            <div className="ueflow-landing-showcase-mockup">
-              <div className="ueflow-landing-showcase-sidebar-mock">
-                <div className="ueflow-landing-showcase-mock-title">BP_PlayerCharacter</div>
-                <div className="ueflow-landing-showcase-mock-section">
-                  <div className="ueflow-landing-showcase-mock-label">Events</div>
-                  <div className="ueflow-landing-showcase-mock-item">BeginPlay</div>
-                  <div className="ueflow-landing-showcase-mock-item">AnyDamage</div>
-                  <div className="ueflow-landing-showcase-mock-item">Tick</div>
-                </div>
-                <div className="ueflow-landing-showcase-mock-section">
-                  <div className="ueflow-landing-showcase-mock-label">Functions</div>
-                  <div className="ueflow-landing-showcase-mock-item">CalculateDamage</div>
-                  <div className="ueflow-landing-showcase-mock-item">HandleDeath</div>
-                </div>
-                <div className="ueflow-landing-showcase-mock-section">
-                  <div className="ueflow-landing-showcase-mock-label">Variables</div>
-                  <div className="ueflow-landing-showcase-mock-item ueflow-landing-showcase-mock-var">Health <span>Float</span></div>
-                  <div className="ueflow-landing-showcase-mock-item ueflow-landing-showcase-mock-var">Stamina <span>Float</span></div>
-                  <div className="ueflow-landing-showcase-mock-item ueflow-landing-showcase-mock-var">IsSprinting <span>Bool</span></div>
-                </div>
-              </div>
-              <div className="ueflow-landing-showcase-graph-mock">
-                <div className="ueflow-landing-showcase-graph-dots" />
-              </div>
-            </div>
-          </div>
-          <div className="ueflow-landing-showcase-info">
-            <ul className="ueflow-landing-showcase-list">
-              {SHOWCASE_FEATURES.map((f) => (
-                <li key={f.label} className="ueflow-landing-showcase-list-item">
-                  <strong>{f.label}</strong>
-                  <span>{f.desc}</span>
-                </li>
-              ))}
-            </ul>
-            {onExploreDemoBlueprint && (
-              <button className="ueflow-landing-cta ueflow-landing-showcase-btn" onClick={onExploreDemoBlueprint}>
-                Explore Demo Blueprint
-              </button>
-            )}
-          </div>
-        </div>
+        <ShowcaseInteractive onExploreDemoBlueprint={onExploreDemoBlueprint} />
       </section>
 
       {/* Features */}

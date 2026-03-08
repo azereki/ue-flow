@@ -2474,7 +2474,7 @@
 
 .ueflow-landing-showcase-mockup {
   display: flex;
-  height: 280px;
+  height: 380px;
 }
 
 .ueflow-landing-showcase-sidebar-mock {
@@ -2527,6 +2527,12 @@
 
 .ueflow-landing-showcase-mock-item:hover {
   background: color-mix(in srgb, var(--uf-accent) 10%, transparent);
+  color: var(--uf-text);
+  cursor: pointer;
+}
+
+.ueflow-landing-showcase-mock-item--active {
+  background: color-mix(in srgb, var(--uf-accent) 20%, transparent);
   color: var(--uf-text);
 }
 
@@ -2611,7 +2617,7 @@
     grid-template-columns: 1fr;
   }
   .ueflow-landing-showcase-mockup {
-    height: 220px;
+    height: 300px;
   }
 }
 
