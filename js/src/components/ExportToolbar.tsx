@@ -143,9 +143,15 @@ function generateMarkdown(nodes: AnyFlowNode[], edges: BlueprintFlowEdge[]): str
 }
 
 export const ExportToolbar: FC<ExportToolbarProps> = ({ nodes, edges }) => {
+  const flashCopied = useCallback((key: string) => {
+    setCopiedBtn(key);
+    setTimeout(() => setCopiedBtn((prev) => prev === key ? null : prev), 1500);
+  }, []);
+
   const handleCopyT3D = useCallback(async () => {
     await copyToClipboard(flowToT3D(nodes, edges));
-  }, [nodes, edges]);
+    flashCopied('t3d');
+  }, [nodes, edges, flashCopied]);
 
   const handleDownloadT3D = useCallback(() => {
     const t3d = flowToT3D(nodes, edges);
@@ -158,6 +164,7 @@ export const ExportToolbar: FC<ExportToolbarProps> = ({ nodes, edges }) => {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }, [nodes, edges]);
 
+  const [copiedBtn, setCopiedBtn] = useState<string | null>(null);
   const [pushStatus, setPushStatus] = useState<'idle' | 'sent' | 'failed'>('idle');
 
   const handlePushToEditor = useCallback(async () => {
@@ -180,22 +187,25 @@ export const ExportToolbar: FC<ExportToolbarProps> = ({ nodes, edges }) => {
     const dataEl = document.getElementById('ue-flow-data');
     if (dataEl?.textContent) {
       await copyToClipboard(dataEl.textContent);
+      flashCopied('json');
     }
-  }, []);
+  }, [flashCopied]);
 
   const handleCopyContext = useCallback(async () => {
     await copyToClipboard(generateContext(nodes, edges));
-  }, [nodes, edges]);
+    flashCopied('context');
+  }, [nodes, edges, flashCopied]);
 
   const handleCopyMarkdown = useCallback(async () => {
     await copyToClipboard(generateMarkdown(nodes, edges));
-  }, [nodes, edges]);
+    flashCopied('markdown');
+  }, [nodes, edges, flashCopied]);
 
   return (
     <div className="ueflow-export-toolbar">
       <button className="ueflow-toolbar-btn" onClick={handleCopyT3D} title="Copy T3D to clipboard">
         <span className="ueflow-toolbar-icon">&#9113;</span>
-        <span className="ueflow-toolbar-label">Copy T3D</span>
+        <span className="ueflow-toolbar-label">{copiedBtn === 't3d' ? 'Copied!' : 'Copy T3D'}</span>
       </button>
       <button className="ueflow-toolbar-btn" onClick={handleDownloadT3D} title="Download as .txt file">
         <span className="ueflow-toolbar-icon">&#8615;</span>
@@ -207,15 +217,15 @@ export const ExportToolbar: FC<ExportToolbarProps> = ({ nodes, edges }) => {
       </button>
       <button className="ueflow-toolbar-btn" onClick={handleCopyContext} title="Copy LLM context summary">
         <span className="ueflow-toolbar-icon">&#9998;</span>
-        <span className="ueflow-toolbar-label">Context</span>
+        <span className="ueflow-toolbar-label">{copiedBtn === 'context' ? 'Copied!' : 'Context'}</span>
       </button>
       <button className="ueflow-toolbar-btn" onClick={handleCopyMarkdown} title="Copy markdown documentation">
         <span className="ueflow-toolbar-icon">&#9776;</span>
-        <span className="ueflow-toolbar-label">Markdown</span>
+        <span className="ueflow-toolbar-label">{copiedBtn === 'markdown' ? 'Copied!' : 'Markdown'}</span>
       </button>
       <button className="ueflow-toolbar-btn ueflow-toolbar-btn--secondary" onClick={handleCopyJSON} title="Copy graph JSON">
         <span className="ueflow-toolbar-icon">{'{}'}</span>
-        <span className="ueflow-toolbar-label">JSON</span>
+        <span className="ueflow-toolbar-label">{copiedBtn === 'json' ? 'Copied!' : 'JSON'}</span>
       </button>
     </div>
   );
