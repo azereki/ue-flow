@@ -126,7 +126,7 @@ export const AIToolbar: FC<AIToolbarProps> = ({ graphContext, onNavigateToNode, 
           disabled={disableActions}
           title="Generate documentation for this Blueprint"
         >
-          &#128196; Document
+          &#128196;<span className="ueflow-ai-toolbar-label"> Document</span>
         </button>
         <button
           className="ueflow-ai-toolbar-btn"
@@ -134,7 +134,7 @@ export const AIToolbar: FC<AIToolbarProps> = ({ graphContext, onNavigateToNode, 
           disabled={disableActions}
           title="Review this Blueprint for issues"
         >
-          &#128269; Review
+          &#128269;<span className="ueflow-ai-toolbar-label"> Review</span>
         </button>
         {showSearch ? (
           <div className="ueflow-ai-toolbar-search">
@@ -169,7 +169,7 @@ export const AIToolbar: FC<AIToolbarProps> = ({ graphContext, onNavigateToNode, 
             disabled={disableActions}
             title="Search Blueprint with natural language"
           >
-            &#128270; Search
+            &#128270;<span className="ueflow-ai-toolbar-label"> Search</span>
           </button>
         )}
         <AISettings />

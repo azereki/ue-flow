@@ -361,7 +361,12 @@ export function LandingPage({ onGraphParsed, onExploreDemoBlueprint }: LandingPa
             Paste Unreal Engine T3D text and get an interactive Blueprint graph instantly.
             No plugins, no server &mdash; runs entirely in your browser.
           </p>
-          <a href="#try-it" className="ueflow-landing-cta">Try It Now</a>
+          <div className="ueflow-landing-hero-actions">
+            <a href="#try-it" className="ueflow-landing-cta">Paste T3D Text</a>
+            <button className="ueflow-landing-cta ueflow-landing-cta--secondary" onClick={onExploreDemoBlueprint}>
+              Explore Demo Blueprint
+            </button>
+          </div>
         </div>
         <HeroDemo />
       </section>

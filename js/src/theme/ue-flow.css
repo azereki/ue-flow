@@ -2259,6 +2259,23 @@
   transform: translateY(-1px);
 }
 
+.ueflow-landing-cta--secondary {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--uf-text);
+  border: 1px solid var(--uf-surface-border);
+}
+
+.ueflow-landing-cta--secondary:hover {
+  border-color: var(--uf-accent);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.ueflow-landing-hero-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
 /* Hero graph */
 .ueflow-landing-hero-graph {
   width: 100%;
@@ -3587,6 +3604,61 @@
     transform: scale(0.85);
     transform-origin: bottom left;
   }
+  /* AI toolbar: icon-only on mobile (hide text labels, keep emoji) */
+  .ueflow-ai-toolbar-label {
+    display: none;
+  }
+  .ueflow-ai-toolbar-btn {
+    padding: 6px 8px;
+    min-width: 32px;
+    min-height: 32px;
+    justify-content: center;
+  }
+  .ueflow-ai-toolbar {
+    gap: 2px;
+  }
+  .ueflow-topbar-chat-btn {
+    padding: 6px 8px;
+    min-width: 32px;
+    min-height: 32px;
+  }
+  .ueflow-topbar-right {
+    gap: 4px;
+  }
+  .ueflow-topbar-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    flex: 1;
+  }
+  /* AI search input: shrink on mobile */
+  .ueflow-ai-toolbar-search-input {
+    width: 120px;
+    font-size: 10px;
+  }
+  /* Back button: bottom-left on mobile, clear of topbar and content */
+  .ueflow-back-btn {
+    position: fixed;
+    top: auto;
+    bottom: 60px;
+    left: 8px;
+    font-size: 10px;
+    padding: 6px 12px;
+    z-index: 20;
+    opacity: 0.85;
+  }
+  /* Export toolbar: larger touch targets */
+  .ueflow-export-toolbar {
+    bottom: 8px;
+    padding: 4px 6px;
+    gap: 2px;
+  }
+  .ueflow-toolbar-btn {
+    min-height: 36px;
+    min-width: 36px;
+    padding: 6px 8px;
+  }
 }
 
 @media (max-width: 600px) {
@@ -3610,10 +3682,38 @@
     min-height: 44px;
     padding: 12px 24px;
     font-size: 15px;
+    width: 100%;
   }
   .ueflow-landing-cta {
     min-height: 44px;
     padding: 12px 24px;
+    width: 100%;
+  }
+  /* Stack hero content buttons vertically */
+  .ueflow-landing-hero-content {
+    align-items: stretch;
+  }
+  .ueflow-landing-hero-actions {
+    flex-direction: column;
+  }
+  .ueflow-landing-hero-actions .ueflow-landing-cta {
+    width: 100%;
+  }
+  /* Paste section actions: stack vertically */
+  .ueflow-landing-paste-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  .ueflow-landing-paste-actions .ueflow-paste-btn {
+    width: 100%;
+  }
+  .ueflow-paste-hint {
+    display: none;
+  }
+  /* Landing paste section: tighter on mobile */
+  .ueflow-landing-paste {
+    width: 100%;
+    padding: 0 4px;
   }
   .ueflow-chat-fab {
     width: 48px;
@@ -3641,6 +3741,11 @@
   .ueflow-chat-panel--floating {
     width: 100%;
     max-width: 100%;
+  }
+  /* Standalone paste landing: compact */
+  .ueflow-paste-card {
+    width: 95%;
+    padding: 20px 16px;
   }
 }
 

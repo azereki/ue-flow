@@ -30,7 +30,7 @@ export const TopBar: FC<TopBarProps> = ({ title, onToggleChat, chatOpen, graphCo
             onClick={onToggleChat}
             title={chatOpen ? 'Close AI Chat' : 'Open AI Chat'}
           >
-            &#129302; Chat
+            &#129302;<span className="ueflow-ai-toolbar-label"> Chat</span>
           </button>
         )}
       </div>

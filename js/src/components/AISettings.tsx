@@ -107,7 +107,7 @@ export const AISettings: FC = () => {
         title="AI Settings"
       >
         <span className={`ueflow-ai-status-dot${ready ? (warning ? ' ueflow-ai-status-dot--warning' : ' ueflow-ai-status-dot--connected') : ''}`} title={warning ?? undefined} />
-        &#9881;{providerLabel ? ` ${providerLabel}` : ' AI Settings'}
+        &#9881;<span className="ueflow-ai-toolbar-label">{providerLabel ? ` ${providerLabel}` : ' AI Settings'}</span>
       </button>
 
       {open && (
