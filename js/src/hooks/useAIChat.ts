@@ -9,8 +9,9 @@ const SYSTEM_PROMPT = `You are a UE Blueprint analyst. You directly answer quest
 
 const MAX_HISTORY = 10;
 const MODEL = 'claude-sonnet-4-6';
+const TIMEOUT_MS = 30_000;
 
-/** Extract text from a non-streaming Puter.js response (handles both string and Claude array content). */
+/** Extract text from a non-streaming Puter.js response. */
 function extractResponseText(resp: unknown): string {
   if (!resp || typeof resp !== 'object') return '';
   const r = resp as Record<string, unknown>;
@@ -30,21 +31,15 @@ function extractResponseText(resp: unknown): string {
   return '';
 }
 
-/** Extract text from a Puter.js stream chunk. */
-function extractChunkText(part: unknown): string {
-  if (!part || typeof part !== 'object') return '';
-  const p = part as Record<string, unknown>;
-  if (typeof p.text === 'string') return p.text;
-  if (p.message && typeof p.message === 'object') {
-    const msg = p.message as Record<string, unknown>;
-    if (typeof msg.content === 'string') return msg.content;
-  }
-  if (p.delta && typeof p.delta === 'object') {
-    const delta = p.delta as Record<string, unknown>;
-    if (typeof delta.content === 'string') return delta.content;
-  }
-  if (typeof p.content === 'string') return p.content;
-  return '';
+/** Wrap a promise with a timeout. */
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s — Puter auth may not have completed. Allow popups for this site and try again.`)), ms);
+    promise.then(
+      (val) => { clearTimeout(timer); resolve(val); },
+      (err) => { clearTimeout(timer); reject(err); },
+    );
+  });
 }
 
 export function useAIChat(graphContext: string) {
@@ -52,7 +47,6 @@ export function useAIChat(graphContext: string) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const streamingRef = useRef(false);
-  // Keep a ref-copy of messages so we can read current state synchronously
   const messagesRef = useRef<ChatMessage[]>([]);
 
   const sendMessage = useCallback(async (userMessage: string) => {
@@ -61,7 +55,6 @@ export function useAIChat(graphContext: string) {
     setError(null);
     const userMsg: ChatMessage = { role: 'user', content: userMessage.trim() };
 
-    // Update both state and ref
     const updatedMessages = [...messagesRef.current, userMsg].slice(-MAX_HISTORY);
     messagesRef.current = updatedMessages;
     setMessages(updatedMessages);
@@ -70,7 +63,6 @@ export function useAIChat(graphContext: string) {
     streamingRef.current = true;
 
     try {
-      // Build API messages from ref (guaranteed up-to-date)
       const apiMessages: PuterAIChatMessage[] = [
         {
           role: 'system',
@@ -79,70 +71,29 @@ export function useAIChat(graphContext: string) {
         ...messagesRef.current.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
       ];
 
-      console.log('[ue-flow AI] Sending to Puter.ai.chat:', { model: MODEL, messageCount: apiMessages.length, systemPromptLength: apiMessages[0].content.length });
+      // Use non-streaming for reliability — wrap with timeout to catch auth hangs
+      const response = await withTimeout(
+        puter.ai.chat(apiMessages, { model: MODEL }),
+        TIMEOUT_MS,
+        'AI chat',
+      );
 
-      // Try streaming
-      let accumulated = '';
-
-      const streamResult = await puter.ai.chat(apiMessages, {
-        model: MODEL,
-        stream: true,
-      });
-
-      console.log('[ue-flow AI] Got response:', typeof streamResult, streamResult);
-
-      // Check if async iterable (streaming)
-      if (streamResult && typeof streamResult === 'object' && Symbol.asyncIterator in streamResult) {
-        // Add placeholder assistant message
-        const withPlaceholder = [...messagesRef.current, { role: 'assistant' as const, content: '' }];
-        messagesRef.current = withPlaceholder;
-        setMessages(withPlaceholder);
-
-        let chunkCount = 0;
-        for await (const part of streamResult) {
-          chunkCount++;
-          if (chunkCount <= 3) {
-            console.log('[ue-flow AI] Stream chunk', chunkCount, ':', JSON.stringify(part).slice(0, 200));
-          }
-          const text = extractChunkText(part);
-          if (text) {
-            accumulated += text;
-            const current = accumulated;
-            const updated = [...messagesRef.current];
-            updated[updated.length - 1] = { role: 'assistant', content: current };
-            messagesRef.current = updated;
-            setMessages(updated);
-          }
-        }
-        console.log('[ue-flow AI] Stream complete. Chunks:', chunkCount, 'Accumulated length:', accumulated.length);
+      const text = extractResponseText(response);
+      if (text) {
+        const updated = [...messagesRef.current, { role: 'assistant' as const, content: text }];
+        messagesRef.current = updated;
+        setMessages(updated);
       } else {
-        // Non-streaming response
-        console.log('[ue-flow AI] Non-streaming response:', JSON.stringify(streamResult).slice(0, 500));
-        accumulated = extractResponseText(streamResult);
-        if (accumulated) {
-          const updated = [...messagesRef.current, { role: 'assistant' as const, content: accumulated }];
-          messagesRef.current = updated;
-          setMessages(updated);
-        }
-      }
-
-      if (!accumulated) {
-        // No content — show debug info
-        const debugInfo = `(No response received. Raw: ${JSON.stringify(streamResult).slice(0, 300)})`;
-        console.error('[ue-flow AI] Empty response. Full object:', streamResult);
-        const updated = [...messagesRef.current];
-        if (updated.length > 0 && updated[updated.length - 1].role === 'assistant' && updated[updated.length - 1].content === '') {
-          updated[updated.length - 1] = { role: 'assistant', content: debugInfo };
-        } else {
-          updated.push({ role: 'assistant', content: debugInfo });
-        }
+        console.error('[ue-flow AI] Empty response:', JSON.stringify(response).slice(0, 500));
+        const fallback = `(Empty response from model. Raw: ${JSON.stringify(response).slice(0, 200)})`;
+        const updated = [...messagesRef.current, { role: 'assistant' as const, content: fallback }];
         messagesRef.current = updated;
         setMessages(updated);
       }
     } catch (err: unknown) {
       console.error('[ue-flow AI] Error:', err);
       const message = err instanceof Error ? err.message : String(err);
-      setError(`AI error: ${message}`);
+      setError(message);
       // Remove empty trailing assistant message if present
       const cleaned = messagesRef.current.filter(
         (m, i) => !(i === messagesRef.current.length - 1 && m.role === 'assistant' && m.content === ''),

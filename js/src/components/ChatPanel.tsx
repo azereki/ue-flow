@@ -77,6 +77,10 @@ export const ChatPanel: FC<ChatPanelProps> = ({ graphContext, onClose, floating 
         {messages.length === 0 && !error && (
           <div className="ueflow-chat-empty">
             <div className="ueflow-chat-empty-title">Ask about this Blueprint</div>
+            <div className="ueflow-chat-empty-hint">
+              Powered by Puter.js — a free Puter account is needed.
+              Allow popups when prompted.
+            </div>
             <div className="ueflow-chat-chips">
               {SUGGESTED_PROMPTS.map((prompt) => (
                 <button
