@@ -8,7 +8,29 @@ export interface ChatMessage {
 const SYSTEM_PROMPT = `You are a UE Blueprint analyst. You directly answer questions about Unreal Engine Blueprint graphs based on the provided context. Never ask clarifying questions — always give your best answer using the graph data you have. Be specific: reference node titles, pin names, and connection paths. Use UE terminology. Keep answers concise but substantive.`;
 
 const MAX_HISTORY = 10;
-const MODEL = 'anthropic/claude-sonnet-4-6';
+const MODEL = 'claude-sonnet-4-6';
+
+/** Extract text from a non-streaming Puter.js response (handles both string and Claude array content). */
+function extractResponseText(resp: unknown): string {
+  if (!resp || typeof resp !== 'object') return '';
+  const r = resp as Record<string, unknown>;
+  const msg = r.message as Record<string, unknown> | undefined;
+  if (!msg) return typeof r.text === 'string' ? r.text : '';
+  const content = msg.content;
+  // String content (OpenAI-style)
+  if (typeof content === 'string') return content;
+  // Array content (Claude-style): [{type: "text", text: "..."}]
+  if (Array.isArray(content)) {
+    return content
+      .map((c: unknown) => {
+        if (typeof c === 'string') return c;
+        if (c && typeof c === 'object' && 'text' in c) return (c as Record<string, unknown>).text;
+        return '';
+      })
+      .join('');
+  }
+  return '';
+}
 
 /** Extract text from a Puter.js stream chunk — handles varying response shapes. */
 function extractChunkText(part: unknown): string {
@@ -97,13 +119,7 @@ export function useAIChat(graphContext: string) {
         } else {
           // Got a non-streaming response back despite requesting stream
           useStreaming = false;
-          const resp = stream as unknown as Record<string, unknown>;
-          if (resp.message && typeof resp.message === 'object') {
-            const msg = resp.message as Record<string, unknown>;
-            accumulated = typeof msg.content === 'string' ? msg.content : '';
-          } else if (typeof resp.text === 'string') {
-            accumulated = resp.text;
-          }
+          accumulated = extractResponseText(stream);
           if (accumulated) {
             setMessages((prev) => [...prev, { role: 'assistant', content: accumulated }]);
           }
@@ -112,8 +128,7 @@ export function useAIChat(graphContext: string) {
         // Streaming failed — fall back to non-streaming
         useStreaming = false;
         const response = await puter.ai.chat(apiMessages, { model: MODEL });
-        const resp = response as PuterAIChatResponse;
-        accumulated = resp.message?.content ?? '';
+        accumulated = extractResponseText(response);
         if (accumulated) {
           setMessages((prev) => [...prev, { role: 'assistant', content: accumulated }]);
         }
