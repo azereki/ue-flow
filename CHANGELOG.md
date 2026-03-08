@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.0] - 2026-03-08
+
+### Added
+
+- Add natural language Blueprint generation — describe logic in chat, AI generates UEGraphJSON nodes that render on the canvas with preview modal for insert/open/discard
+- Add `ai-generate.ts` with generation system prompt (schema docs + few-shot example), `parseGeneratedGraph()` JSON extractor/validator, `normalizeGeneratedPin()` default filler, and `offsetGraphPositions()` for merge placement
+- Add `GeneratePreview` component with contained ReactFlow preview of generated graph, Insert into Graph / Open as New Graph / Discard buttons, and node/connection count summary
+- Add generation detection in `useAIChat` via keyword heuristic — automatically uses generation prompt when message contains "generate", "create", "build", etc.
+- Add selection-aware chat — selected node title injected into AI system prompt, dynamic suggested prompts ("What does [title] do?", "What connects to [title]?", "Trace execution from [title]")
+- Add clickable node links in AI Review results — node titles in result text become navigation links with accent color and hover glow
+- Add `NodeExplainer` floating card — one-shot AI explanation of selected node with 800ms debounce, dismisses on deselect/Escape
+- Add generation-focused suggested prompts in chat panel: "Generate a health regen system", "Create a damage handler", "Build a simple timer"
+- Add 13 Vitest tests for ai-generate parser, normalizer, offset, and round-trip through `graphJsonToFlow()`
+
 ## [0.2.0] - 2026-03-07
 
 ### Added
@@ -103,6 +117,7 @@ _First release._
 - Move Components section to top of sidebar for default layout ([`0082ea8`][0082ea8])
 - Reduce segment button padding and field label min-width for compact details panel ([`0082ea8`][0082ea8])
 
+[0.3.0]: https://github.com/azereki/ue-flow/releases/tag/v0.3.0
 [0.2.0]: https://github.com/azereki/ue-flow/releases/tag/v0.2.0
 [0.1.0]: https://github.com/azereki/ue-flow/releases/tag/v0.1.0
 

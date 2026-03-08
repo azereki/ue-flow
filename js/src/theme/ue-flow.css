@@ -3152,6 +3152,35 @@
   color: var(--uf-text-muted);
 }
 
+.ueflow-ai-settings-select {
+  background: var(--uf-surface);
+  border: 1px solid var(--uf-surface-border);
+  color: var(--uf-text);
+  font-family: var(--uf-font-body);
+  font-size: 12px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color var(--uf-transition);
+}
+
+.ueflow-ai-settings-select:focus {
+  border-color: var(--uf-accent);
+}
+
+.ueflow-ai-settings-select optgroup {
+  color: var(--uf-text-muted);
+  font-style: normal;
+  font-weight: 600;
+}
+
+.ueflow-ai-settings-select option {
+  color: var(--uf-text);
+  background: var(--uf-surface);
+  font-weight: 400;
+}
+
 .ueflow-ai-settings-checkbox {
   display: flex;
   align-items: center;
@@ -3313,6 +3342,172 @@
   white-space: pre-wrap;
   word-break: break-word;
   font-family: var(--uf-font-body);
+}
+
+/* ===== Generate Preview Modal ===== */
+
+.ueflow-generate-preview {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  background: var(--uf-chrome-bg-solid);
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.ueflow-generate-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--uf-subtle-border);
+  flex-shrink: 0;
+}
+
+.ueflow-generate-preview-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--uf-text);
+}
+
+.ueflow-generate-preview-summary {
+  font-size: 11px;
+  color: var(--uf-text-muted);
+}
+
+.ueflow-generate-preview-graph {
+  flex: 1;
+  min-height: 200px;
+  position: relative;
+}
+
+.ueflow-generate-preview-actions {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--uf-subtle-border);
+  flex-shrink: 0;
+}
+
+.ueflow-generate-preview-btn {
+  flex: 1;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-family: var(--uf-font-body);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: opacity var(--uf-transition);
+}
+
+.ueflow-generate-preview-btn:hover {
+  opacity: 0.85;
+}
+
+.ueflow-generate-preview-btn--primary {
+  background: var(--uf-accent);
+  color: #fff;
+}
+
+.ueflow-generate-preview-btn--secondary {
+  background: var(--uf-surface);
+  color: var(--uf-text);
+  border: 1px solid var(--uf-surface-border);
+}
+
+.ueflow-generate-preview-btn--discard {
+  background: none;
+  color: var(--uf-text-muted);
+  border: 1px solid var(--uf-subtle-border);
+  flex: 0;
+  white-space: nowrap;
+}
+
+/* ===== Clickable Node Links in AI Results ===== */
+
+.ueflow-ai-node-link {
+  color: var(--uf-accent);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  transition: color var(--uf-transition), text-shadow var(--uf-transition);
+}
+
+.ueflow-ai-node-link:hover {
+  color: #818cf8;
+  text-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+}
+
+/* ===== Node Explainer Card ===== */
+
+.ueflow-node-explainer {
+  position: absolute;
+  z-index: 50;
+  max-width: 300px;
+  background: rgba(15, 17, 23, 0.95);
+  border: 1px solid var(--uf-surface-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  animation: ueflow-explainer-in 0.2s ease-out;
+  overflow: hidden;
+}
+
+@keyframes ueflow-explainer-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ueflow-node-explainer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--uf-subtle-border);
+}
+
+.ueflow-node-explainer-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--uf-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ueflow-node-explainer-close {
+  background: none;
+  border: none;
+  color: var(--uf-text-muted);
+  cursor: pointer;
+  font-size: 10px;
+  padding: 2px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.ueflow-node-explainer-close:hover {
+  color: var(--uf-text);
+}
+
+.ueflow-node-explainer-body {
+  padding: 8px 10px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--uf-text-secondary);
+}
+
+.ueflow-node-explainer-error {
+  color: #f87171;
+  font-size: 11px;
+}
+
+.ueflow-node-explainer-text {
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* Responsive */

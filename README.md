@@ -18,9 +18,12 @@ An open-source Unreal Engine 5 Blueprint rendering suite. Parses UE5 T3D clipboa
 - **Bi-directional editing** — edit pin values in the browser, export modified T3D back to UE
 - **Self-contained HTML** output with all JS, CSS, and fonts inlined (no external dependencies)
 - **Python CLI** for rendering T3D files to HTML or PNG from the command line
-- **AI chat panel** powered by Puter.js — ask questions about your Blueprint graphs using Claude Sonnet 4.6, no API keys needed
+- **AI chat panel** powered by Puter.js or OpenRouter BYOK — ask questions about your Blueprint graphs, no API keys needed (or bring your own)
+- **AI Blueprint generation** — describe logic in natural language, AI generates Blueprint nodes that render on canvas with preview modal
+- **Selection-aware AI** — selected node context injected into AI prompts, dynamic suggested prompts, and one-shot node explanation cards
+- **Clickable AI findings** — node titles in Review results become navigation links
 - **Graph analysis** API for execution tracing, data dependencies, dead end detection, and diff
-- **~113 tests** across Python (pytest) and JavaScript (Vitest + Playwright)
+- **~111 tests** across Python (pytest) and JavaScript (Vitest + Playwright)
 
 ## Quick Start
 
@@ -92,11 +95,11 @@ js/                         React/Vite frontend (TypeScript, @xyflow/react)
     components/             UI chrome (Sidebar, DetailsPanel, TabBar, TopBar, StatusBar, etc.)
     nodes/                  BlueprintNode, CommentNode, NodeHeader, PinHandle, PinValueEditor
     edges/                  BlueprintEdge (bezier with type-colored glow)
-    hooks/                  useTabNavigation, useUndoRedo, useAIChat
+    hooks/                  useTabNavigation, useUndoRedo, useAIChat, useAIAction
     transform/              json-to-flow.ts (UE JSON -> React Flow), flow-to-t3d.ts (reverse)
     types/                  ue-graph.ts, pin-types.ts, flow-types.ts
-    utils/                  graph-context.ts (graph→text serializer for AI context)
-    theme/                  ue-flow.css (~2900 lines), self-hosted fonts (Geist, JetBrainsMono)
+    utils/                  graph-context.ts (AI context), ai-generate.ts (Blueprint generation)
+    theme/                  ue-flow.css (~3500 lines), self-hosted fonts (Geist, JetBrainsMono)
   e2e/                      Playwright smoke tests
 python/
   ue_flow/

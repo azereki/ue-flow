@@ -36,8 +36,10 @@ import { StructView } from './components/StructView';
 import { useUndoRedo } from './hooks/useUndoRedo';
 import { LandingPage } from './components/LandingPage';
 import { ChatPanel } from './components/ChatPanel';
+import { NodeExplainer } from './components/NodeExplainer';
 import { DEMO_MULTIGRAPH } from './data/demo-multigraph';
 import { serializeGraphContext, serializeMultiGraphContext } from './utils/graph-context';
+import { offsetGraphPositions } from './utils/ai-generate';
 
 const nodeTypes = {
   blueprintNode: BlueprintNode,
@@ -479,6 +481,12 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
     [multiGraph, activeGraph],
   );
 
+  const nodeTitles = useMemo(() => {
+    const graph = multiGraph.graphs[activeGraph];
+    if (!graph) return [];
+    return graph.nodes.map((n) => n.title).filter(Boolean);
+  }, [multiGraph, activeGraph]);
+
   const title = multiGraph.metadata?.title || multiGraph.metadata?.blueprintName || multiGraph.metadata?.assetPath || 'Blueprint';
   const scale = useViewportScale();
 
@@ -494,6 +502,7 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
         chatOpen={chatOpen}
         graphContext={chatContext}
         onNavigateToNode={navigateToGraph}
+        nodeTitles={nodeTitles}
       />
       <div className="ueflow-multi-layout">
         <div ref={sidebarRef} style={{ width: sidebarWidth ?? 'max-content', minWidth: 160, maxWidth: 400, flexShrink: 0 }}>
@@ -550,7 +559,7 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
           <>
             <div className="ueflow-chat-resize" onMouseDown={handleChatResize} />
             <div ref={chatRef} style={{ width: chatWidth, minWidth: 240, maxWidth: 500, flexShrink: 0 }}>
-              <ChatPanel graphContext={chatContext} onClose={handleToggleChat} />
+              <ChatPanel graphContext={chatContext} onClose={handleToggleChat} selectedNodeTitle={selectedNode} />
             </div>
           </>
         )}
@@ -573,6 +582,8 @@ export function App({ graphJSON, multiGraphJSON }: AppProps) {
   const [pasteCount, setPasteCount] = useState(0);
   const [demoMode, setDemoMode] = useState(false);
   const [singleChatOpen, setSingleChatOpen] = useState(false);
+  const [singleSelectedNode, setSingleSelectedNode] = useState<string | null>(null);
+  const [explainerNode, setExplainerNode] = useState<{ title: string; nodeClass: string; position: { x: number; y: number } } | null>(null);
 
   const handleGraphParsed = useCallback((graph: UEGraphJSON) => {
     setPastedGraph(graph);
@@ -586,6 +597,32 @@ export function App({ graphJSON, multiGraphJSON }: AppProps) {
 
   const handleExploreDemoBlueprint = useCallback(() => {
     setDemoMode(true);
+  }, []);
+
+  const handleAcceptGeneratedGraph = useCallback((graph: UEGraphJSON, mode: 'merge' | 'new') => {
+    if (mode === 'new' || !pastedGraph) {
+      // Open as new standalone graph
+      setPastedGraph(graph);
+      setPasteCount(c => c + 1);
+    } else {
+      // Merge: offset generated graph to the right of existing nodes
+      const maxX = pastedGraph.nodes.reduce((max, n) => Math.max(max, n.position.x), 0);
+      const offsetGraph = offsetGraphPositions(graph, maxX + 400, 0);
+      const merged: UEGraphJSON = {
+        metadata: pastedGraph.metadata,
+        nodes: [...pastedGraph.nodes, ...offsetGraph.nodes],
+        edges: [...pastedGraph.edges, ...offsetGraph.edges],
+      };
+      setPastedGraph(merged);
+      setPasteCount(c => c + 1);
+    }
+  }, [pastedGraph]);
+
+  const handleSingleSelectedNodeChange = useCallback((title: string | null) => {
+    setSingleSelectedNode(title);
+    if (!title) {
+      setExplainerNode(null);
+    }
   }, []);
 
   // Multi-graph mode takes precedence (embedded or demo)
@@ -616,12 +653,23 @@ export function App({ graphJSON, multiGraphJSON }: AppProps) {
         <SingleGraphView
           key={pastedGraph ? `paste-${pasteCount}` : 'embedded'}
           graphJSON={activeGraph}
+          onSelectedNodeChange={handleSingleSelectedNodeChange}
         />
+        {explainerNode && (
+          <NodeExplainer
+            nodeTitle={explainerNode.title}
+            nodeClass={explainerNode.nodeClass}
+            position={explainerNode.position}
+            onDismiss={() => setExplainerNode(null)}
+          />
+        )}
         {singleChatOpen && (
           <ChatPanel
             graphContext={serializeGraphContext(activeGraph)}
             onClose={() => setSingleChatOpen(false)}
             floating
+            selectedNodeTitle={singleSelectedNode}
+            onAcceptGraph={handleAcceptGeneratedGraph}
           />
         )}
         {!singleChatOpen && (

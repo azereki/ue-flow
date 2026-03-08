@@ -10,15 +10,16 @@ interface TopBarProps {
   chatOpen?: boolean;
   graphContext?: string;
   onNavigateToNode?: (graphName: string, nodeTitle: string) => void;
+  nodeTitles?: string[];
 }
 
-export const TopBar: FC<TopBarProps> = ({ title, graphCount, functionCount, variableCount, onToggleChat, chatOpen, graphContext, onNavigateToNode }) => {
+export const TopBar: FC<TopBarProps> = ({ title, graphCount, functionCount, variableCount, onToggleChat, chatOpen, graphContext, onNavigateToNode, nodeTitles }) => {
   return (
     <header className="ueflow-topbar">
       <span className="ueflow-topbar-title">{title}</span>
       <div className="ueflow-topbar-right">
         {graphContext && (
-          <AIToolbar graphContext={graphContext} onNavigateToNode={onNavigateToNode} />
+          <AIToolbar graphContext={graphContext} onNavigateToNode={onNavigateToNode} nodeTitles={nodeTitles} />
         )}
         <span className="ueflow-topbar-stats">
           {graphCount} graphs | {functionCount} functions | {variableCount} variables

@@ -1,24 +1,45 @@
-import { useState, useRef, useEffect, useCallback, type FC, type KeyboardEvent } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, type FC, type KeyboardEvent } from 'react';
 import { useAIChat } from '../hooks/useAIChat';
 import { useAIProvider } from '../contexts/AIProviderContext';
 import { usePuterAuth } from '../hooks/usePuterAuth';
+import { GeneratePreview } from './GeneratePreview';
+import type { UEGraphJSON } from '../types/ue-graph';
 
 interface ChatPanelProps {
   graphContext: string;
   onClose: () => void;
   floating?: boolean;
+  selectedNodeTitle?: string | null;
+  onAcceptGraph?: (graph: UEGraphJSON, mode: 'merge' | 'new') => void;
 }
 
-const SUGGESTED_PROMPTS = [
+const STATIC_PROMPTS = [
   'What does this graph do?',
   'List all events',
   'Explain the execution flow',
 ];
 
-export const ChatPanel: FC<ChatPanelProps> = ({ graphContext, onClose, floating }) => {
+const GENERATE_PROMPTS = [
+  'Generate a health regen system',
+  'Create a damage handler',
+  'Build a simple timer',
+];
+
+export const ChatPanel: FC<ChatPanelProps> = ({ graphContext, onClose, floating, selectedNodeTitle, onAcceptGraph }) => {
   const { provider } = useAIProvider();
   const { authState, authError, signIn } = usePuterAuth();
-  const { messages, isStreaming, error, sendMessage, clearChat } = useAIChat(graphContext);
+  const { messages, isStreaming, error, sendMessage, clearChat, generatedGraph, clearGeneratedGraph } = useAIChat(graphContext, selectedNodeTitle);
+
+  const suggestedPrompts = useMemo(() => {
+    if (selectedNodeTitle) {
+      return [
+        `What does ${selectedNodeTitle} do?`,
+        `What connects to ${selectedNodeTitle}?`,
+        `Trace execution from ${selectedNodeTitle}`,
+      ];
+    }
+    return [...STATIC_PROMPTS, ...GENERATE_PROMPTS];
+  }, [selectedNodeTitle]);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -123,7 +144,7 @@ export const ChatPanel: FC<ChatPanelProps> = ({ graphContext, onClose, floating 
               <div className="ueflow-chat-empty">
                 <div className="ueflow-chat-empty-title">Ask about this Blueprint</div>
                 <div className="ueflow-chat-chips">
-                  {SUGGESTED_PROMPTS.map((prompt) => (
+                  {suggestedPrompts.map((prompt) => (
                     <button
                       key={prompt}
                       className="ueflow-chat-chip"
@@ -170,7 +191,7 @@ export const ChatPanel: FC<ChatPanelProps> = ({ graphContext, onClose, floating 
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              placeholder={isStreaming ? 'Waiting for response...' : 'Ask about this Blueprint...'}
+              placeholder={isStreaming ? 'Waiting for response...' : 'Ask or generate a Blueprint...'}
               rows={1}
               disabled={isStreaming}
             />
@@ -188,6 +209,18 @@ export const ChatPanel: FC<ChatPanelProps> = ({ graphContext, onClose, floating 
             </button>
           </div>
         </>
+      )}
+
+      {/* Generate Preview Overlay */}
+      {generatedGraph && (
+        <GeneratePreview
+          graph={generatedGraph}
+          onAccept={(graph, mode) => {
+            onAcceptGraph?.(graph, mode);
+            clearGeneratedGraph();
+          }}
+          onDiscard={clearGeneratedGraph}
+        />
       )}
     </div>
   );

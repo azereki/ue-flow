@@ -1,4 +1,4 @@
-import { useState, useCallback, type FC } from 'react';
+import { useState, useCallback, useMemo, type FC } from 'react';
 import { useAIProvider } from '../contexts/AIProviderContext';
 import { usePuterAuth } from '../hooks/usePuterAuth';
 import { useAIAction } from '../hooks/useAIAction';
@@ -8,6 +8,7 @@ import { AISettings } from './AISettings';
 interface AIToolbarProps {
   graphContext: string;
   onNavigateToNode?: (graphName: string, nodeTitle: string) => void;
+  nodeTitles?: string[];
 }
 
 const DOCUMENT_SYSTEM_PROMPT = `You are a UE Blueprint documentation generator. Given the Blueprint context below, generate clear, structured documentation in markdown format. Include:
@@ -58,7 +59,7 @@ Rules:
 
 type ModalType = 'document' | 'review' | 'search' | null;
 
-export const AIToolbar: FC<AIToolbarProps> = ({ graphContext, onNavigateToNode }) => {
+export const AIToolbar: FC<AIToolbarProps> = ({ graphContext, onNavigateToNode, nodeTitles }) => {
   const { provider, ready } = useAIProvider();
   const { authState, signIn } = usePuterAuth();
   const { loading, result, error, execute, clear } = useAIAction();
@@ -205,6 +206,8 @@ export const AIToolbar: FC<AIToolbarProps> = ({ graphContext, onNavigateToNode }
           result={result}
           error={error}
           onClose={handleCloseModal}
+          nodeTitles={nodeTitles}
+          onNavigateToNode={onNavigateToNode}
         />
       )}
     </>

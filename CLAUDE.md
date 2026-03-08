@@ -53,6 +53,14 @@ The end-to-end flow has two directions:
 1. JS `flow-to-t3d.ts` transforms React Flow nodes/edges → T3D clipboard text
 2. Users can paste back into UE editor
 
+**Natural language → Blueprint generation (AI path):**
+1. User describes logic in chat (e.g. "Generate a health regen system")
+2. `useAIChat` detects generation intent via keyword heuristic, switches to `GENERATE_SYSTEM_PROMPT`
+3. AI returns UEGraphJSON in a ` ```json ``` ` code block
+4. `parseGeneratedGraph()` extracts, validates, and normalizes the JSON
+5. `GeneratePreview` renders a contained ReactFlow preview with Insert/Open New/Discard
+6. On accept: `offsetGraphPositions()` shifts nodes right of existing content, merges into graph state
+
 ## Key Architecture — JS (`js/src/`)
 
 - **App modes:** `App.tsx` switches between `LandingPage` (no data — hero demo, showcase, paste CTA), `SingleGraphView` (one graph, full viewport + floating chat FAB), `MultiGraphView` (sidebar + tabs + details panel + docked chat panel + breadcrumbs), and demo mode (loads `DEMO_MULTIGRAPH` into MultiGraphView). Embedded JSON takes precedence over pasted graphs, demo mode is toggled via "Explore Demo Blueprint" button on landing page
@@ -63,9 +71,11 @@ The end-to-end flow has two directions:
 - **Theme:** `js/src/theme/ue-flow.css` — all visual styling (Blueprint Noir dark theme)
 - **Types:** `ue-graph.ts` (UEPin, UENode, UEEdge, UEGraphJSON, UEMultiGraphJSON), `pin-types.ts` (PinCategory, PIN_COLORS), `flow-types.ts` (typed React Flow aliases)
 - **Transform:** `json-to-flow.ts` (UE JSON → React Flow with node size estimation), `flow-to-t3d.ts` (React Flow → UE T3D paste text), `t3d-to-json.ts` (raw T3D paste text → UEGraphJSON, client-side port of Python parser)
-- **AI Chat:** `ChatPanel.tsx` renders the chat UI (header, message list, thinking indicator, suggested prompts, textarea input). `useAIChat.ts` hook manages Puter.js API calls with 30s timeout, message history (last 10), and error handling. `graph-context.ts` serializes UE graph data into compact text summaries (12K char cap) for the AI system prompt. Chat is docked in MultiGraphView (resizable right panel) and floating in SingleGraphView (FAB + overlay)
+- **AI Chat:** `ChatPanel.tsx` renders the chat UI (header, message list, thinking indicator, suggested prompts, textarea input, GeneratePreview overlay). `useAIChat.ts` hook manages AI API calls with message history (last 10), generation detection, and error handling. `graph-context.ts` serializes UE graph data into compact text summaries (12K char cap) for the AI system prompt. Chat is docked in MultiGraphView (resizable right panel) and floating in SingleGraphView (FAB + overlay)
+- **AI Generation:** `ai-generate.ts` contains `GENERATE_SYSTEM_PROMPT` (UEGraphJSON schema + few-shot), `parseGeneratedGraph()` (extracts/validates JSON from AI response), `normalizeGeneratedPin()` (fills UEPin defaults), `offsetGraphPositions()` (for merge placement). `GeneratePreview.tsx` renders a contained ReactFlow preview with Insert/Open New/Discard. `NodeExplainer.tsx` shows a floating explanation card for selected nodes (800ms debounce)
+- **AI Result Modal:** `AIResultModal.tsx` supports clickable node links — `renderWithNodeLinks()` scans result text for known node titles and wraps them as navigation links
 - **Puter.js integration:** `<script src="https://js.puter.com/v2/">` in `index.html` provides client-side AI via `puter.ai.chat()`. Uses `claude-sonnet-4-6` model. Requires user auth — Puter shows a consent dialog then opens a popup to puter.com for sign-in. The API call hangs until auth completes (no reject/timeout from Puter itself), so `useAIChat` wraps it with a 30s timeout. Type declarations in `puter.d.ts`
-- **Hooks:** `useTabNavigation.ts` — tab/breadcrumb/navigation state for MultiGraphView; `useUndoRedo.ts` — undo/redo with snapshot history; `useAIChat.ts` — Puter.js AI chat with timeout and message management
+- **Hooks:** `useTabNavigation.ts` — tab/breadcrumb/navigation state for MultiGraphView; `useUndoRedo.ts` — undo/redo with snapshot history; `useAIChat.ts` — AI chat with generation detection, selection-aware context, and message management; `useAIAction.ts` — one-shot AI actions (document, review, search, node explain)
 - **Shared utils:** `pin-types.ts` exports `classifyPinType()` for mapping type strings → PinCategory; `utils/selectors.ts` for shared React Flow store selectors
 - **PinBodyContext** — single `useStore(zoomSelector)` in `PinBodyProvider` gates pin body rendering and edge glow (threshold: `zoom >= 0.15`). Consume this context for zoom-dependent rendering — do not create new store subscriptions
 - **`window.ueFlowFitView()`** is exposed for the Python PNG renderer — do not remove or rename

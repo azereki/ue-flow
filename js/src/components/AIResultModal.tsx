@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef, useState, type FC } from 'react';
+import { useEffect, useCallback, useRef, useState, useMemo, type FC } from 'react';
 
 interface AIResultModalProps {
   title: string;
@@ -6,11 +6,56 @@ interface AIResultModalProps {
   result: string | null;
   error: string | null;
   onClose: () => void;
+  nodeTitles?: string[];
+  onNavigateToNode?: (graphName: string, nodeTitle: string) => void;
 }
 
-export const AIResultModal: FC<AIResultModalProps> = ({ title, loading, result, error, onClose }) => {
+/** Render result text with clickable node title links. */
+function renderWithNodeLinks(
+  text: string,
+  nodeTitles: string[],
+  onNavigate: (graphName: string, nodeTitle: string) => void,
+): React.ReactNode {
+  if (nodeTitles.length === 0) return text;
+
+  // Sort by length descending to avoid partial matches
+  const sorted = [...nodeTitles].sort((a, b) => b.length - a.length);
+  // Build regex matching any title (escaped)
+  const escaped = sorted.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const regex = new RegExp(`(${escaped.join('|')})`, 'g');
+
+  const parts = text.split(regex);
+  const titleSet = new Set(sorted);
+
+  return parts.map((part, i) =>
+    titleSet.has(part) ? (
+      <span
+        key={i}
+        className="ueflow-ai-node-link"
+        onClick={() => onNavigate('', part)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => { if (e.key === 'Enter') onNavigate('', part); }}
+      >
+        {part}
+      </span>
+    ) : (
+      <span key={i}>{part}</span>
+    ),
+  );
+}
+
+export const AIResultModal: FC<AIResultModalProps> = ({ title, loading, result, error, onClose, nodeTitles, onNavigateToNode }) => {
   const bodyRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
+
+  const renderedResult = useMemo(() => {
+    if (!result) return null;
+    if (nodeTitles?.length && onNavigateToNode) {
+      return renderWithNodeLinks(result, nodeTitles, onNavigateToNode);
+    }
+    return result;
+  }, [result, nodeTitles, onNavigateToNode]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -108,7 +153,7 @@ export const AIResultModal: FC<AIResultModalProps> = ({ title, loading, result, 
             </div>
           )}
           {error && <div className="ueflow-chat-error">{error}</div>}
-          {result && <div className="ueflow-ai-modal-result">{result}</div>}
+          {result && <div className="ueflow-ai-modal-result">{renderedResult}</div>}
         </div>
       </div>
     </div>

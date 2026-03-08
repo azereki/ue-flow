@@ -1,6 +1,8 @@
 import { useState, useCallback, useRef } from 'react';
 import { useAIProvider } from '../contexts/AIProviderContext';
+import { parseGeneratedGraph, GENERATE_SYSTEM_PROMPT } from '../utils/ai-generate';
 import type { ChatMessage } from '../utils/openrouter';
+import type { UEGraphJSON } from '../types/ue-graph';
 
 export type { ChatMessage };
 
@@ -8,13 +10,23 @@ const SYSTEM_PROMPT = `You are a UE Blueprint analyst. You directly answer quest
 
 const MAX_HISTORY = 10;
 
-export function useAIChat(graphContext: string) {
+/** Heuristic: does the user message look like a generation request? */
+function isGenerationRequest(msg: string): boolean {
+  const lower = msg.toLowerCase();
+  const keywords = ['generate', 'create', 'build', 'make', 'add nodes', 'blueprint that', 'blueprint for', 'blueprint to', 'nodes that', 'nodes for', 'graph that', 'graph for', 'implement', 'set up', 'wire up'];
+  return keywords.some((k) => lower.includes(k));
+}
+
+export function useAIChat(graphContext: string, selectedNodeTitle?: string | null) {
   const { chatCompletion } = useAIProvider();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [generatedGraph, setGeneratedGraph] = useState<UEGraphJSON | null>(null);
   const streamingRef = useRef(false);
   const messagesRef = useRef<ChatMessage[]>([]);
+
+  const clearGeneratedGraph = useCallback(() => setGeneratedGraph(null), []);
 
   const sendMessage = useCallback(async (userMessage: string) => {
     if (!userMessage.trim() || streamingRef.current) return;
@@ -29,16 +41,30 @@ export function useAIChat(graphContext: string) {
     setIsStreaming(true);
     streamingRef.current = true;
 
+    // Choose system prompt based on whether this looks like a generation request
+    const useGeneratePrompt = isGenerationRequest(userMessage);
+
     try {
+      let systemContent = useGeneratePrompt
+        ? GENERATE_SYSTEM_PROMPT
+        : `${SYSTEM_PROMPT}\n\nHere is the Blueprint context:\n${graphContext}`;
+
+      if (selectedNodeTitle) {
+        systemContent += `\n\nThe user currently has the node '${selectedNodeTitle}' selected. Prioritize information about this node and its connections.`;
+      }
+
       const apiMessages: ChatMessage[] = [
-        {
-          role: 'system',
-          content: `${SYSTEM_PROMPT}\n\nHere is the Blueprint context:\n${graphContext}`,
-        },
+        { role: 'system', content: systemContent },
         ...messagesRef.current,
       ];
 
       const text = await chatCompletion(apiMessages);
+
+      // Check if response contains a generated graph
+      const parsed = parseGeneratedGraph(text);
+      if (parsed) {
+        setGeneratedGraph(parsed);
+      }
 
       const updated = [...messagesRef.current, { role: 'assistant' as const, content: text }];
       messagesRef.current = updated;
@@ -56,13 +82,14 @@ export function useAIChat(graphContext: string) {
       setIsStreaming(false);
       streamingRef.current = false;
     }
-  }, [graphContext, chatCompletion]);
+  }, [graphContext, chatCompletion, selectedNodeTitle]);
 
   const clearChat = useCallback(() => {
     messagesRef.current = [];
     setMessages([]);
     setError(null);
+    setGeneratedGraph(null);
   }, []);
 
-  return { messages, isStreaming, error, sendMessage, clearChat };
+  return { messages, isStreaming, error, sendMessage, clearChat, generatedGraph, clearGeneratedGraph };
 }
