@@ -1,5 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
-import { MODEL, TIMEOUT_MS, extractResponseText, withTimeout } from '../utils/puter-helpers';
+import { MODEL, extractResponseText, withTimeout } from '../utils/puter-helpers';
+
+const ACTION_TIMEOUT_MS = 60_000;
 
 export interface AIActionState {
   loading: boolean;
@@ -7,12 +9,15 @@ export interface AIActionState {
   error: string | null;
 }
 
+let nextRequestId = 0;
+
 export function useAIAction() {
   const [state, setState] = useState<AIActionState>({ loading: false, result: null, error: null });
-  const abortRef = useRef(false);
+  const activeRequestRef = useRef(0);
 
   const execute = useCallback(async (systemPrompt: string, userPrompt: string): Promise<string | null> => {
-    abortRef.current = false;
+    const requestId = ++nextRequestId;
+    activeRequestRef.current = requestId;
     setState({ loading: true, result: null, error: null });
 
     try {
@@ -23,11 +28,12 @@ export function useAIAction() {
 
       const response = await withTimeout(
         puter.ai.chat(messages, { model: MODEL }),
-        TIMEOUT_MS,
+        ACTION_TIMEOUT_MS,
         'AI action',
       );
 
-      if (abortRef.current) return null;
+      // Stale response — a newer request superseded this one
+      if (activeRequestRef.current !== requestId) return null;
 
       const text = extractResponseText(response);
       if (text) {
@@ -38,7 +44,8 @@ export function useAIAction() {
         return null;
       }
     } catch (err: unknown) {
-      if (abortRef.current) return null;
+      // Only apply error if this is still the active request
+      if (activeRequestRef.current !== requestId) return null;
       const message = err instanceof Error ? err.message : String(err);
       setState({ loading: false, result: null, error: message });
       return null;
@@ -46,7 +53,7 @@ export function useAIAction() {
   }, []);
 
   const clear = useCallback(() => {
-    abortRef.current = true;
+    activeRequestRef.current = 0;
     setState({ loading: false, result: null, error: null });
   }, []);
 
