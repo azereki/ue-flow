@@ -59,61 +59,40 @@ Rules:
 type ModalType = 'document' | 'review' | 'search' | null;
 
 export const AIToolbar: FC<AIToolbarProps> = ({ graphContext, onNavigateToNode, nodeTitles }) => {
-  const { provider, puterAuthState, puterSignIn } = useAIProvider();
+  const { ready } = useAIProvider();
   const { loading, result, error, execute, clear } = useAIAction();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
 
-  // For OpenRouter, always ready. For Puter, need signed-in.
-  const isReady = provider === 'openrouter' || puterAuthState === 'signed-in';
+  const handleDocument = useCallback(async () => {
+    setActiveModal('document');
+    await execute(DOCUMENT_SYSTEM_PROMPT, graphContext);
+  }, [execute, graphContext]);
 
-  const requireAuth = useCallback(async (action: () => void) => {
-    if (provider === 'openrouter') {
-      action();
-      return;
-    }
-    if (puterAuthState === 'signed-in') {
-      action();
-    } else if (puterAuthState === 'signed-out' || puterAuthState === 'error') {
-      await puterSignIn();
-    }
-  }, [provider, puterAuthState, puterSignIn]);
+  const handleReview = useCallback(async () => {
+    setActiveModal('review');
+    await execute(REVIEW_SYSTEM_PROMPT, graphContext);
+  }, [execute, graphContext]);
 
-  const handleDocument = useCallback(() => {
-    requireAuth(async () => {
-      setActiveModal('document');
-      await execute(DOCUMENT_SYSTEM_PROMPT, graphContext);
-    });
-  }, [requireAuth, execute, graphContext]);
-
-  const handleReview = useCallback(() => {
-    requireAuth(async () => {
-      setActiveModal('review');
-      await execute(REVIEW_SYSTEM_PROMPT, graphContext);
-    });
-  }, [requireAuth, execute, graphContext]);
-
-  const handleSearch = useCallback(() => {
+  const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) return;
-    requireAuth(async () => {
-      setActiveModal('search');
-      const text = await execute(SEARCH_SYSTEM_PROMPT, `Query: "${searchQuery}"\n\nBlueprint Context:\n${graphContext}`);
-      if (text && onNavigateToNode) {
-        try {
-          const jsonMatch = text.match(/```json\s*\n?([\s\S]*?)\n?\s*```/);
-          if (jsonMatch) {
-            const parsed = JSON.parse(jsonMatch[1]) as { matches?: { graph: string; nodeTitle: string }[] };
-            if (parsed.matches?.[0]) {
-              onNavigateToNode(parsed.matches[0].graph, parsed.matches[0].nodeTitle);
-            }
+    setActiveModal('search');
+    const text = await execute(SEARCH_SYSTEM_PROMPT, `Query: "${searchQuery}"\n\nBlueprint Context:\n${graphContext}`);
+    if (text && onNavigateToNode) {
+      try {
+        const jsonMatch = text.match(/```json\s*\n?([\s\S]*?)\n?\s*```/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[1]) as { matches?: { graph: string; nodeTitle: string }[] };
+          if (parsed.matches?.[0]) {
+            onNavigateToNode(parsed.matches[0].graph, parsed.matches[0].nodeTitle);
           }
-        } catch {
-          // JSON parse failed — result still shows in modal
         }
+      } catch {
+        // JSON parse failed — result still shows in modal
       }
-    });
-  }, [requireAuth, execute, graphContext, searchQuery, onNavigateToNode]);
+    }
+  }, [execute, graphContext, searchQuery, onNavigateToNode]);
 
   const handleSearchKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -136,8 +115,7 @@ export const AIToolbar: FC<AIToolbarProps> = ({ graphContext, onNavigateToNode, 
     : activeModal === 'search' ? 'Search Results'
     : '';
 
-  const isAuthing = provider === 'puter' && (puterAuthState === 'signing-in' || puterAuthState === 'checking');
-  const disableActions = isAuthing || loading || (!isReady && provider === 'puter');
+  const disableActions = loading || !ready;
 
   return (
     <>

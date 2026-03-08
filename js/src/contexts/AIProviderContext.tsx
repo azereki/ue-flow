@@ -9,105 +9,35 @@ import {
   getRememberPreference,
   DEFAULT_MODEL,
 } from '../utils/openrouter';
-import { extractResponseText, withTimeout, isPuterAvailable } from '../utils/puter-helpers';
-
-export type AIProvider = 'puter' | 'openrouter';
-export type PuterAuthState = 'checking' | 'unavailable' | 'signed-out' | 'signing-in' | 'signed-in' | 'error';
 
 export interface AIProviderState {
-  /** Active provider. */
-  provider: AIProvider;
-  /** Whether the active provider is ready (authed / key set). */
+  /** Whether an OpenRouter key is configured. */
   ready: boolean;
   /** OpenRouter config if set. */
   openRouterConfig: OpenRouterConfig | null;
-  /** Send a chat completion. Returns the assistant's text. */
+  /** Send a chat completion via OpenRouter. Returns the assistant's text. */
   chatCompletion: (messages: ChatMessage[]) => Promise<string>;
   /** Save an OpenRouter key. */
   setOpenRouterKey: (apiKey: string, model: string, remember: boolean) => void;
-  /** Clear the OpenRouter key and fall back to Puter. */
+  /** Clear the OpenRouter key. */
   clearOpenRouterKey: () => void;
-  /** Get the remember preference. */
+  /** Whether the remember-across-sessions preference is on. */
   remember: boolean;
-  /** Shared Puter auth state (avoids multiple independent usePuterAuth instances). */
-  puterAuthState: PuterAuthState;
-  /** Puter auth error message. */
-  puterAuthError: string | null;
-  /** Trigger Puter sign-in (shared across all consumers). */
-  puterSignIn: () => Promise<void>;
 }
 
 const AIProviderContext = createContext<AIProviderState | null>(null);
 
-const PUTER_MODEL = 'claude-sonnet-4-6';
-const TIMEOUT_MS = 60_000;
-
 export function AIProviderProvider({ children }: { children: ReactNode }) {
   const [orConfig, setOrConfig] = useState<OpenRouterConfig | null>(() => loadOpenRouterConfig());
   const [remember, setRemember] = useState(() => getRememberPreference());
-  const [puterAuthState, setPuterAuthState] = useState<PuterAuthState>('checking');
-  const [puterAuthError, setPuterAuthError] = useState<string | null>(null);
 
-  // Shared Puter auth check — runs once on mount
-  useEffect(() => {
-    let attempts = 0;
-    const maxAttempts = 20;
-    const check = () => {
-      if (isPuterAvailable()) {
-        try {
-          setPuterAuthState(puter.auth.isSignedIn() ? 'signed-in' : 'signed-out');
-        } catch {
-          setPuterAuthState('signed-out');
-        }
-        return;
-      }
-      attempts++;
-      if (attempts >= maxAttempts) {
-        setPuterAuthState('unavailable');
-        return;
-      }
-      setTimeout(check, 100);
-    };
-    check();
-  }, []);
-
-  const puterSignIn = useCallback(async () => {
-    setPuterAuthState('signing-in');
-    setPuterAuthError(null);
-    try {
-      await puter.auth.signIn();
-      setPuterAuthState('signed-in');
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      setPuterAuthError(message);
-      setPuterAuthState('error');
-    }
-  }, []);
-
-  // Determine active provider
-  const provider: AIProvider = orConfig ? 'openrouter' : 'puter';
-  const ready = orConfig ? true : isPuterAvailable();
+  const ready = !!orConfig;
 
   const chatCompletion = useCallback(async (messages: ChatMessage[]): Promise<string> => {
-    if (orConfig) {
-      return openRouterChat(messages, orConfig);
+    if (!orConfig) {
+      throw new Error('No API key configured. Open AI Settings and add your OpenRouter key.');
     }
-
-    // Puter.js fallback
-    const apiMessages: PuterAIChatMessage[] = messages.map((m) => ({
-      role: m.role,
-      content: m.content,
-    }));
-
-    const response = await withTimeout(
-      puter.ai.chat(apiMessages, { model: PUTER_MODEL }),
-      TIMEOUT_MS,
-      'AI chat',
-    );
-
-    const text = extractResponseText(response);
-    if (!text) throw new Error('Empty response from Puter.js');
-    return text;
+    return openRouterChat(messages, orConfig);
   }, [orConfig]);
 
   const setOpenRouterKey = useCallback((apiKey: string, model: string, rem: boolean) => {
@@ -134,16 +64,12 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
 
   return (
     <AIProviderContext.Provider value={{
-      provider,
       ready,
       openRouterConfig: orConfig,
       chatCompletion,
       setOpenRouterKey,
       clearOpenRouterKey: clearOpenRouterKeyFn,
       remember,
-      puterAuthState,
-      puterAuthError,
-      puterSignIn,
     }}>
       {children}
     </AIProviderContext.Provider>

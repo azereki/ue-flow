@@ -2938,7 +2938,7 @@
   color: var(--uf-accent);
 }
 
-/* ===== Auth Gate ===== */
+/* ===== Chat Setup Prompt ===== */
 
 .ueflow-chat-auth {
   display: flex;
@@ -2968,32 +2968,6 @@
   color: var(--uf-text-muted);
   line-height: 1.5;
   max-width: 260px;
-}
-
-.ueflow-chat-auth-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--uf-accent);
-  border: none;
-  color: #fff;
-  padding: 10px 20px;
-  border-radius: var(--uf-radius-pill);
-  font-family: var(--uf-font-body);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity var(--uf-transition);
-  margin-top: 4px;
-}
-
-.ueflow-chat-auth-btn:hover:not(:disabled) {
-  opacity: 0.85;
-}
-
-.ueflow-chat-auth-btn--loading {
-  opacity: 0.7;
-  cursor: not-allowed;
 }
 
 /* ===== AI Toolbar ===== */
@@ -3207,56 +3181,6 @@
   border-radius: 4px;
 }
 
-.ueflow-ai-settings-puter-section {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.ueflow-ai-settings-section-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--uf-text-secondary);
-}
-
-.ueflow-ai-settings-puter-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  background: rgba(99, 102, 241, 0.12);
-  border: 1px solid rgba(99, 102, 241, 0.3);
-  color: var(--uf-accent);
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-family: var(--uf-font-body);
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background var(--uf-transition), border-color var(--uf-transition);
-}
-
-.ueflow-ai-settings-puter-btn:hover:not(:disabled) {
-  background: rgba(99, 102, 241, 0.2);
-  border-color: var(--uf-accent);
-}
-
-.ueflow-ai-settings-puter-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.ueflow-ai-settings-puter-connected {
-  font-size: 11px;
-  color: #4ade80;
-  font-weight: 600;
-}
-
-.ueflow-ai-settings-divider {
-  height: 1px;
-  background: var(--uf-subtle-border);
-  margin: 2px 0;
-}
 
 .ueflow-ai-settings-footer {
   display: flex;

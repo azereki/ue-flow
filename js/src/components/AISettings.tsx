@@ -3,7 +3,7 @@ import { useAIProvider } from '../contexts/AIProviderContext';
 import { DEFAULT_MODEL, MODEL_OPTIONS } from '../utils/openrouter';
 
 export const AISettings: FC = () => {
-  const { provider, openRouterConfig, setOpenRouterKey, clearOpenRouterKey, remember, puterAuthState, puterAuthError, puterSignIn } = useAIProvider();
+  const { ready, openRouterConfig, setOpenRouterKey, clearOpenRouterKey, remember } = useAIProvider();
   const [open, setOpen] = useState(false);
   const [key, setKey] = useState('');
   const [model, setModel] = useState(DEFAULT_MODEL);
@@ -57,62 +57,39 @@ export const AISettings: FC = () => {
     setOpen(false);
   }, [clearOpenRouterKey]);
 
-  const isConfigured = provider === 'openrouter';
-
   return (
     <div className="ueflow-ai-settings" ref={popoverRef}>
       <button
-        className={`ueflow-ai-toolbar-btn ueflow-ai-settings-btn${isConfigured ? ' ueflow-ai-settings-btn--active' : ''}`}
+        className={`ueflow-ai-toolbar-btn ueflow-ai-settings-btn${ready ? ' ueflow-ai-settings-btn--active' : ''}`}
         onClick={() => setOpen(!open)}
         title="AI Settings"
       >
-        &#9881;{isConfigured ? ' OpenRouter' : ' AI Settings'}
+        &#9881;{ready ? ' OpenRouter' : ' AI Settings'}
       </button>
 
       {open && (
         <div className="ueflow-ai-settings-popover">
           <div className="ueflow-ai-settings-title">
-            AI Provider Settings
+            AI Settings
           </div>
 
           <div className="ueflow-ai-settings-status">
-            {isConfigured ? (
+            {ready ? (
               <span className="ueflow-ai-settings-badge ueflow-ai-settings-badge--active">
-                OpenRouter connected
-              </span>
-            ) : puterAuthState === 'signed-in' ? (
-              <span className="ueflow-ai-settings-badge ueflow-ai-settings-badge--active">
-                Puter.js connected (free)
+                Connected
               </span>
             ) : (
               <span className="ueflow-ai-settings-badge">
-                Not connected
+                No API key set
               </span>
             )}
           </div>
 
-          {/* Puter.js auth section — only show when not using OpenRouter */}
-          {!isConfigured && (
-            <div className="ueflow-ai-settings-puter-section">
-              <div className="ueflow-ai-settings-section-title">Puter.js (free, no key needed)</div>
-              {puterAuthState === 'signed-in' ? (
-                <div className="ueflow-ai-settings-puter-connected">&#10003; Authorized</div>
-              ) : puterAuthState === 'signing-in' ? (
-                <button className="ueflow-ai-settings-puter-btn" disabled>
-                  <span className="ueflow-chat-send-spinner" /> Connecting...
-                </button>
-              ) : puterAuthState === 'unavailable' ? (
-                <div className="ueflow-ai-settings-hint">Puter.js unavailable — use OpenRouter below</div>
-              ) : (
-                <button className="ueflow-ai-settings-puter-btn" onClick={puterSignIn}>
-                  Authorize Puter.js
-                </button>
-              )}
-              {puterAuthError && <div className="ueflow-ai-settings-error">{puterAuthError}</div>}
+          {!ready && (
+            <div className="ueflow-ai-settings-hint">
+              Get a free key at <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--uf-accent)' }}>openrouter.ai/keys</a> — many models are free.
             </div>
           )}
-
-          <div className="ueflow-ai-settings-divider" />
 
           <label className="ueflow-ai-settings-label">
             OpenRouter API Key
@@ -175,7 +152,7 @@ export const AISettings: FC = () => {
             <button className="ueflow-ai-settings-save-btn" onClick={handleSave}>
               Save
             </button>
-            {isConfigured && (
+            {ready && (
               <button className="ueflow-ai-settings-clear-btn" onClick={handleClear}>
                 Clear Key
               </button>

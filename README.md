@@ -18,7 +18,7 @@ An open-source Unreal Engine 5 Blueprint rendering suite. Parses UE5 T3D clipboa
 - **Bi-directional editing** — edit pin values in the browser, export modified T3D back to UE
 - **Self-contained HTML** output with all JS, CSS, and fonts inlined (no external dependencies)
 - **Python CLI** for rendering T3D files to HTML or PNG from the command line
-- **AI chat panel** powered by Puter.js or OpenRouter BYOK — ask questions about your Blueprint graphs, no API keys needed (or bring your own)
+- **AI chat panel** powered by OpenRouter — ask questions about your Blueprint graphs using any model (many free options available)
 - **AI Blueprint generation** — describe logic in natural language, AI generates Blueprint nodes that render on canvas with preview modal
 - **Selection-aware AI** — selected node context injected into AI prompts, dynamic suggested prompts, and one-shot node explanation cards
 - **Clickable AI findings** — node titles in Review results become navigation links
