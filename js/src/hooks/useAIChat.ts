@@ -8,7 +8,7 @@ export interface ChatMessage {
 const SYSTEM_PROMPT = `You are a UE Blueprint analyst. You directly answer questions about Unreal Engine Blueprint graphs based on the provided context. Never ask clarifying questions — always give your best answer using the graph data you have. Be specific: reference node titles, pin names, and connection paths. Use UE terminology. Keep answers concise but substantive.`;
 
 const MAX_HISTORY = 10;
-const MODEL = 'claude-sonnet-4-5';
+const MODEL = 'anthropic/claude-sonnet-4-6';
 
 /** Extract text from a Puter.js stream chunk — handles varying response shapes. */
 function extractChunkText(part: unknown): string {
