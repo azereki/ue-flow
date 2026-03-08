@@ -56,7 +56,7 @@ The end-to-end flow has two directions:
 ## Key Architecture — JS (`js/src/`)
 
 - **App modes:** `App.tsx` switches between `LandingPage` (no data — hero demo, showcase, paste CTA), `SingleGraphView` (one graph, full viewport), `MultiGraphView` (sidebar + tabs + details panel + breadcrumbs), and demo mode (loads `DEMO_MULTIGRAPH` into MultiGraphView). Embedded JSON takes precedence over pasted graphs, demo mode is toggled via "Explore Demo Blueprint" button on landing page
-- **Landing page:** `LandingPage.tsx` — hero with live 6-node demo graph, "Full Blueprint Viewer" showcase section with mockup + "Explore Demo Blueprint" button, feature cards, how-it-works steps, paste CTA section
+- **Landing page:** `LandingPage.tsx` — hero with live 6-node demo graph, interactive "Full Blueprint Viewer" showcase (live ReactFlow rendering of EventGraph, clickable sidebar items that switch graphs and animate zoom-to-node, scroll zoom enabled), feature cards, how-it-works steps, paste CTA section. Key internal components: `ShowcaseInteractive` (stateful sidebar + graph switcher), `ShowcaseGraph` (keyed `ReactFlowProvider` wrapper), `ShowcaseFocuser` (zoom-to-node via `useReactFlow`)
 - **Demo data:** `data/demo-graph.ts` (simple 6-node hero graph), `data/demo-multigraph.ts` (full BP_PlayerCharacter with 3 graphs, events, functions, variables, components, structs, delegates)
 - **Nodes:** `BlueprintNode.tsx` renders header + pin columns; `PinHandle.tsx` renders individual pins with React Flow `<Handle>`; `CommentNode.tsx` renders transparent comment blocks; `NodeHeader.tsx` renders the colored header bar
 - **Edges:** `BlueprintEdge.tsx` uses `getSmoothStepPath` with `borderRadius: 16` for UE-style right-angled wire routing — do NOT switch to `getBezierPath` (produces messy curves)
@@ -97,6 +97,14 @@ The end-to-end flow has two directions:
 - Node header glass uses `color-mix(in srgb, var(--header-accent) 25%, rgba(...))` — do not reintroduce `backdrop-filter` on node headers
 - Do not use `100vw`/`100vh` on elements that receive CSS `zoom` — use `100%` and let a non-zoomed ancestor hold viewport units
 - Example HTML files embed the IIFE inline — they go stale after rebuilds. Regenerate with the Python renderer or extract JSON + inject latest IIFE
+- When swapping entire graph data in a ReactFlow instance, key the `ReactFlowProvider` (not just `ReactFlow`) — otherwise internal state (viewport, node store) persists from the previous graph
+
+## Visual QA (Selenium)
+- Selenium + Brave headless is available for taking screenshots during dev sessions
+- Scripts at `js/.firecrawl/scratchpad/screenshot.py` (full page) and `screenshot-scroll.py` (scroll to element) and `screenshot-click.py` (click then screenshot)
+- Usage: `python screenshot.py <url> [output.png]`, `python screenshot-scroll.py <url> <css-selector> [output.png]`
+- Brave path: `C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe`
+- Playwright MCP plugin requires Chrome (not installed) — use Selenium for browser automation instead
 
 ## Deployment
 - **Production:** Cloudflare Pages at `ue-flow.pages.dev` — auto-deploys from GitHub via dashboard connection
