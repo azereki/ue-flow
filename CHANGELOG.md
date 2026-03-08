@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.2.0] - 2026-03-07
+
+### Added
+
+- Add AI chat panel powered by Puter.js with Claude Sonnet 4.6 for asking questions about rendered Blueprint graphs ([`7286966`][7286966])
+- Add graph-to-text serializer (`graph-context.ts`) that converts UE graph data into compact text summaries for AI context, with 12K character cap and truncation ([`7286966`][7286966])
+- Add `useAIChat` hook with Puter.js integration, 30-second timeout for auth hangs, and conversation history management ([`56b4ed3`][56b4ed3])
+- Add `ChatPanel` component with suggested prompt chips, animated thinking indicator (bouncing dots), header status, and send button spinner ([`0950cc5`][0950cc5])
+- Add docked resizable chat panel in MultiGraphView (240–500px, right side with drag handle) ([`7286966`][7286966])
+- Add floating chat overlay with FAB toggle button in SingleGraphView ([`7286966`][7286966])
+- Add chat toggle button (robot head icon) in TopBar for MultiGraphView ([`9649cb2`][9649cb2])
+- Add Puter.js TypeScript declarations (`puter.d.ts`) for `puter.ai.chat()` with streaming overloads ([`7286966`][7286966])
+- Add 10 Vitest tests for graph-context serializer covering structure, truncation, and multi-graph output ([`7286966`][7286966])
+
+### Fixed
+
+- Fix app shell viewport containment: use `height: 100vh` on `.ueflow-app-shell` so TopBar stays visible without breaking landing page scroll ([`b1ee37d`][b1ee37d])
+- Fix AI chat "no response received" by using correct Puter.js model name (`claude-sonnet-4-6`) and handling Claude's array content format (`content[0].text`) ([`cc84069`][cc84069])
+- Fix AI chat promise hanging forever on Puter auth by wrapping API calls with 30-second timeout and clear error messaging ([`56b4ed3`][56b4ed3])
+- Fix stale message state in chat hook by replacing `setMessages` callback reads with synchronous `messagesRef` ([`0cea8fc`][0cea8fc])
+
 ## [0.1.0] - 2026-03-01
 
 _First release._
@@ -82,7 +103,16 @@ _First release._
 - Move Components section to top of sidebar for default layout ([`0082ea8`][0082ea8])
 - Reduce segment button padding and field label min-width for compact details panel ([`0082ea8`][0082ea8])
 
+[0.2.0]: https://github.com/azereki/ue-flow/releases/tag/v0.2.0
 [0.1.0]: https://github.com/azereki/ue-flow/releases/tag/v0.1.0
+
+[0950cc5]: https://github.com/azereki/ue-flow/commit/0950cc5
+[56b4ed3]: https://github.com/azereki/ue-flow/commit/56b4ed3
+[0cea8fc]: https://github.com/azereki/ue-flow/commit/0cea8fc
+[cc84069]: https://github.com/azereki/ue-flow/commit/cc84069
+[b1ee37d]: https://github.com/azereki/ue-flow/commit/b1ee37d
+[9649cb2]: https://github.com/azereki/ue-flow/commit/9649cb2
+[7286966]: https://github.com/azereki/ue-flow/commit/7286966
 
 [3e99964]: https://github.com/azereki/ue-flow/commit/3e99964
 [02cc3db]: https://github.com/azereki/ue-flow/commit/02cc3db
