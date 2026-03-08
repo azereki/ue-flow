@@ -2,6 +2,8 @@ import { Component, type ReactNode, type ErrorInfo } from 'react';
 
 interface Props {
   children: ReactNode;
+  /** Use 100% instead of 100vw/100vh for embed containers */
+  embedded?: boolean;
 }
 
 interface State {
@@ -24,8 +26,8 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div style={{
-          width: '100vw',
-          height: '100vh',
+          width: this.props.embedded ? '100%' : '100vw',
+          height: this.props.embedded ? '100%' : '100vh',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',

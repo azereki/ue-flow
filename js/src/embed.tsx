@@ -38,8 +38,8 @@ function setupContainer(container: HTMLElement, height: string): void {
 function mountGraph(container: HTMLElement, graphJSON: UEGraphJSON): { root: Root } {
   const root = createRoot(container);
   root.render(
-    <ErrorBoundary>
-      <SingleGraphView graphJSON={graphJSON} />
+    <ErrorBoundary embedded>
+      <SingleGraphView graphJSON={graphJSON} embedded />
     </ErrorBoundary>,
   );
   return { root };
