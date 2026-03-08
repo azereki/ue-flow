@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect, type FC } from 'react';
 import { useAIProvider } from '../contexts/AIProviderContext';
-import { DEFAULT_MODEL } from '../utils/openrouter';
+import { DEFAULT_MODEL, MODEL_OPTIONS } from '../utils/openrouter';
 
 export const AISettings: FC = () => {
   const { provider, openRouterConfig, setOpenRouterKey, clearOpenRouterKey, remember } = useAIProvider();
@@ -102,14 +102,32 @@ export const AISettings: FC = () => {
 
           <label className="ueflow-ai-settings-label">
             Model
-            <input
-              className="ueflow-ai-settings-input"
-              type="text"
+            <select
+              className="ueflow-ai-settings-select"
               value={model}
               onChange={(e) => setModel(e.target.value)}
-              placeholder={DEFAULT_MODEL}
-              spellCheck={false}
-            />
+            >
+              <optgroup label="Free (no cost)">
+                {MODEL_OPTIONS.filter(m => m.tier === 'free').map(m => (
+                  <option key={m.id} value={m.id}>{m.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Budget (under $1/M tokens)">
+                {MODEL_OPTIONS.filter(m => m.tier === 'budget').map(m => (
+                  <option key={m.id} value={m.id}>{m.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Standard">
+                {MODEL_OPTIONS.filter(m => m.tier === 'standard').map(m => (
+                  <option key={m.id} value={m.id}>{m.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Premium (best quality)">
+                {MODEL_OPTIONS.filter(m => m.tier === 'premium').map(m => (
+                  <option key={m.id} value={m.id}>{m.label}</option>
+                ))}
+              </optgroup>
+            </select>
           </label>
 
           <label className="ueflow-ai-settings-checkbox">

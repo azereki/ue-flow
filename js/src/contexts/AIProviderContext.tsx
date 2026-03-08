@@ -12,6 +12,7 @@ import {
 import { extractResponseText, withTimeout, isPuterAvailable } from '../utils/puter-helpers';
 
 export type AIProvider = 'puter' | 'openrouter';
+export type PuterAuthState = 'checking' | 'unavailable' | 'signed-out' | 'signing-in' | 'signed-in' | 'error';
 
 export interface AIProviderState {
   /** Active provider. */
@@ -28,6 +29,12 @@ export interface AIProviderState {
   clearOpenRouterKey: () => void;
   /** Get the remember preference. */
   remember: boolean;
+  /** Shared Puter auth state (avoids multiple independent usePuterAuth instances). */
+  puterAuthState: PuterAuthState;
+  /** Puter auth error message. */
+  puterAuthError: string | null;
+  /** Trigger Puter sign-in (shared across all consumers). */
+  puterSignIn: () => Promise<void>;
 }
 
 const AIProviderContext = createContext<AIProviderState | null>(null);
@@ -38,6 +45,44 @@ const TIMEOUT_MS = 60_000;
 export function AIProviderProvider({ children }: { children: ReactNode }) {
   const [orConfig, setOrConfig] = useState<OpenRouterConfig | null>(() => loadOpenRouterConfig());
   const [remember, setRemember] = useState(() => getRememberPreference());
+  const [puterAuthState, setPuterAuthState] = useState<PuterAuthState>('checking');
+  const [puterAuthError, setPuterAuthError] = useState<string | null>(null);
+
+  // Shared Puter auth check — runs once on mount
+  useEffect(() => {
+    let attempts = 0;
+    const maxAttempts = 20;
+    const check = () => {
+      if (isPuterAvailable()) {
+        try {
+          setPuterAuthState(puter.auth.isSignedIn() ? 'signed-in' : 'signed-out');
+        } catch {
+          setPuterAuthState('signed-out');
+        }
+        return;
+      }
+      attempts++;
+      if (attempts >= maxAttempts) {
+        setPuterAuthState('unavailable');
+        return;
+      }
+      setTimeout(check, 100);
+    };
+    check();
+  }, []);
+
+  const puterSignIn = useCallback(async () => {
+    setPuterAuthState('signing-in');
+    setPuterAuthError(null);
+    try {
+      await puter.auth.signIn();
+      setPuterAuthState('signed-in');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setPuterAuthError(message);
+      setPuterAuthState('error');
+    }
+  }, []);
 
   // Determine active provider
   const provider: AIProvider = orConfig ? 'openrouter' : 'puter';
@@ -96,6 +141,9 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
       setOpenRouterKey,
       clearOpenRouterKey: clearOpenRouterKeyFn,
       remember,
+      puterAuthState,
+      puterAuthError,
+      puterSignIn,
     }}>
       {children}
     </AIProviderContext.Provider>

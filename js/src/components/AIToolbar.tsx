@@ -1,6 +1,5 @@
-import { useState, useCallback, useMemo, type FC } from 'react';
+import { useState, useCallback, type FC } from 'react';
 import { useAIProvider } from '../contexts/AIProviderContext';
-import { usePuterAuth } from '../hooks/usePuterAuth';
 import { useAIAction } from '../hooks/useAIAction';
 import { AIResultModal } from './AIResultModal';
 import { AISettings } from './AISettings';
@@ -60,27 +59,26 @@ Rules:
 type ModalType = 'document' | 'review' | 'search' | null;
 
 export const AIToolbar: FC<AIToolbarProps> = ({ graphContext, onNavigateToNode, nodeTitles }) => {
-  const { provider, ready } = useAIProvider();
-  const { authState, signIn } = usePuterAuth();
+  const { provider, puterAuthState, puterSignIn } = useAIProvider();
   const { loading, result, error, execute, clear } = useAIAction();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
 
-  // For OpenRouter, always ready. For Puter, need auth.
-  const isReady = provider === 'openrouter' || (ready && authState === 'signed-in');
+  // For OpenRouter, always ready. For Puter, need signed-in.
+  const isReady = provider === 'openrouter' || puterAuthState === 'signed-in';
 
   const requireAuth = useCallback(async (action: () => void) => {
     if (provider === 'openrouter') {
       action();
       return;
     }
-    if (authState === 'signed-in') {
+    if (puterAuthState === 'signed-in') {
       action();
-    } else if (authState === 'signed-out' || authState === 'error') {
-      await signIn();
+    } else if (puterAuthState === 'signed-out' || puterAuthState === 'error') {
+      await puterSignIn();
     }
-  }, [provider, authState, signIn]);
+  }, [provider, puterAuthState, puterSignIn]);
 
   const handleDocument = useCallback(() => {
     requireAuth(async () => {
@@ -138,7 +136,7 @@ export const AIToolbar: FC<AIToolbarProps> = ({ graphContext, onNavigateToNode, 
     : activeModal === 'search' ? 'Search Results'
     : '';
 
-  const isAuthing = provider === 'puter' && (authState === 'signing-in' || authState === 'checking');
+  const isAuthing = provider === 'puter' && (puterAuthState === 'signing-in' || puterAuthState === 'checking');
   const disableActions = isAuthing || loading || (!isReady && provider === 'puter');
 
   return (

@@ -1,7 +1,37 @@
 /** OpenRouter API client for browser-side AI calls. */
 
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const DEFAULT_MODEL = 'anthropic/claude-sonnet-4-6';
+const DEFAULT_MODEL = 'anthropic/claude-sonnet-4.6';
+
+export interface ModelOption {
+  id: string;
+  label: string;
+  tier: 'free' | 'budget' | 'standard' | 'premium';
+}
+
+/**
+ * Curated models known to perform well on UE Blueprint analysis.
+ * Ordered by tier (free → premium), then by quality within each tier.
+ */
+export const MODEL_OPTIONS: ModelOption[] = [
+  // Free — no cost at all
+  { id: 'meta-llama/llama-3.3-70b-instruct:free',            label: 'Llama 3.3 70B (free)',         tier: 'free' },
+  { id: 'qwen/qwen3-coder:free',                             label: 'Qwen3 Coder 480B (free)',      tier: 'free' },
+  { id: 'google/gemma-3-27b-it:free',                        label: 'Gemma 3 27B (free)',           tier: 'free' },
+  { id: 'mistralai/mistral-small-3.1-24b-instruct:free',     label: 'Mistral Small 3.1 (free)',     tier: 'free' },
+  // Budget — under $1/M input tokens
+  { id: 'openai/gpt-4.1-nano',                               label: 'GPT-4.1 Nano (~$0.10/M)',     tier: 'budget' },
+  { id: 'google/gemini-2.0-flash-001',                       label: 'Gemini 2.0 Flash (~$0.10/M)',  tier: 'budget' },
+  { id: 'openai/gpt-4o-mini',                                label: 'GPT-4o Mini (~$0.15/M)',       tier: 'budget' },
+  { id: 'google/gemini-2.5-flash',                           label: 'Gemini 2.5 Flash (~$0.30/M)',  tier: 'budget' },
+  { id: 'deepseek/deepseek-chat',                            label: 'DeepSeek V3 (~$0.32/M)',       tier: 'budget' },
+  { id: 'openai/gpt-4.1-mini',                               label: 'GPT-4.1 Mini (~$0.40/M)',      tier: 'budget' },
+  // Standard
+  { id: 'anthropic/claude-3.5-haiku',                        label: 'Claude 3.5 Haiku (~$0.80/M)',  tier: 'standard' },
+  { id: 'google/gemini-2.5-pro',                             label: 'Gemini 2.5 Pro (~$1.25/M)',    tier: 'standard' },
+  // Premium — best quality
+  { id: 'anthropic/claude-sonnet-4.6',                       label: 'Claude Sonnet 4.6 (~$3/M)',    tier: 'premium' },
+];
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
