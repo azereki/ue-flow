@@ -1,0 +1,9 @@
+# Cloudflare Pages configuration for ue-flow web testing
+# Deploy: npx wrangler pages deploy js/dist-pages --project-name ue-flow
+# Or connect GitHub repo in Cloudflare dashboard with these build settings.
+
+name = "ue-flow"
+pages_build_output_dir = "js/dist-pages"
+
+[pages_build_config]
+command = "npm install --prefix js && npm run build:pages --prefix js"
