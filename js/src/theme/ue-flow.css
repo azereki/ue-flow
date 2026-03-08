@@ -3107,6 +3107,31 @@
   flex-shrink: 0;
 }
 
+.ueflow-ai-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ueflow-ai-modal-action-btn {
+  background: none;
+  border: 1px solid var(--uf-subtle-border);
+  color: var(--uf-text-secondary);
+  padding: 3px 10px;
+  border-radius: var(--uf-radius-pill);
+  font-family: var(--uf-font-body);
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--uf-transition), border-color var(--uf-transition), background var(--uf-transition);
+}
+
+.ueflow-ai-modal-action-btn:hover {
+  color: var(--uf-text);
+  border-color: var(--uf-accent);
+  background: rgba(99, 102, 241, 0.08);
+}
+
 .ueflow-ai-modal-title {
   font-size: 13px;
   font-weight: 600;
