@@ -1,10 +1,3 @@
-/* ===== Root viewport containment ===== */
-html, body, #ue-flow-root {
-  height: 100%;
-  margin: 0;
-  overflow: hidden;
-}
-
 /* ===== @font-face — Self-hosted fonts (woff2) ===== */
 
 @font-face {
@@ -741,7 +734,7 @@ html, body, #ue-flow-root {
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100%;
+  height: 100vh;
   overflow: hidden;
   font-family: var(--uf-font-body);
 }
