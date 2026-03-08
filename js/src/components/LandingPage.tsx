@@ -16,6 +16,7 @@ const edgeTypes = { blueprintEdge: BlueprintEdge };
 
 interface LandingPageProps {
   onGraphParsed: (graphJSON: UEGraphJSON) => void;
+  onExploreDemoBlueprint?: () => void;
 }
 
 /* ---------- Hero demo (read-only interactive graph) ---------- */
@@ -160,9 +161,18 @@ const STEPS = [
   { step: '3', title: 'Explore', desc: 'Pan, zoom, inspect pins, and export. Share the link or download PNG.' },
 ];
 
+/* ---------- Full Blueprint showcase ---------- */
+
+const SHOWCASE_FEATURES = [
+  { label: 'Multiple Event Graphs', desc: 'EventGraph, ConstructionScript, and custom function graphs' },
+  { label: 'Sidebar Navigation', desc: 'Browse events, functions, variables, and components' },
+  { label: 'Tabbed Interface', desc: 'Open multiple graphs as tabs with breadcrumb navigation' },
+  { label: 'Variables & Structs', desc: 'Inspect replicated variables, delegates, and custom structs' },
+];
+
 /* ---------- Main landing page ---------- */
 
-export function LandingPage({ onGraphParsed }: LandingPageProps) {
+export function LandingPage({ onGraphParsed, onExploreDemoBlueprint }: LandingPageProps) {
   return (
     <div className="ueflow-landing">
       {/* Hero */}
@@ -178,6 +188,59 @@ export function LandingPage({ onGraphParsed }: LandingPageProps) {
           <a href="#try-it" className="ueflow-landing-cta">Try It Now</a>
         </div>
         <HeroDemo />
+      </section>
+
+      {/* Full Blueprint Showcase */}
+      <section className="ueflow-landing-section ueflow-landing-showcase">
+        <h2 className="ueflow-landing-h2">Full Blueprint Viewer</h2>
+        <p className="ueflow-landing-showcase-sub">
+          Not just single functions &mdash; explore entire Blueprints with the full multi-graph viewer.
+          Sidebar, tabs, variables, structs, and more.
+        </p>
+        <div className="ueflow-landing-showcase-card">
+          <div className="ueflow-landing-showcase-preview">
+            <div className="ueflow-landing-showcase-mockup">
+              <div className="ueflow-landing-showcase-sidebar-mock">
+                <div className="ueflow-landing-showcase-mock-title">BP_PlayerCharacter</div>
+                <div className="ueflow-landing-showcase-mock-section">
+                  <div className="ueflow-landing-showcase-mock-label">Events</div>
+                  <div className="ueflow-landing-showcase-mock-item">BeginPlay</div>
+                  <div className="ueflow-landing-showcase-mock-item">AnyDamage</div>
+                  <div className="ueflow-landing-showcase-mock-item">Tick</div>
+                </div>
+                <div className="ueflow-landing-showcase-mock-section">
+                  <div className="ueflow-landing-showcase-mock-label">Functions</div>
+                  <div className="ueflow-landing-showcase-mock-item">CalculateDamage</div>
+                  <div className="ueflow-landing-showcase-mock-item">HandleDeath</div>
+                </div>
+                <div className="ueflow-landing-showcase-mock-section">
+                  <div className="ueflow-landing-showcase-mock-label">Variables</div>
+                  <div className="ueflow-landing-showcase-mock-item ueflow-landing-showcase-mock-var">Health <span>Float</span></div>
+                  <div className="ueflow-landing-showcase-mock-item ueflow-landing-showcase-mock-var">Stamina <span>Float</span></div>
+                  <div className="ueflow-landing-showcase-mock-item ueflow-landing-showcase-mock-var">IsSprinting <span>Bool</span></div>
+                </div>
+              </div>
+              <div className="ueflow-landing-showcase-graph-mock">
+                <div className="ueflow-landing-showcase-graph-dots" />
+              </div>
+            </div>
+          </div>
+          <div className="ueflow-landing-showcase-info">
+            <ul className="ueflow-landing-showcase-list">
+              {SHOWCASE_FEATURES.map((f) => (
+                <li key={f.label} className="ueflow-landing-showcase-list-item">
+                  <strong>{f.label}</strong>
+                  <span>{f.desc}</span>
+                </li>
+              ))}
+            </ul>
+            {onExploreDemoBlueprint && (
+              <button className="ueflow-landing-cta ueflow-landing-showcase-btn" onClick={onExploreDemoBlueprint}>
+                Explore Demo Blueprint
+              </button>
+            )}
+          </div>
+        </div>
       </section>
 
       {/* Features */}
