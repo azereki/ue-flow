@@ -627,7 +627,7 @@ export function App({ graphJSON, multiGraphJSON }: AppProps) {
             className="ueflow-chat-fab"
             onClick={() => setSingleChatOpen(true)}
           >
-            &#9993; AI Chat
+            &#129302; AI Chat
           </button>
         )}
       </div>

@@ -21,7 +21,7 @@ export const TopBar: FC<TopBarProps> = ({ title, graphCount, functionCount, vari
             onClick={onToggleChat}
             title={chatOpen ? 'Close AI Chat' : 'Open AI Chat'}
           >
-            &#9993;
+            &#129302;
           </button>
         )}
       </span>
