@@ -4,6 +4,8 @@ interface Props {
   children: ReactNode;
   /** Use 100% instead of 100vw/100vh for embed containers */
   embedded?: boolean;
+  /** Called when an error is caught (e.g. for embed API onError callback) */
+  onError?: (error: Error) => void;
 }
 
 interface State {
@@ -20,6 +22,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('ue-flow render error:', error, info.componentStack);
+    this.props.onError?.(error);
   }
 
   render() {
