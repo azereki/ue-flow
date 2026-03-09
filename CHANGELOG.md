@@ -1,5 +1,42 @@
 # Changelog
 
+## [0.4.0] - 2026-03-08
+
+### Added
+
+- Add node alignment toolbar — align left/right/top/bottom/center, distribute horizontally/vertically, and straighten connections (Q key) when 2+ nodes selected
+- Add search panel (Ctrl+F) — full-text search across node titles, pin names, comment text, and pin values with click-to-navigate and cross-graph search in MultiGraphView
+- Add bookmarks panel (Ctrl+B) — save and restore named viewport locations with per-graph tracking and sessionStorage persistence
+- Add enhanced minimap — nodes colored by semantic type via `TYPE_COLORS`, interactive zooming and panning, transparent comment nodes
+- Add implicit type conversion system — `int→real`, `int→float`, `byte→int`, `float→real`, `name→string`, `text→string` promotions and UE object class hierarchy awareness (Actor→Pawn→Character, etc.)
+- Add enum registry with 8 common UE enums (EMovementMode, ECollisionChannel, EInputEvent, EBlendMode, ETraceTypeQuery, EObjectTypeQuery, ENetRole, ETextCommit) for dropdown pin editors and connection-time enum type validation
+- Add exec output single-connection rule — new exec output connections auto-replace existing ones (matches UE behavior), with `replaces` field in `ConnectionValidation` interface
+- Add reroute node support — double-click edges to insert `K2Node_Knot` routing dots via `insertRerouteNode()` GraphAPI method
+- Add node diagnostics system — error badges (red) for missing FunctionReference/EventReference/VariableReference, warning badges (yellow) for unreachable impure nodes, clock icon (⏱) on latent functions (Delay, etc.)
+- Add per-node annotations — speech bubble notes above node headers with inline editing, add/edit/remove via right-click context menu and `setNodeAnnotation()` GraphAPI method
+- Add copy-paste between graphs (Ctrl+C/V/X) — serializes selected nodes + interconnecting edges with automatic ID/GUID remapping on paste via `pasteNodes()` GraphAPI method
+- Add dynamic pin nodes — "+" button to add pins on K2Node_ExecutionSequence (Then outputs), K2Node_MakeArray (element inputs), K2Node_Select (option inputs), K2Node_CommutativeAssociativeBinaryOperator (operand inputs), K2Node_SwitchInteger (case outputs) via `addDynamicPin()`/`removeDynamicPin()` GraphAPI methods
+- Add struct registry with 12 common UE structs (FVector, FRotator, FTransform, FLinearColor, FVector2D, FHitResult, FTimerHandle, FKey, FGameplayTag, FGameplayTagContainer, FColor, FLatentActionInfo) with Break/Make node palette entries that auto-generate pins from struct field definitions
+- Add advanced pin editors — enum dropdown populated from enum registry, rotator struct editor (Pitch/Yaw/Roll fields), enhanced byte pin handling (number input for plain bytes, dropdown for enum bytes)
+- Add context menu — right-click nodes for Duplicate, Delete, Add Note/Edit Note; right-click edges for Delete Connection
+- Add node palette — Tab key or right-click canvas opens searchable palette with 2,700+ functions from signature DB plus special entries for events, flow control, variables, casting (8 common classes), reroute, and Break/Make structs
+- Add unreachable node detection — BFS from exec roots (events, function entries) marks disconnected impure nodes, `traceExecPath()` for downstream exec chain analysis
+- Add cast node support — 8 palette entries (Cast To Actor/Pawn/Character/PlayerController/GameModeBase/PlayerState/ActorComponent/Widget) with auto-generated pins (Object input, exec in/out, Cast Failed, As [Class] output)
+- Add Map pin value type — `valueType` field on `UEPin` for Map container pins, tooltip shows `Map<Key, Value>` format
+- Add `alignment.ts` utility with pure functions for `alignNodes()`, `distributeNodes()`, and `straightenConnection()`
+- Add `type-conversions.ts` with `TYPE_PROMOTIONS` map, `OBJECT_HIERARCHY` for ~20 UE classes, `canImplicitlyConvert()`, and `isObjectSubclass()`
+- Add `exec-graph.ts` with `findExecRoots()`, `findReachableNodes()` (BFS with data dependency tracking), and `traceExecPath()`
+- Add `clipboard.ts` with `serializeSelection()` and `deserializeClipboard()` (ID/GUID remapping)
+- Add `node-diagnostics.ts` with `diagnoseNode()` returning severity-leveled diagnostics
+- Add `dynamic-pins.ts` with `DYNAMIC_PIN_CLASSES` map, `generateNextPin()`, and `canRemovePin()`
+- Add 7 new test files: alignment (7 tests), type-conversions (14 tests), exec-graph (3 tests), struct-registry (7 tests), connection-validator additions (5 tests) — total now 223 Vitest tests across 14 test files
+
+### Changed
+
+- Refactor `addEdge()` in GraphAPI to use centralized `canConnect()` validator with exec output auto-replacement support
+- Enhance `canConnect()` in connection-validator with implicit type conversion checks (bidirectional) and enum subCategoryObject validation
+- Upgrade `PinValueEditor` with enum dropdown support via enum registry, rotator struct field editor, and byte pin enum detection
+
 ## [0.3.0] - 2026-03-08
 
 ### Added
@@ -137,6 +174,7 @@ _First release._
 - Move Components section to top of sidebar for default layout ([`0082ea8`][0082ea8])
 - Reduce segment button padding and field label min-width for compact details panel ([`0082ea8`][0082ea8])
 
+[0.4.0]: https://github.com/azereki/ue-flow/releases/tag/v0.4.0
 [0.3.0]: https://github.com/azereki/ue-flow/releases/tag/v0.3.0
 [0.2.0]: https://github.com/azereki/ue-flow/releases/tag/v0.2.0
 [0.1.0]: https://github.com/azereki/ue-flow/releases/tag/v0.1.0

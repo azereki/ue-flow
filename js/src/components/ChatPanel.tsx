@@ -24,9 +24,15 @@ const GENERATE_PROMPTS = [
   'Build a simple timer',
 ];
 
+const COMMAND_PROMPTS = [
+  'Delete the Print String node',
+  'Connect BeginPlay to Delay',
+  'Set Duration to 3.0',
+];
+
 export const ChatPanel: FC<ChatPanelProps> = ({ graphContext, onClose, floating, selectedNodeTitle, onAcceptGraph }) => {
   const { ready } = useAIProvider();
-  const { messages, isStreaming, error, sendMessage, clearChat, generatedGraph, clearGeneratedGraph } = useAIChat(graphContext, selectedNodeTitle);
+  const { messages, isStreaming, error, sendMessage, clearChat, generatedGraph, clearGeneratedGraph, lastCommandResult } = useAIChat(graphContext, selectedNodeTitle);
 
   const suggestedPrompts = useMemo(() => {
     if (selectedNodeTitle) {
@@ -36,7 +42,7 @@ export const ChatPanel: FC<ChatPanelProps> = ({ graphContext, onClose, floating,
         `Trace execution from ${selectedNodeTitle}`,
       ];
     }
-    return [...STATIC_PROMPTS, ...GENERATE_PROMPTS];
+    return [...STATIC_PROMPTS, ...GENERATE_PROMPTS, ...COMMAND_PROMPTS];
   }, [selectedNodeTitle]);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);

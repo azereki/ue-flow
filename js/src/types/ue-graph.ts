@@ -19,6 +19,8 @@ export interface UEPin {
   advancedView: boolean;
   description?: string;
   pinSubCategoryMemberReference?: string;
+  /** For Map container pins: the value type of the map. */
+  valueType?: { category: PinCategory; subCategory?: string; subCategoryObject?: string };
 }
 
 export interface UENode {

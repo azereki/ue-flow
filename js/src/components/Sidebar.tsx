@@ -8,24 +8,38 @@ interface SidebarProps {
   onNavigateToGraph: (graphName: string, focusTitle?: string) => void;
   onShowDetails?: (item: DetailsItem) => void;
   onOpenSpecialTab?: (name: string, type: 'datatable' | 'struct') => void;
+  onCreateVariable?: (name: string, type: string) => void;
+  onCreateEvent?: (name: string) => void;
+  onCreateFunction?: (name: string) => void;
 }
 
 interface SectionProps {
   title: string;
   count: number;
   defaultOpen?: boolean;
+  onAdd?: () => void;
   children: React.ReactNode;
 }
 
-const Section: FC<SectionProps> = ({ title, count, defaultOpen = true, children }) => {
+const Section: FC<SectionProps> = ({ title, count, defaultOpen = true, onAdd, children }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="ueflow-sidebar-section">
-      <button className="ueflow-section-header" aria-expanded={open} onClick={() => setOpen(!open)}>
-        <span className="ueflow-section-title">{title}</span>
-        <span className="ueflow-section-count">{count}</span>
-        <span className={`ueflow-section-arrow ${open ? '' : 'ueflow-collapsed'}`}>&#9660;</span>
-      </button>
+      <div className="ueflow-section-header-row">
+        <button className="ueflow-section-header" aria-expanded={open} onClick={() => setOpen(!open)}>
+          <span className="ueflow-section-title">{title}</span>
+          <span className="ueflow-section-count">{count}</span>
+          <span className={`ueflow-section-arrow ${open ? '' : 'ueflow-collapsed'}`}>&#9660;</span>
+        </button>
+        {onAdd && (
+          <button
+            className="ueflow-section-add-btn"
+            onClick={(e) => { e.stopPropagation(); onAdd(); }}
+            title={`Add ${title.toLowerCase().slice(0, -1)}`}
+            aria-label={`Add ${title.toLowerCase().slice(0, -1)}`}
+          >+</button>
+        )}
+      </div>
       {open && <div className="ueflow-section-body">{children}</div>}
     </div>
   );
@@ -142,7 +156,7 @@ function findGraphForEvent(graphs: Record<string, { nodes: Array<{ title: string
   return 'EventGraph';
 }
 
-export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onShowDetails, onOpenSpecialTab }) => {
+export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onShowDetails, onOpenSpecialTab, onCreateVariable, onCreateEvent, onCreateFunction }) => {
   const [search, setSearch] = useState('');
   const deferredSearch = useDeferredValue(search);
   const { events, functions, variables, structs, delegates, dataTables, graphs, components, macros } = multiGraph;
@@ -242,7 +256,7 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
 
       {/* Events */}
       {eventNodes.length > 0 && (
-        <Section title="EVENTS" count={eventNodes.length}>
+        <Section title="EVENTS" count={eventNodes.length} onAdd={onCreateEvent ? () => { const name = prompt('Event name:'); if (name) onCreateEvent(name); } : undefined}>
           <TruncatedList items={eventNodes.map((evt: SidebarEvent) => {
             const params = (evt.params || evt.inputs || [])
               .map(toParamObj)
@@ -273,7 +287,7 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
 
       {/* Functions */}
       {filteredFunctions.length > 0 && (
-        <Section title="FUNCTIONS" count={filteredFunctions.length}>
+        <Section title="FUNCTIONS" count={filteredFunctions.length} onAdd={onCreateFunction ? () => { const name = prompt('Function name:'); if (name) onCreateFunction(name); } : undefined}>
           <TruncatedList items={Array.from(funcGroups.entries()).flatMap(([category, fns]) => [
             <div key={`cat-${category}`} className="ueflow-category-label">{category}</div>,
             ...fns.map((fn: SidebarFunction) => {
@@ -328,7 +342,7 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
 
       {/* Variables */}
       {filteredVariables.length > 0 && (
-        <Section title="VARIABLES" count={filteredVariables.length} defaultOpen={filteredVariables.length <= 30}>
+        <Section title="VARIABLES" count={filteredVariables.length} defaultOpen={filteredVariables.length <= 30} onAdd={onCreateVariable ? () => { const name = prompt('Variable name:'); if (!name) return; const type = prompt('Variable type (e.g. Boolean, Float, Integer, String, Vector):') ?? 'Boolean'; onCreateVariable(name, type); } : undefined}>
           <TruncatedList items={Array.from(varGroups.entries()).flatMap(([category, vars]) => [
             ...(varGroups.size > 1 ? [<div key={`cat-${category}`} className="ueflow-category-label">{category}</div>] : []),
             ...vars.map((v: SidebarVariable) => {

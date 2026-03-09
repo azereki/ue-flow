@@ -10,6 +10,7 @@ import {
   useEdgesState,
   useReactFlow,
   useStore,
+  type Connection,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './theme/ue-flow.css';
@@ -33,7 +34,6 @@ import { zoomSelector } from './utils/selectors';
 import { useTabNavigation, parseTabName } from './hooks/useTabNavigation';
 import { DataTableView } from './components/DataTableView';
 import { StructView } from './components/StructView';
-import { useUndoRedo } from './hooks/useUndoRedo';
 import { LandingPage } from './components/LandingPage';
 import { ChatPanel } from './components/ChatPanel';
 import { NodeExplainer } from './components/NodeExplainer';
@@ -41,6 +41,19 @@ import { DEMO_MULTIGRAPH } from './data/demo-multigraph';
 import { serializeGraphContext, serializeMultiGraphContext } from './utils/graph-context';
 import { offsetGraphPositions } from './utils/ai-generate';
 import { useIsMobile } from './hooks/useIsMobile';
+import { GraphAPI } from './api/graph-api';
+import { GraphAPIProvider } from './contexts/GraphAPIContext';
+import { canConnect } from './api/connection-validator';
+import { ContextMenu, type ContextMenuAction } from './components/ContextMenu';
+import { NodePalette } from './components/NodePalette';
+import { AlignToolbar } from './components/AlignToolbar';
+import { SearchPanel } from './components/SearchPanel';
+import { BookmarkPanel } from './components/BookmarkPanel';
+import { loadSignatureDB } from './utils/signature-db';
+import { alignNodes, distributeNodes, straightenConnection, type AlignAxis, type DistributeAxis } from './utils/alignment';
+import { serializeSelection, deserializeClipboard } from './utils/clipboard';
+import { useSearch } from './hooks/useSearch';
+import { useBookmarks } from './hooks/useBookmarks';
 
 const nodeTypes = {
   blueprintNode: BlueprintNode,
@@ -101,6 +114,16 @@ function PinBodyProvider({ children }: { children: React.ReactNode }) {
   return <PinBodyContext.Provider value={zoom >= 0.15}>{children}</PinBodyContext.Provider>;
 }
 
+/** Exposes screenToFlowPosition via a ref for the parent component. */
+function ExposeScreenToFlow({ screenToFlowRef }: { screenToFlowRef: React.MutableRefObject<((pos: { x: number; y: number }) => { x: number; y: number }) | null> }) {
+  const { screenToFlowPosition } = useReactFlow();
+  useEffect(() => {
+    screenToFlowRef.current = screenToFlowPosition;
+    return () => { screenToFlowRef.current = null; };
+  }, [screenToFlowPosition, screenToFlowRef]);
+  return null;
+}
+
 export interface DisplayOptions {
   showControls?: boolean;
   showMiniMap?: boolean;
@@ -108,56 +131,57 @@ export interface DisplayOptions {
   showZoomIndicator?: boolean;
 }
 
-export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange, embedded, displayOptions, onReady }: { graphJSON: UEGraphJSON; focusNodeTitle?: string | null; onSelectedNodeChange?: (title: string | null) => void; embedded?: boolean; displayOptions?: DisplayOptions; onReady?: () => void }) {
+export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange, embedded, displayOptions, onReady, graphAPI: externalGraphAPI }: { graphJSON: UEGraphJSON; focusNodeTitle?: string | null; onSelectedNodeChange?: (title: string | null) => void; embedded?: boolean; displayOptions?: DisplayOptions; onReady?: () => void; graphAPI?: GraphAPI }) {
   const initial = useMemo(() => graphJsonToFlow(graphJSON), [graphJSON]);
   const [nodes, setNodes, onNodesChange] = useNodesState<AnyFlowNode>(initial.nodes);
   // useEdgesState is kept untyped because its OnEdgesChange generic is contravariant —
   // React Flow's internal edge changes produce base Edge objects which can't satisfy the
   // narrower BlueprintFlowEdge constraint at the handler level. We cast at usage sites.
-  const [edgesRaw, , onEdgesChange] = useEdgesState(initial.edges);
+  const [edgesRaw, setEdgesRaw, onEdgesChange] = useEdgesState(initial.edges);
   const edges = edgesRaw as BlueprintFlowEdge[];
-  const { captureSnapshot } = useUndoRedo(nodes, setNodes);
 
-  // Issue 3: inject __setPinValue callback into each BlueprintNode's data so that
-  // PinValueEditor edits propagate back to the node store.  flowToT3D() reads
-  // data.pins[i].defaultValue, so we patch that field in-place on the node.
-  const setPinValue = useCallback((nodeId: string, pinId: string, value: string) => {
-    setNodes((prev) =>
-      prev.map((n) => {
-        if (n.id !== nodeId || n.type !== 'blueprintNode') return n;
-        const bp = n as BlueprintFlowNode;
-        const updatedPins = bp.data.pins.map((p) =>
-          p.id === pinId ? { ...p, defaultValue: value } : p,
-        );
-        return { ...bp, data: { ...bp.data, pins: updatedPins } };
-      }),
+  // Stable refs for GraphAPI access
+  const nodesRef = useRef(nodes);
+  nodesRef.current = nodes;
+  const edgesRef = useRef(edges);
+  edgesRef.current = edges;
+
+  // Create or use external GraphAPI
+  const graphAPIRef = useRef<GraphAPI | null>(externalGraphAPI ?? null);
+  if (!graphAPIRef.current) {
+    graphAPIRef.current = new GraphAPI(
+      () => nodesRef.current,
+      () => edgesRef.current,
+      setNodes as (updater: (nodes: AnyFlowNode[]) => AnyFlowNode[]) => void,
+      setEdgesRaw as unknown as (updater: (edges: BlueprintFlowEdge[]) => BlueprintFlowEdge[]) => void,
     );
-  }, [setNodes]);
+  }
+  const graphAPI = graphAPIRef.current;
 
-  // Stable ref wrapper: the callback identity never changes, so nodesWithCallback
-  // can bail out early for nodes that already have it attached — avoids re-spreading
-  // every node on every drag frame.
-  const setPinValueRef = useRef(setPinValue);
-  setPinValueRef.current = setPinValue;
+  // Eagerly load signature DB for node palette
+  useEffect(() => { loadSignatureDB(); }, []);
+
+  // Pin value editing via GraphAPI
+  const setPinValueRef = useRef((nodeId: string, pinId: string, value: string) => {
+    graphAPI.setPinValue(nodeId, pinId, value);
+  });
   const stableSetPinValue = useCallback(
     (nodeId: string, pinId: string, value: string) => { setPinValueRef.current(nodeId, pinId, value); },
     [],
   );
 
   // Attach __setPinValue to every blueprintNode's data.
-  // We do this as a derived value from nodes so nodes without the callback always get it.
   const nodesWithCallback = useMemo(() =>
     nodes.map((n) => {
       if (n.type !== 'blueprintNode') return n;
       const bp = n as BlueprintFlowNode;
-      if (bp.data.__setPinValue === stableSetPinValue) return n; // already attached, skip allocation
+      if (bp.data.__setPinValue === stableSetPinValue) return n;
       return { ...bp, data: { ...bp.data, __setPinValue: stableSetPinValue } };
     }),
     [nodes, stableSetPinValue],
   );
 
   // Resolve focus title to node position using stable initial data
-  // Handles mismatches: sidebar has "BeginPlay", graph has "Event ReceiveBeginPlay"
   const focusNode = useMemo(() => {
     if (!focusNodeTitle) return undefined;
     const q = focusNodeTitle.toLowerCase();
@@ -178,12 +202,8 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
   // Comment group-drag: when a comment node is dragged, move all enclosed nodes with it.
   const dragContext = useRef<{ childIds: Set<string>; commentId: string; lastPos: { x: number; y: number } } | null>(null);
 
-  // Ref to current nodes so drag handlers read latest state without closure staleness
-  const nodesRef = useRef(nodes);
-  nodesRef.current = nodes;
-
   const handleNodeDragStart = useCallback((_: React.MouseEvent, node: AnyFlowNode) => {
-    captureSnapshot();
+    graphAPI.captureSnapshot('drag');
     if (node.type !== 'commentNode') return;
     const cx = node.position.x;
     const cy = node.position.y;
@@ -201,8 +221,6 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
       }
     }
     dragContext.current = { childIds, commentId: node.id, lastPos: { x: cx, y: cy } };
-    // Elevate comment above non-children (z 500 + 1000 from elevateNodesOnSelect = 1500),
-    // and children even higher (z 2000) so they always render on top of the comment.
     setNodes((prev) =>
       prev.map((n) => {
         if (n.id === node.id) return { ...n, zIndex: 500 };
@@ -210,7 +228,7 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
         return n;
       }),
     );
-  }, [setNodes, captureSnapshot]);
+  }, [setNodes, graphAPI]);
 
   const handleNodeDrag = useCallback((_: React.MouseEvent, node: AnyFlowNode) => {
     const ctx = dragContext.current;
@@ -231,7 +249,6 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
   const handleNodeDragStop = useCallback(() => {
     const ctx = dragContext.current;
     if (ctx) {
-      // Reset comment and child z-index back to defaults after drag
       setNodes((prev) =>
         prev.map((n) => {
           if (n.id === ctx.commentId) return { ...n, zIndex: -2000 };
@@ -243,14 +260,284 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
     dragContext.current = null;
   }, [setNodes]);
 
-  // Right-click pan through nodes: React Flow adds the "nopan" class to all draggable
-  // node wrappers, and d3-zoom's filter rejects mousedown events originating from
-  // inside .nopan. There's a bypass for middle-click but not right-click.
-  // Fix: intercept mousedown (what d3-zoom listens for) on nodes in capture phase,
-  // then re-dispatch on .react-flow__pane (outside .nopan) so the filter passes.
-  // d3-zoom binds mousemove/mouseup on event.view (window), so view must be set.
-  // Track which .react-flow instance is being right-click-panned so mouseup
-  // can clean up the correct one (supports multiple embeds on the same page).
+  // ─── Context Menu & Node Palette ────────────────────────────────────────────
+
+  const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [bookmarksOpen, setBookmarksOpen] = useState(false);
+  const { query: searchQuery, setQuery: setSearchQuery, results: searchResults, clearSearch } = useSearch(undefined, graphJSON);
+  const { bookmarks, addBookmark, removeBookmark } = useBookmarks();
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId?: string; edgeId?: string } | null>(null);
+  const [nodePalette, setNodePalette] = useState<{ x: number; y: number; graphX: number; graphY: number } | null>(null);
+  // screenToFlowPosition needs to be called from inside ReactFlow's context.
+  // We store a ref that gets set by a child component.
+  const screenToFlowRef = useRef<((pos: { x: number; y: number }) => { x: number; y: number }) | null>(null);
+
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    // Prevent default browser context menu
+    e.preventDefault();
+
+    // Check if right-clicked on a node
+    const nodeEl = (e.target as HTMLElement).closest('.react-flow__node');
+    const edgeEl = (e.target as HTMLElement).closest('.react-flow__edge');
+
+    if (nodeEl) {
+      const nodeId = nodeEl.getAttribute('data-id');
+      if (nodeId) {
+        setContextMenu({ x: e.clientX, y: e.clientY, nodeId });
+        return;
+      }
+    }
+    if (edgeEl) {
+      // Extract edge ID from the SVG element's data-testid
+      const edgeId = edgeEl.getAttribute('data-testid')?.replace('rf__edge-', '') ?? undefined;
+      if (edgeId) {
+        setContextMenu({ x: e.clientX, y: e.clientY, edgeId });
+        return;
+      }
+    }
+
+    // Right-click on empty canvas → show node palette
+    if (!embedded && screenToFlowRef.current) {
+      const flowPos = screenToFlowRef.current({ x: e.clientX, y: e.clientY });
+      setNodePalette({ x: e.clientX, y: e.clientY, graphX: flowPos.x, graphY: flowPos.y });
+    }
+  }, [embedded]);
+
+  const contextMenuActions = useMemo((): ContextMenuAction[] => {
+    if (!contextMenu) return [];
+    if (contextMenu.nodeId) {
+      const nodeId = contextMenu.nodeId!;
+      const node = nodesRef.current.find((n) => n.id === nodeId);
+      const hasAnnotation = node?.type === 'blueprintNode' && (node as BlueprintFlowNode).data.annotation;
+      return [
+        { label: 'Duplicate', shortcut: 'Ctrl+D', onClick: () => graphAPI.duplicateNodes([nodeId]) },
+        {
+          label: hasAnnotation ? 'Edit Note' : 'Add Note',
+          onClick: () => {
+            const text = prompt('Note:', hasAnnotation ? String(hasAnnotation) : '');
+            if (text !== null) graphAPI.setNodeAnnotation(nodeId, text);
+          },
+        },
+        { label: 'Delete', shortcut: 'Del', danger: true, onClick: () => graphAPI.deleteNodes([nodeId]) },
+      ];
+    }
+    if (contextMenu.edgeId) {
+      return [
+        { label: 'Delete Connection', shortcut: 'Del', danger: true, onClick: () => graphAPI.deleteEdges([contextMenu.edgeId!]) },
+      ];
+    }
+    return [];
+  }, [contextMenu, graphAPI]);
+
+  const handlePaletteSelect = useCallback((entry: { label: string; nodeClass: string; memberName?: string; memberParent?: string }) => {
+    if (!nodePalette) return;
+    if (entry.memberName && entry.memberParent) {
+      graphAPI.addNodeFromSignature(entry.memberName, { x: nodePalette.graphX, y: nodePalette.graphY });
+    } else {
+      graphAPI.addNode({
+        nodeClass: entry.nodeClass,
+        title: entry.label,
+        position: { x: nodePalette.graphX, y: nodePalette.graphY },
+      });
+    }
+    setNodePalette(null);
+  }, [nodePalette, graphAPI]);
+
+  // ─── Alignment ─────────────────────────────────────────────────────────────
+
+  const getSelectedRects = useCallback(() => {
+    const nodes = nodesRef.current;
+    return selectedNodeIds
+      .map((id) => {
+        const n = nodes.find((node) => node.id === id);
+        if (!n || n.type === 'commentNode') return null;
+        return { id: n.id, x: n.position.x, y: n.position.y, width: n.initialWidth ?? 160, height: n.initialHeight ?? 80 };
+      })
+      .filter(Boolean) as Array<{ id: string; x: number; y: number; width: number; height: number }>;
+  }, [selectedNodeIds]);
+
+  const handleAlign = useCallback((axis: AlignAxis) => {
+    const rects = getSelectedRects();
+    if (rects.length < 2) return;
+    graphAPI.captureSnapshot('align');
+    const moves = alignNodes(rects, axis);
+    graphAPI.moveNodes(moves);
+  }, [getSelectedRects, graphAPI]);
+
+  const handleDistribute = useCallback((axis: DistributeAxis) => {
+    const rects = getSelectedRects();
+    if (rects.length < 3) return;
+    graphAPI.captureSnapshot('distribute');
+    const moves = distributeNodes(rects, axis);
+    graphAPI.moveNodes(moves);
+  }, [getSelectedRects, graphAPI]);
+
+  const handleStraighten = useCallback(() => {
+    const rects = getSelectedRects();
+    if (rects.length !== 2) return;
+    graphAPI.captureSnapshot('straighten');
+    const moves = straightenConnection(rects[0], rects[1]);
+    graphAPI.moveNodes(moves);
+  }, [getSelectedRects, graphAPI]);
+
+  // ─── Reroute insertion (double-click on edge) ──────────────────────────────
+
+  const handleEdgeDoubleClick = useCallback((_: React.MouseEvent, edge: BlueprintFlowEdge) => {
+    if (embedded || !screenToFlowRef.current) return;
+    // Insert reroute at mouse position (approximate: use edge midpoint as fallback)
+    const sourceNode = nodesRef.current.find((n) => n.id === edge.source);
+    const targetNode = nodesRef.current.find((n) => n.id === edge.target);
+    if (!sourceNode || !targetNode) return;
+    const midX = (sourceNode.position.x + targetNode.position.x) / 2;
+    const midY = (sourceNode.position.y + targetNode.position.y) / 2;
+    graphAPI.insertRerouteNode(edge.id, { x: midX, y: midY });
+  }, [embedded, graphAPI]);
+
+  // ─── Connection Drawing (Layer 2) ───────────────────────────────────────────
+
+  const handleConnect = useCallback((connection: Connection) => {
+    if (!connection.source || !connection.target || !connection.sourceHandle || !connection.targetHandle) return;
+    // Find the pin names from handle IDs
+    const sourceNode = nodesRef.current.find((n) => n.id === connection.source);
+    const targetNode = nodesRef.current.find((n) => n.id === connection.target);
+    if (!sourceNode || !targetNode) return;
+    if (sourceNode.type !== 'blueprintNode' || targetNode.type !== 'blueprintNode') return;
+    const srcPin = (sourceNode as BlueprintFlowNode).data.pins.find((p) => p.id === connection.sourceHandle);
+    const tgtPin = (targetNode as BlueprintFlowNode).data.pins.find((p) => p.id === connection.targetHandle);
+    if (!srcPin || !tgtPin) return;
+    graphAPI.addEdge(connection.source, srcPin.name, connection.target, tgtPin.name);
+  }, [graphAPI]);
+
+  const handleIsValidConnection = useCallback((connection: Connection) => {
+    if (!connection.source || !connection.target || !connection.sourceHandle || !connection.targetHandle) return false;
+    const sourceNode = nodesRef.current.find((n) => n.id === connection.source);
+    const targetNode = nodesRef.current.find((n) => n.id === connection.target);
+    if (!sourceNode || !targetNode) return false;
+    if (sourceNode.type !== 'blueprintNode' || targetNode.type !== 'blueprintNode') return false;
+    const srcPin = (sourceNode as BlueprintFlowNode).data.pins.find((p) => p.id === connection.sourceHandle);
+    const tgtPin = (targetNode as BlueprintFlowNode).data.pins.find((p) => p.id === connection.targetHandle);
+    if (!srcPin || !tgtPin) return false;
+    const result = canConnect(srcPin, tgtPin, connection.source, connection.target, edgesRef.current);
+    return result.valid;
+  }, []);
+
+  // ─── Keyboard Shortcuts ─────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (embedded) return;
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+      // Ctrl+F — open search
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        setSearchOpen((prev) => !prev);
+        return;
+      }
+
+      // Ctrl+B — toggle bookmarks
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault();
+        setBookmarksOpen((prev) => !prev);
+        return;
+      }
+
+      // Ctrl+C — copy selected nodes
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        const ids = graphAPI.getSelectedNodeIds();
+        if (ids.length > 0) {
+          const json = serializeSelection(ids, nodesRef.current, edgesRef.current);
+          navigator.clipboard?.writeText(json).catch(() => {
+            sessionStorage.setItem('ueflow-clipboard', json);
+          });
+          sessionStorage.setItem('ueflow-clipboard', json);
+        }
+        return;
+      }
+
+      // Ctrl+V — paste nodes
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        e.preventDefault();
+        const pasteFromText = (text: string) => {
+          if (!screenToFlowRef.current) return;
+          const center = screenToFlowRef.current({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+          const result = deserializeClipboard(text, center);
+          if (result) graphAPI.pasteNodes(result.nodes, result.edges);
+        };
+        navigator.clipboard?.readText()
+          .then(pasteFromText)
+          .catch(() => {
+            const fallback = sessionStorage.getItem('ueflow-clipboard');
+            if (fallback) pasteFromText(fallback);
+          });
+        return;
+      }
+
+      // Ctrl+X — cut selected nodes
+      if ((e.ctrlKey || e.metaKey) && e.key === 'x') {
+        const ids = graphAPI.getSelectedNodeIds();
+        if (ids.length > 0) {
+          const json = serializeSelection(ids, nodesRef.current, edgesRef.current);
+          navigator.clipboard?.writeText(json).catch(() => {
+            sessionStorage.setItem('ueflow-clipboard', json);
+          });
+          sessionStorage.setItem('ueflow-clipboard', json);
+          graphAPI.deleteNodes(ids);
+        }
+        return;
+      }
+
+      // Ctrl+Z / Ctrl+Shift+Z — undo/redo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) graphAPI.redo();
+        else graphAPI.undo();
+        return;
+      }
+
+      // Delete / Backspace — delete selected
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        const selectedNodeIds = graphAPI.getSelectedNodeIds();
+        const selectedEdgeIds = graphAPI.getSelectedEdgeIds();
+        if (selectedNodeIds.length > 0) graphAPI.deleteNodes(selectedNodeIds);
+        else if (selectedEdgeIds.length > 0) graphAPI.deleteEdges(selectedEdgeIds);
+        return;
+      }
+
+      // Ctrl+D — duplicate selected
+      if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+        e.preventDefault();
+        const selectedNodeIds = graphAPI.getSelectedNodeIds();
+        if (selectedNodeIds.length > 0) graphAPI.duplicateNodes(selectedNodeIds);
+        return;
+      }
+
+      // Q — straighten selected connection
+      if (e.key === 'q' || e.key === 'Q') {
+        handleStraighten();
+        return;
+      }
+
+      // Tab — open node palette (only when not in an embedded/showcase context)
+      if (e.key === 'Tab' && screenToFlowRef.current) {
+        e.preventDefault();
+        // Open palette at center of viewport
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const flowPos = screenToFlowRef.current({ x: vw / 2, y: vh / 2 });
+        setNodePalette({ x: vw / 2 - 150, y: vh / 2 - 200, graphX: flowPos.x, graphY: flowPos.y });
+        return;
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [embedded, graphAPI, handleStraighten]);
+
+  // ─── Right-click pan through nodes ──────────────────────────────────────────
+
   const rpanTarget = useRef<Element | null>(null);
 
   useEffect(() => {
@@ -259,7 +546,6 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
     const onMouseDown = (e: MouseEvent) => {
       if (e.button !== 2) return;
       if ((e as unknown as Record<string, unknown>)[BYPASS]) return;
-      // Scope to the closest .react-flow ancestor (not document.querySelector)
       const rf = (e.target as HTMLElement).closest('.react-flow');
       if (!rf) return;
       const node = (e.target as HTMLElement).closest('.react-flow__node');
@@ -268,12 +554,9 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
       e.stopPropagation();
       e.preventDefault();
 
-      // Safety: disable pointer-events on nodes so mousemove reaches pane
       rf.classList.add('ueflow-rpan');
       rpanTarget.current = rf;
 
-      // Re-dispatch on the pane — event.target will be the pane (not inside .nopan)
-      // and event.view must be window so d3-zoom can bind mousemove/mouseup there
       const pane = rf.querySelector('.react-flow__pane');
       if (pane) {
         const synth = new MouseEvent('mousedown', {
@@ -310,6 +593,7 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
   }, []);
 
   const handleSelectionChange = useCallback(({ nodes: selectedNodes }: { nodes: AnyFlowNode[] }) => {
+    setSelectedNodeIds(selectedNodes.map((n) => n.id));
     if (!onSelectedNodeChange) return;
     if (selectedNodes.length === 1) {
       const n = selectedNodes[0];
@@ -320,48 +604,115 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
   }, [onSelectedNodeChange]);
 
   return (
-    <div style={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }}>
-      <ReactFlow
-        nodes={nodesWithCallback}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onSelectionChange={handleSelectionChange}
-        onNodeDragStart={handleNodeDragStart}
-        onNodeDrag={handleNodeDrag}
-        onNodeDragStop={handleNodeDragStop}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        colorMode="dark"
-        onlyRenderVisibleElements
-        elevateNodesOnSelect
-        nodesConnectable={false}
-        panOnDrag={[1, 2]}
-        selectionOnDrag
-        selectionMode={SelectionMode.Partial}
-        minZoom={0.05}
-        maxZoom={4}
-        proOptions={{ hideAttribution: true }}
-        aria-label="Blueprint graph"
-      >
-        <PinBodyProvider>
-          <FitViewOnMount focusNode={focusNode} onReady={onReady} />
-          {!embedded && <ExposeGlobalFitView />}
-          <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.025)" gap={20} />
-          <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.05)" gap={100} />
-          {displayOptions?.showControls !== false && <Controls />}
-          {displayOptions?.showMiniMap !== false && <MiniMap nodeColor={(node) => {
-            const t = (node as AnyFlowNode).type === 'blueprintNode'
-              ? ((node as BlueprintFlowNode).data.ueType ?? '')
-              : 'comment';
-            return TYPE_COLORS[t] ?? '#2a2d37';
-          }} maskColor="rgba(0, 0, 0, 0.7)" />}
-          {displayOptions?.showZoomIndicator !== false && <ZoomIndicator />}
-        </PinBodyProvider>
-      </ReactFlow>
-      <div className="ueflow-watermark">BLUEPRINT</div>
-      {displayOptions?.showExportToolbar !== false && <ExportToolbar nodes={nodesWithCallback} edges={edges} />}
-    </div>
+    <GraphAPIProvider value={graphAPI}>
+      <div style={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }}>
+        <ReactFlow
+          nodes={nodesWithCallback}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onSelectionChange={handleSelectionChange}
+          onNodeDragStart={handleNodeDragStart}
+          onNodeDrag={handleNodeDrag}
+          onNodeDragStop={handleNodeDragStop}
+          onConnect={embedded ? undefined : handleConnect}
+          isValidConnection={embedded ? undefined : handleIsValidConnection}
+          onEdgeDoubleClick={embedded ? undefined : handleEdgeDoubleClick as unknown as (event: React.MouseEvent, edge: { id: string }) => void}
+          onContextMenu={embedded ? undefined : handleContextMenu}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          colorMode="dark"
+          onlyRenderVisibleElements
+          elevateNodesOnSelect
+          nodesConnectable={!embedded}
+          panOnDrag={[1, 2]}
+          selectionOnDrag
+          selectionMode={SelectionMode.Partial}
+          minZoom={0.05}
+          maxZoom={4}
+          proOptions={{ hideAttribution: true }}
+          aria-label="Blueprint graph"
+        >
+          <PinBodyProvider>
+            <FitViewOnMount focusNode={focusNode} onReady={onReady} />
+            {!embedded && <ExposeGlobalFitView />}
+            {!embedded && <ExposeScreenToFlow screenToFlowRef={screenToFlowRef} />}
+            <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.025)" gap={20} />
+            <Background variant={BackgroundVariant.Lines} color="rgba(255,255,255,0.05)" gap={100} />
+            {displayOptions?.showControls !== false && <Controls />}
+            {displayOptions?.showMiniMap !== false && <MiniMap
+              nodeColor={(node) => {
+                const t = (node as AnyFlowNode).type === 'blueprintNode'
+                  ? ((node as BlueprintFlowNode).data.ueType ?? '')
+                  : 'comment';
+                return t === 'comment' ? 'rgba(255,255,255,0.1)' : (TYPE_COLORS[t] ?? '#2a2d37');
+              }}
+              maskColor="rgba(0, 0, 0, 0.6)"
+              zoomable
+              pannable
+            />}
+            {displayOptions?.showZoomIndicator !== false && <ZoomIndicator />}
+          </PinBodyProvider>
+        </ReactFlow>
+        <div className="ueflow-watermark">BLUEPRINT</div>
+        {displayOptions?.showExportToolbar !== false && <ExportToolbar nodes={nodesWithCallback} edges={edges} />}
+
+        {/* Bookmark Panel */}
+        {bookmarksOpen && (
+          <BookmarkPanel
+            bookmarks={bookmarks}
+            onGoTo={() => {/* viewport restoration requires useReactFlow — handled by parent */}}
+            onRemove={removeBookmark}
+            onAdd={() => {
+              const label = prompt('Bookmark name:');
+              if (label) addBookmark(label, graphJSON.metadata?.title ?? 'Graph', { x: 0, y: 0, zoom: 1 });
+            }}
+            onClose={() => setBookmarksOpen(false)}
+          />
+        )}
+
+        {/* Search Panel */}
+        {searchOpen && (
+          <SearchPanel
+            query={searchQuery}
+            onQueryChange={setSearchQuery}
+            results={searchResults}
+            onSelectResult={() => {/* fitView to node handled by parent */}}
+            onClose={() => { setSearchOpen(false); clearSearch(); }}
+          />
+        )}
+
+        {/* Alignment Toolbar */}
+        {!embedded && selectedNodeIds.length >= 2 && (
+          <AlignToolbar
+            onAlign={handleAlign}
+            onDistribute={handleDistribute}
+            onStraighten={handleStraighten}
+            selectedCount={selectedNodeIds.length}
+          />
+        )}
+
+        {/* Context Menu */}
+        {contextMenu && (
+          <ContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            actions={contextMenuActions}
+            onClose={() => setContextMenu(null)}
+          />
+        )}
+
+        {/* Node Palette */}
+        {nodePalette && (
+          <NodePalette
+            x={nodePalette.x}
+            y={nodePalette.y}
+            onSelect={handlePaletteSelect}
+            onClose={() => setNodePalette(null)}
+          />
+        )}
+      </div>
+    </GraphAPIProvider>
   );
 }
 
@@ -379,7 +730,8 @@ function useViewportScale(referenceWidth = 1440): number {
   return scale;
 }
 
-function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
+function MultiGraphView({ multiGraph: initialMultiGraph }: { multiGraph: UEMultiGraphJSON }) {
+  const [multiGraph, setMultiGraph] = useState(initialMultiGraph);
   const graphNames = useMemo(() => Object.keys(multiGraph.graphs), [multiGraph]);
   const {
     openTabs, activeGraph, breadcrumbs, focusNodeTitle, pinnedTab,
@@ -416,6 +768,33 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
 
   const handleShowDetails = useCallback((item: DetailsItem) => {
     setDetailsItem(item);
+  }, []);
+
+  // ─── Blueprint-Level Creation (Layer 5) ───────────────────────────────────
+
+  const handleCreateVariable = useCallback((name: string, type: string) => {
+    setMultiGraph((prev) => ({
+      ...prev,
+      variables: [...prev.variables, { name, type }],
+    }));
+  }, []);
+
+  const handleCreateEvent = useCallback((name: string) => {
+    setMultiGraph((prev) => ({
+      ...prev,
+      events: [...prev.events, { name }],
+    }));
+  }, []);
+
+  const handleCreateFunction = useCallback((name: string) => {
+    setMultiGraph((prev) => ({
+      ...prev,
+      functions: [...prev.functions, { name }],
+      graphs: {
+        ...prev.graphs,
+        [name]: { metadata: { title: name, assetPath: '' }, nodes: [], edges: [] },
+      },
+    }));
   }, []);
 
   // Separate abort controllers per resize handle — prevents one drag from cancelling the other
@@ -512,14 +891,14 @@ function MultiGraphView({ multiGraph }: { multiGraph: UEMultiGraphJSON }) {
             <>
               <div className="ueflow-drawer-backdrop" onClick={() => setDrawerOpen(false)} />
               <div className="ueflow-drawer">
-                <Sidebar multiGraph={multiGraph} onNavigateToGraph={(g, n) => { navigateToGraph(g, n); setDrawerOpen(false); }} onShowDetails={handleShowDetails} onOpenSpecialTab={(t) => { openSpecialTab(t); setDrawerOpen(false); }} />
+                <Sidebar multiGraph={multiGraph} onNavigateToGraph={(g, n) => { navigateToGraph(g, n); setDrawerOpen(false); }} onShowDetails={handleShowDetails} onOpenSpecialTab={(t) => { openSpecialTab(t); setDrawerOpen(false); }} onCreateVariable={handleCreateVariable} onCreateEvent={handleCreateEvent} onCreateFunction={handleCreateFunction} />
               </div>
             </>
           )
         ) : (
           <>
             <div ref={sidebarRef} style={{ width: sidebarWidth ?? 'max-content', minWidth: 160, maxWidth: 400, flexShrink: 0 }}>
-              <Sidebar multiGraph={multiGraph} onNavigateToGraph={navigateToGraph} onShowDetails={handleShowDetails} onOpenSpecialTab={openSpecialTab} />
+              <Sidebar multiGraph={multiGraph} onNavigateToGraph={navigateToGraph} onShowDetails={handleShowDetails} onOpenSpecialTab={openSpecialTab} onCreateVariable={handleCreateVariable} onCreateEvent={handleCreateEvent} onCreateFunction={handleCreateFunction} />
             </div>
             <div className="ueflow-sidebar-resize" onMouseDown={handleSidebarResize} />
           </>

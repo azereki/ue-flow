@@ -1104,6 +1104,35 @@
 
 .ueflow-section-header:hover { background: rgba(18, 19, 42, 0.6); color: var(--uf-text-secondary); }
 
+.ueflow-section-header-row {
+  display: flex;
+  align-items: center;
+}
+
+.ueflow-section-header-row .ueflow-section-header {
+  flex: 1;
+}
+
+.ueflow-section-add-btn {
+  background: none;
+  border: none;
+  color: var(--uf-text-muted, rgba(255, 255, 255, 0.25));
+  font-size: 14px;
+  font-weight: 600;
+  padding: 2px 8px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.ueflow-section-header-row:hover .ueflow-section-add-btn {
+  opacity: 1;
+}
+
+.ueflow-section-add-btn:hover {
+  color: var(--uf-text, #e0e0e0);
+}
+
 .ueflow-section-title { flex: 0 0 auto; }
 
 .ueflow-section-count {
@@ -3892,4 +3921,555 @@
 
 .ueflow-topbar-menu-btn:hover {
   opacity: 1;
+}
+
+/* ===== Context Menu ===== */
+
+.ueflow-context-menu {
+  z-index: 10000;
+  background: var(--uf-chrome-bg, #1e2028);
+  border: 1px solid var(--uf-subtle-border, rgba(255, 255, 255, 0.08));
+  border-radius: 6px;
+  padding: 4px 0;
+  min-width: 180px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  font-family: 'Geist', sans-serif;
+}
+
+.ueflow-context-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 6px 14px;
+  background: none;
+  border: none;
+  color: var(--uf-text, #e0e0e0);
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.ueflow-context-menu-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.ueflow-context-menu-item--danger {
+  color: #e55;
+}
+
+.ueflow-context-menu-item--danger:hover {
+  background: rgba(238, 85, 85, 0.12);
+}
+
+.ueflow-context-menu-item--disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.ueflow-context-menu-shortcut {
+  color: var(--uf-text-secondary, rgba(255, 255, 255, 0.4));
+  font-size: 11px;
+  margin-left: 16px;
+}
+
+/* ===== Node Palette ===== */
+
+.ueflow-node-palette {
+  z-index: 10000;
+  background: var(--uf-chrome-bg, #1e2028);
+  border: 1px solid var(--uf-subtle-border, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  width: 300px;
+  max-height: 400px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  font-family: 'Geist', sans-serif;
+}
+
+.ueflow-node-palette-search {
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: none;
+  border-bottom: 1px solid var(--uf-subtle-border, rgba(255, 255, 255, 0.08));
+  color: var(--uf-text, #e0e0e0);
+  font-size: 13px;
+  font-family: 'Geist', sans-serif;
+  outline: none;
+  border-radius: 8px 8px 0 0;
+}
+
+.ueflow-node-palette-search::placeholder {
+  color: var(--uf-text-secondary, rgba(255, 255, 255, 0.35));
+}
+
+.ueflow-node-palette-list {
+  overflow-y: auto;
+  flex: 1;
+  padding: 4px 0;
+}
+
+.ueflow-node-palette-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 5px 12px;
+  background: none;
+  border: none;
+  color: var(--uf-text, #e0e0e0);
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.ueflow-node-palette-item:hover,
+.ueflow-node-palette-item--selected {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.ueflow-node-palette-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ueflow-node-palette-group {
+  color: var(--uf-text-secondary, rgba(255, 255, 255, 0.35));
+  font-size: 10px;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.ueflow-node-palette-empty {
+  padding: 16px 12px;
+  color: var(--uf-text-secondary, rgba(255, 255, 255, 0.35));
+  font-size: 12px;
+  text-align: center;
+}
+
+/* ===== Connection drawing styles ===== */
+
+.react-flow .react-flow__connection-line {
+  stroke-width: 2;
+}
+
+/* Highlight valid connection targets */
+.react-flow .react-flow__handle.connecting {
+  background: var(--pin-color, #888);
+}
+
+.react-flow .react-flow__handle.valid {
+  background: var(--pin-color, #888);
+  box-shadow: 0 0 6px var(--pin-color, #888);
+}
+
+/* ═══ Alignment Toolbar ═══ */
+
+.ueflow-align-toolbar {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  background: var(--uf-chrome-bg, #1e1f26);
+  border: 1px solid var(--uf-subtle-border, rgba(255,255,255,0.08));
+  border-radius: 6px;
+  padding: 4px 6px;
+  z-index: 20;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+.ueflow-align-toolbar-group {
+  display: flex;
+  gap: 2px;
+}
+
+.ueflow-align-toolbar-group + .ueflow-align-toolbar-group {
+  border-left: 1px solid var(--uf-subtle-border, rgba(255,255,255,0.08));
+  padding-left: 6px;
+  margin-left: 2px;
+}
+
+.ueflow-align-toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--uf-text-secondary, #888);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+}
+
+.ueflow-align-toolbar-btn:hover {
+  background: rgba(255,255,255,0.08);
+  color: var(--uf-text, #e0e0e0);
+}
+
+/* ═══ Search Panel ═══ */
+
+.ueflow-search-panel {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 320px;
+  max-height: 400px;
+  background: var(--uf-chrome-bg, #1e1f26);
+  border: 1px solid var(--uf-subtle-border, rgba(255,255,255,0.08));
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ueflow-search-header {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  gap: 6px;
+  border-bottom: 1px solid var(--uf-subtle-border, rgba(255,255,255,0.08));
+}
+
+.ueflow-search-input {
+  flex: 1;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  color: var(--uf-text, #e0e0e0);
+  padding: 6px 10px;
+  font-size: 13px;
+  outline: none;
+  font-family: inherit;
+}
+
+.ueflow-search-input:focus {
+  border-color: var(--uf-accent, #4a9eff);
+}
+
+.ueflow-search-close {
+  background: none;
+  border: none;
+  color: var(--uf-text-secondary, #888);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 2px 6px;
+  line-height: 1;
+}
+
+.ueflow-search-results {
+  overflow-y: auto;
+  max-height: 340px;
+}
+
+.ueflow-search-result {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  border: none;
+  background: none;
+  color: var(--uf-text, #e0e0e0);
+  cursor: pointer;
+  text-align: left;
+  font-size: 12px;
+  font-family: inherit;
+  transition: background 0.12s;
+}
+
+.ueflow-search-result:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.ueflow-search-result-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: rgba(74,158,255,0.15);
+  color: var(--uf-accent, #4a9eff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.ueflow-search-result-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ueflow-search-result-title {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ueflow-search-result-meta {
+  color: var(--uf-text-secondary, #888);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ueflow-search-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--uf-text-secondary, #888);
+  font-size: 13px;
+}
+
+.ueflow-node--dimmed {
+  opacity: 0.3;
+  transition: opacity 0.2s;
+}
+/* ═══ Bookmarks ═══ */
+
+.ueflow-bookmark-panel {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 260px;
+  max-height: 350px;
+  background: var(--uf-chrome-bg, #1e1f26);
+  border: 1px solid var(--uf-subtle-border, rgba(255,255,255,0.08));
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ueflow-bookmark-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  gap: 6px;
+  border-bottom: 1px solid var(--uf-subtle-border, rgba(255,255,255,0.08));
+}
+
+.ueflow-bookmark-title {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--uf-text, #e0e0e0);
+}
+
+.ueflow-bookmark-add,
+.ueflow-bookmark-close,
+.ueflow-bookmark-remove {
+  background: none;
+  border: none;
+  color: var(--uf-text-secondary, #888);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 2px 4px;
+  line-height: 1;
+}
+
+.ueflow-bookmark-add:hover,
+.ueflow-bookmark-close:hover,
+.ueflow-bookmark-remove:hover {
+  color: var(--uf-text, #e0e0e0);
+}
+
+.ueflow-bookmark-list {
+  overflow-y: auto;
+  max-height: 290px;
+}
+
+.ueflow-bookmark-item {
+  display: flex;
+  align-items: center;
+}
+
+.ueflow-bookmark-goto {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 6px 10px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--uf-text, #e0e0e0);
+  font-family: inherit;
+  transition: background 0.12s;
+}
+
+.ueflow-bookmark-goto:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.ueflow-bookmark-label {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ueflow-bookmark-graph {
+  font-size: 10px;
+  color: var(--uf-text-secondary, #888);
+}
+
+.ueflow-bookmark-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--uf-text-secondary, #888);
+  font-size: 12px;
+}
+/* ═══ Node Badges ═══ */
+
+.ueflow-node-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: help;
+  z-index: 10;
+}
+
+.ueflow-node-badge--error {
+  background: #d32f2f;
+  color: #fff;
+}
+
+.ueflow-node-badge--warning {
+  background: #f9a825;
+  color: #000;
+  border-radius: 2px;
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+  width: 14px;
+  height: 14px;
+}
+
+.ueflow-latent-icon {
+  font-size: 12px;
+  margin-right: 4px;
+  opacity: 0.8;
+}
+/* ═══ Pin Editors ═══ */
+.ueflow-editor-enum {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--uf-subtle-border);
+  border-radius: 3px;
+  color: var(--uf-text);
+  font-size: 10px;
+  padding: 1px 2px;
+  max-width: 100px;
+  cursor: pointer;
+  outline: none;
+}
+.ueflow-editor-enum:focus {
+  border-color: var(--uf-accent);
+}
+.ueflow-editor-enum option {
+  background: var(--uf-chrome-bg);
+  color: var(--uf-text);
+}
+/* ═══ Node Annotations ═══ */
+
+.ueflow-annotation {
+  position: relative;
+  background: rgba(255, 220, 80, 0.15);
+  border: 1px solid rgba(255, 220, 80, 0.3);
+  border-radius: 4px 4px 0 0;
+  padding: 3px 8px;
+  font-size: 11px;
+  color: #ffd850;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: default;
+  margin-bottom: -1px;
+}
+
+.ueflow-annotation-text {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ueflow-annotation-remove {
+  background: none;
+  border: none;
+  color: rgba(255, 220, 80, 0.5);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.ueflow-annotation-remove:hover {
+  color: #ffd850;
+}
+
+.ueflow-annotation-input {
+  flex: 1;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255, 220, 80, 0.4);
+  border-radius: 2px;
+  color: #ffd850;
+  font-size: 11px;
+  padding: 1px 4px;
+  outline: none;
+  font-family: inherit;
+}
+/* ═══ Unreachable Nodes ═══ */
+/* ═══ Template Library ═══ */
+/* ═══ Clipboard ═══ */
+/* ═══ Dynamic Pins ═══ */
+.ueflow-dynamic-pin-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--uf-subtle-border);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--uf-text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 2px 0;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.ueflow-dynamic-pin-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--uf-accent);
+  color: var(--uf-text);
+}
+.ueflow-dynamic-pin-btn--input {
+  margin-left: 4px;
+}
+.ueflow-dynamic-pin-btn--output {
+  margin-left: auto;
+  margin-right: 4px;
 }

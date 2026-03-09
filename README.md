@@ -23,7 +23,21 @@ An open-source Unreal Engine 5 Blueprint rendering suite. Parses UE5 T3D clipboa
 - **Selection-aware AI** — selected node context injected into AI prompts, dynamic suggested prompts, and one-shot node explanation cards
 - **Clickable AI findings** — node titles in Review results become navigation links
 - **Graph analysis** API for execution tracing, data dependencies, dead end detection, and diff
-- **~111 tests** across Python (pytest) and JavaScript (Vitest + Playwright)
+- **Node alignment toolbar** — align, distribute, and straighten selected nodes (Q key for wire straightening)
+- **Search across graphs** — Ctrl+F full-text search over node titles, pin names, comments, and pin values
+- **Bookmarks** — Ctrl+B to save and restore named viewport locations across graphs
+- **Implicit type conversions** — int→real, byte→int, name→string, and UE object class hierarchy awareness
+- **Enum registry** with 8 common UE enums for dropdown pin editors and connection validation
+- **Node diagnostics** — error/warning badges for missing references, unreachable nodes, and latent function clock icons
+- **Advanced pin editors** — enum dropdowns, rotator struct fields, vector/color pickers, bool checkboxes
+- **Per-node annotations** — add notes above any node via right-click context menu
+- **Copy-paste between graphs** — Ctrl+C/V/X with automatic ID remapping
+- **Dynamic pin nodes** — "+" button on Sequence, MakeArray, Select, Switch, and operator nodes
+- **Struct registry** with Break/Make palette entries for Vector, Rotator, Transform, HitResult, and 8 more UE structs
+- **Context menu** — right-click nodes (Duplicate, Delete, Add Note) and edges (Delete Connection)
+- **Node palette** — Tab key or right-click canvas to search 2,700+ UE functions, events, flow control, variables, casts, and structs
+- **Connection drawing** with real-time validation — drag between pins to create edges
+- **~223 tests** across Python (pytest) and JavaScript (Vitest + Playwright)
 
 ## Quick Start
 
@@ -92,14 +106,15 @@ React Flow State  ->  flow-to-t3d.ts  ->  T3D Paste Text (clipboard / file / UE 
 js/                         React/Vite frontend (TypeScript, @xyflow/react)
   src/
     App.tsx                 Root: SingleGraphView + MultiGraphView
-    components/             UI chrome (Sidebar, DetailsPanel, TabBar, TopBar, StatusBar, etc.)
-    nodes/                  BlueprintNode, CommentNode, NodeHeader, PinHandle, PinValueEditor
+    components/             UI chrome (Sidebar, DetailsPanel, TabBar, TopBar, StatusBar, ContextMenu, NodePalette, SearchPanel, BookmarkPanel, AlignToolbar, etc.)
+    nodes/                  BlueprintNode, CommentNode, NodeHeader, PinHandle, PinValueEditor, NodeBadge, NodeAnnotation, DynamicPinButton
     edges/                  BlueprintEdge (bezier with type-colored glow)
-    hooks/                  useTabNavigation, useUndoRedo, useAIChat, useAIAction
+    hooks/                  useTabNavigation, useAIChat, useAIAction, useIsMobile, useSearch, useBookmarks
+    api/                    graph-api.ts (GraphAPI), connection-validator.ts, ai-commands.ts
     transform/              json-to-flow.ts (UE JSON -> React Flow), flow-to-t3d.ts (reverse)
     types/                  ue-graph.ts, pin-types.ts, flow-types.ts
-    utils/                  graph-context.ts (AI context), ai-generate.ts (Blueprint generation)
-    theme/                  ue-flow.css (~3500 lines), self-hosted fonts (Geist, JetBrainsMono)
+    utils/                  graph-context.ts, ai-generate.ts, alignment.ts, type-conversions.ts, enum-registry.ts, struct-registry.ts, exec-graph.ts, dynamic-pins.ts, clipboard.ts, node-diagnostics.ts
+    theme/                  ue-flow.css (~4500 lines), self-hosted fonts (Geist, JetBrainsMono)
   e2e/                      Playwright smoke tests
 python/
   ue_flow/
@@ -146,6 +161,22 @@ examples/
 
 Extended sub-type colors for: Vector (gold), Rotator (light blue), Transform (orange), LinearColor (white), Vector2D, Vector4, GameplayTag, FieldPath, int64, uint64, double.
 
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Delete` / `Backspace` | Delete selected nodes/edges |
+| `Ctrl+Z` | Undo |
+| `Ctrl+Shift+Z` | Redo |
+| `Ctrl+D` | Duplicate selected nodes |
+| `Ctrl+C` | Copy selected nodes |
+| `Ctrl+V` | Paste copied nodes |
+| `Ctrl+X` | Cut selected nodes |
+| `Ctrl+F` | Search across graphs |
+| `Ctrl+B` | Toggle bookmarks panel |
+| `Tab` | Open node palette |
+| `Q` | Straighten selected node connections |
+
 ## Environment Variables
 
 | Variable | Default | Description |
@@ -155,7 +186,7 @@ Extended sub-type colors for: Vector (gold), Rotator (light blue), Transform (or
 ## Testing
 
 ```bash
-# JavaScript unit tests (16 tests)
+# JavaScript unit tests (223 tests)
 cd js && npm test
 
 # JavaScript e2e tests (5 Playwright smoke tests)

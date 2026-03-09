@@ -2,12 +2,19 @@ import { memo, useContext, useState, useCallback, useEffect, useMemo, type FC } 
 import type { NodeProps } from '@xyflow/react';
 import { Handle, Position, useStore } from '@xyflow/react';
 import { NodeHeader, COMPACT_TITLE_ICONS } from './NodeHeader';
+import { NodeBadge } from './NodeBadge';
+import { NodeAnnotation } from '../components/NodeAnnotation';
 import { PinHandle } from './PinHandle';
 import { PinValueEditor } from './PinValueEditor';
 import { PinBodyContext } from '../contexts/PinBodyContext';
-import type { BlueprintFlowNode } from '../types/flow-types';
+import type { BlueprintFlowNode, BlueprintFlowEdge } from '../types/flow-types';
 import { isExecPin, PIN_COLORS } from '../types/pin-types';
 import type { UEPin } from '../types/ue-graph';
+import { lookupFunction } from '../utils/signature-db';
+import { diagnoseNode } from '../utils/node-diagnostics';
+import { DYNAMIC_PIN_CLASSES } from '../utils/dynamic-pins';
+import { DynamicPinButton } from './DynamicPinButton';
+import { useGraphAPIMaybe } from '../contexts/GraphAPIContext';
 
 /** Input pin row: holds edited value state shared between PinHandle hint and PinValueEditor. */
 const InputPinRow: FC<{
@@ -65,6 +72,32 @@ export const BlueprintNode = memo(({ data, id }: NodeProps<BlueprintFlowNode>) =
   const [showAdvanced, setShowAdvanced] = useState(false);
   const connectedPinIds = useConnectedPins(pins);
 
+  // Check if latent function via signature DB
+  const isLatent = useMemo(() => {
+    if (ueType !== 'call_function') return false;
+    const ref = String(data.properties?.FunctionReference ?? '');
+    const m = ref.match(/MemberName="([^"]+)"/);
+    if (!m) return false;
+    const sig = lookupFunction(m[1]);
+    return sig?.isLatent ?? false;
+  }, [ueType, data.properties]);
+
+  // Node diagnostics
+  const edges = useStore(useCallback(
+    (s: { edges: Array<{ source: string; sourceHandle?: string | null; target: string; targetHandle?: string | null; data?: { category?: string } }> }) =>
+      s.edges.filter((e) => e.source === id || e.target === id) as BlueprintFlowEdge[],
+    [id],
+  ));
+  const diagnostics = useMemo(() => diagnoseNode(data, id, edges), [data, id, edges]);
+  const graphAPI = useGraphAPIMaybe();
+
+  // Dynamic pin support
+  const shortNodeClass = useMemo(() => {
+    const cls = data.nodeClass ?? '';
+    return cls.includes('.') ? cls.split('.').pop()! : cls;
+  }, [data.nodeClass]);
+  const dynamicPinConfig = DYNAMIC_PIN_CLASSES.get(shortNodeClass);
+
   // Issue 3: lift pin edits into node data via the setNodes callback stored on data.
   // When a user edits a pin value, we update the pin's defaultValue in the node store
   // so that flowToT3D() exports the edited value.
@@ -112,7 +145,15 @@ export const BlueprintNode = memo(({ data, id }: NodeProps<BlueprintFlowNode>) =
 
   return (
     <div className="ueflow-node" data-ue-type={ueType} data-compact={isCompact ? '' : undefined} aria-label={`${ueType} node: ${title}`}>
-      <NodeHeader title={title} ueType={ueType} isPure={isPure} headerAccent={headerAccent} />
+      {data.annotation && (
+        <NodeAnnotation
+          text={data.annotation}
+          onEdit={(text) => graphAPI?.setNodeAnnotation(id, text)}
+          onRemove={() => graphAPI?.setNodeAnnotation(id, '')}
+        />
+      )}
+      <NodeHeader title={title} ueType={ueType} isPure={isPure} isLatent={isLatent} headerAccent={headerAccent} />
+      {diagnostics.length > 0 && <NodeBadge diagnostics={diagnostics} />}
       {ueType === 'select' && showPinBody && (
         <div className="ueflow-select-count">
           {outputPins.filter(p => !isExecPin(p.category)).length} options
@@ -124,11 +165,17 @@ export const BlueprintNode = memo(({ data, id }: NodeProps<BlueprintFlowNode>) =
             {standardInputs.map(pin => <InputPinRow key={pin.id} pin={pin} isConnected={connectedPinIds.has(pin.id)} onPinValueChange={handlePinValueChange} />)}
             {alwaysVisibleAdvancedInputs.map(pin => <InputPinRow key={pin.id} pin={pin} isConnected={connectedPinIds.has(pin.id)} onPinValueChange={handlePinValueChange} />)}
             {showAdvanced && collapsibleAdvancedInputs.map(pin => <InputPinRow key={pin.id} pin={pin} isConnected={connectedPinIds.has(pin.id)} onPinValueChange={handlePinValueChange} />)}
+            {dynamicPinConfig?.direction === 'input' && showPinBody && graphAPI && (
+              <DynamicPinButton onAdd={() => graphAPI.addDynamicPin(id)} direction="input" />
+            )}
           </div>
           <div className="ueflow-pins-column ueflow-pins--output">
             {standardOutputs.map(pin => <PinHandle key={pin.id} pin={pin} isConnected={connectedPinIds.has(pin.id)} />)}
             {alwaysVisibleAdvancedOutputs.map(pin => <PinHandle key={pin.id} pin={pin} isConnected={connectedPinIds.has(pin.id)} />)}
             {showAdvanced && collapsibleAdvancedOutputs.map(pin => <PinHandle key={pin.id} pin={pin} isConnected={connectedPinIds.has(pin.id)} />)}
+            {dynamicPinConfig?.direction === 'output' && showPinBody && graphAPI && (
+              <DynamicPinButton onAdd={() => graphAPI.addDynamicPin(id)} direction="output" />
+            )}
           </div>
         </div>
       )}

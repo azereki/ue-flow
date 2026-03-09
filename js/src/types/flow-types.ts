@@ -21,6 +21,8 @@ export interface FlowNodeData {
   pins: UEPin[];
   /** Override header accent color — e.g. variable getters tinted by pin type. */
   headerAccent?: string;
+  /** User-set annotation note displayed above the node. */
+  annotation?: string;
   /**
    * Optional callback injected by SingleGraphView so that pin value edits inside
    * BlueprintNode can propagate up to the node store.  This keeps the data
