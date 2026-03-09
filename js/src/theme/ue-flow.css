@@ -2259,23 +2259,6 @@
   transform: translateY(-1px);
 }
 
-.ueflow-landing-cta--secondary {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--uf-text);
-  border: 1px solid var(--uf-surface-border);
-}
-
-.ueflow-landing-cta--secondary:hover {
-  border-color: var(--uf-accent);
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.ueflow-landing-hero-actions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
 /* Hero graph */
 .ueflow-landing-hero-graph {
   width: 100%;
@@ -3648,20 +3631,76 @@
     z-index: 20;
     opacity: 0.85;
   }
-  /* Export toolbar: larger touch targets */
+  /* Export toolbar: icon-only, no label expansion on touch */
   .ueflow-export-toolbar {
     bottom: 8px;
     padding: 4px 6px;
     gap: 2px;
   }
+  .ueflow-export-toolbar .ueflow-toolbar-label {
+    display: none;
+  }
   .ueflow-toolbar-btn {
     min-height: 36px;
     min-width: 36px;
-    padding: 6px 8px;
+    padding: 6px 10px;
+  }
+}
+
+/* Landscape phones: short height, apply mobile toolbar + compact layout */
+@media (max-height: 500px) and (orientation: landscape) {
+  .ueflow-export-toolbar .ueflow-toolbar-label {
+    display: none;
+  }
+  .ueflow-toolbar-btn {
+    min-height: 32px;
+    min-width: 32px;
+    padding: 4px 8px;
+  }
+  .ueflow-export-toolbar {
+    bottom: 4px;
+    padding: 3px 4px;
+  }
+  .react-flow__minimap {
+    display: none;
+  }
+  .ueflow-zoom-indicator {
+    display: none;
+  }
+  .ueflow-landing-hero {
+    padding: 24px 24px 16px;
+    min-height: auto;
+  }
+  .ueflow-landing-hero-graph {
+    height: 200px;
   }
 }
 
 @media (max-width: 600px) {
+  /* Reorder landing: paste section first, hero below */
+  .ueflow-landing {
+    display: flex;
+    flex-direction: column;
+  }
+  .ueflow-landing-try {
+    order: -1;
+    padding-top: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--uf-surface-border);
+  }
+  /* Hide the hero CTA — paste is already at the top */
+  .ueflow-landing-hero-content .ueflow-landing-cta {
+    display: none;
+  }
+  .ueflow-landing-hero {
+    padding: 24px 16px 16px;
+  }
+  .ueflow-landing-hero-graph {
+    height: 280px;
+  }
+  .ueflow-landing-section {
+    padding: 40px 16px;
+  }
   .ueflow-landing-features {
     grid-template-columns: 1fr;
   }
@@ -3669,14 +3708,19 @@
     grid-template-columns: 1fr;
     gap: 24px;
   }
-  .ueflow-landing-hero-graph {
-    height: 280px;
-  }
   .ueflow-landing-showcase-sidebar-mock {
     width: 100px;
   }
+  .ueflow-landing-showcase-mockup {
+    height: 250px;
+  }
+  .ueflow-landing-showcase-card {
+    padding: 16px;
+    gap: 20px;
+  }
+  /* Paste form: compact, full-width */
   .ueflow-paste-textarea {
-    height: 150px;
+    height: 120px;
   }
   .ueflow-paste-btn {
     min-height: 44px;
@@ -3687,19 +3731,7 @@
   .ueflow-landing-cta {
     min-height: 44px;
     padding: 12px 24px;
-    width: 100%;
   }
-  /* Stack hero content buttons vertically */
-  .ueflow-landing-hero-content {
-    align-items: stretch;
-  }
-  .ueflow-landing-hero-actions {
-    flex-direction: column;
-  }
-  .ueflow-landing-hero-actions .ueflow-landing-cta {
-    width: 100%;
-  }
-  /* Paste section actions: stack vertically */
   .ueflow-landing-paste-actions {
     flex-direction: column;
     width: 100%;
@@ -3710,11 +3742,11 @@
   .ueflow-paste-hint {
     display: none;
   }
-  /* Landing paste section: tighter on mobile */
   .ueflow-landing-paste {
     width: 100%;
     padding: 0 4px;
   }
+  /* Chat FAB: icon-only circle */
   .ueflow-chat-fab {
     width: 48px;
     height: 48px;
@@ -3724,19 +3756,6 @@
   .ueflow-chat-fab::before {
     content: '\1F916';
     font-size: 20px;
-  }
-  .ueflow-landing-hero {
-    padding: 32px 16px 24px;
-  }
-  .ueflow-landing-section {
-    padding: 40px 16px;
-  }
-  .ueflow-landing-showcase-mockup {
-    height: 250px;
-  }
-  .ueflow-landing-showcase-card {
-    padding: 16px;
-    gap: 20px;
   }
   .ueflow-chat-panel--floating {
     width: 100%;
