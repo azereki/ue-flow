@@ -2,6 +2,8 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAIProvider } from '../contexts/AIProviderContext';
 import { parseGeneratedGraph, GENERATE_SCHEMA_ADDENDUM } from '../utils/ai-generate';
 import { loadSignatureDB } from '../utils/signature-db';
+import { isCommandRequest, COMMAND_SCHEMA_ADDENDUM, parseAICommands, executeAICommands, type AICommandBatchResult } from '../api/ai-commands';
+import { useGraphAPIMaybe } from '../contexts/GraphAPIContext';
 import type { ChatMessage } from '../utils/openrouter';
 import type { UEGraphJSON } from '../types/ue-graph';
 
@@ -61,8 +63,24 @@ export function isGenerationRequest(msg: string): boolean {
   return false;
 }
 
+/** Format command results into a readable string for the chat. */
+function formatCommandResults(batchResult: AICommandBatchResult): string {
+  const lines: string[] = [];
+  if (batchResult.explanation) {
+    lines.push(batchResult.explanation);
+    lines.push('');
+  }
+  for (const r of batchResult.results) {
+    const icon = r.result.success ? '\u2713' : '\u2717';
+    const detail = r.result.error ? ` — ${r.result.error}` : '';
+    lines.push(`${icon} ${r.resolvedDescription}${detail}`);
+  }
+  return lines.join('\n');
+}
+
 export function useAIChat(graphContext: string, selectedNodeTitle?: string | null) {
   const { chatCompletion } = useAIProvider();
+  const graphAPI = useGraphAPIMaybe();
 
   // Eagerly load signature DB so it's ready when AI generates a graph
   useEffect(() => { loadSignatureDB(); }, []);
@@ -71,6 +89,7 @@ export function useAIChat(graphContext: string, selectedNodeTitle?: string | nul
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedGraph, setGeneratedGraph] = useState<UEGraphJSON | null>(null);
+  const [lastCommandResult, setLastCommandResult] = useState<AICommandBatchResult | null>(null);
   const streamingRef = useRef(false);
   const messagesRef = useRef<ChatMessage[]>([]);
 
@@ -80,6 +99,7 @@ export function useAIChat(graphContext: string, selectedNodeTitle?: string | nul
     if (!userMessage.trim() || streamingRef.current) return;
 
     setError(null);
+    setLastCommandResult(null);
 
     // Inject selected node context as user message prefix (closer to the question = better relevance)
     const contextPrefix = selectedNodeTitle ? `[Selected node: "${selectedNodeTitle}"] ` : '';
@@ -93,11 +113,21 @@ export function useAIChat(graphContext: string, selectedNodeTitle?: string | nul
     streamingRef.current = true;
 
     try {
-      // Hybrid prompt: analyst base + generation schema appended when needed
+      // Three-tier intent detection:
+      // 1. Command mode — user wants to modify existing graph
+      // 2. Generation mode — user wants a complete new graph
+      // 3. Analyst mode — user is asking questions
       let systemContent = ANALYST_SYSTEM_PROMPT + '\n' + graphContext;
-      if (isGenerationRequest(userMessage)) {
+      const hasGraph = graphContext.length > 100; // Rough check: graph context is present
+
+      if (hasGraph && graphAPI && isCommandRequest(userMessage)) {
+        // Tier 1: Command mode — append command schema
+        systemContent += '\n\n' + COMMAND_SCHEMA_ADDENDUM;
+      } else if (isGenerationRequest(userMessage)) {
+        // Tier 2: Generation mode — append generation schema
         systemContent += '\n\n' + GENERATE_SCHEMA_ADDENDUM;
       }
+      // Tier 3: Analyst mode — no addendum needed
 
       const apiMessages: ChatMessage[] = [
         { role: 'system', content: systemContent },
@@ -106,15 +136,28 @@ export function useAIChat(graphContext: string, selectedNodeTitle?: string | nul
 
       const text = await chatCompletion(apiMessages);
 
-      // Check if response contains a generated graph
-      const parsed = parseGeneratedGraph(text);
-      if (parsed) {
-        setGeneratedGraph(parsed);
-      }
+      // Try to parse as commands first (takes priority over graph generation)
+      const cmdResponse = parseAICommands(text);
+      if (cmdResponse && graphAPI) {
+        const batchResult = executeAICommands(graphAPI, cmdResponse);
+        setLastCommandResult(batchResult);
 
-      const updated = [...messagesRef.current, { role: 'assistant' as const, content: text }];
-      messagesRef.current = updated;
-      setMessages(updated);
+        // Show command results as assistant message
+        const resultText = formatCommandResults(batchResult);
+        const updated = [...messagesRef.current, { role: 'assistant' as const, content: resultText }];
+        messagesRef.current = updated;
+        setMessages(updated);
+      } else {
+        // Try to parse as generated graph
+        const parsed = parseGeneratedGraph(text);
+        if (parsed) {
+          setGeneratedGraph(parsed);
+        }
+
+        const updated = [...messagesRef.current, { role: 'assistant' as const, content: text }];
+        messagesRef.current = updated;
+        setMessages(updated);
+      }
     } catch (err: unknown) {
       console.error('[ue-flow AI] Error:', err);
       const message = err instanceof Error ? err.message : String(err);
@@ -128,14 +171,15 @@ export function useAIChat(graphContext: string, selectedNodeTitle?: string | nul
       setIsStreaming(false);
       streamingRef.current = false;
     }
-  }, [graphContext, chatCompletion, selectedNodeTitle]);
+  }, [graphContext, chatCompletion, selectedNodeTitle, graphAPI]);
 
   const clearChat = useCallback(() => {
     messagesRef.current = [];
     setMessages([]);
     setError(null);
     setGeneratedGraph(null);
+    setLastCommandResult(null);
   }, []);
 
-  return { messages, isStreaming, error, sendMessage, clearChat, generatedGraph, clearGeneratedGraph };
+  return { messages, isStreaming, error, sendMessage, clearChat, generatedGraph, clearGeneratedGraph, lastCommandResult };
 }

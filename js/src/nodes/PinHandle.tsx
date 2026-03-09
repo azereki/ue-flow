@@ -14,7 +14,12 @@ function pinTooltip(pin: UEPin): string {
     let typeStr: string = pin.category;
     if (pin.subCategoryObject) typeStr = pin.subCategoryObject;
     else if (pin.subCategory) typeStr = pin.subCategory;
-    if (pin.containerType) typeStr = `${pin.containerType}<${typeStr}>`;
+    if (pin.containerType === 'Map' && pin.valueType) {
+      const valType = pin.valueType.subCategoryObject || pin.valueType.category;
+      typeStr = `Map<${typeStr}, ${valType}>`;
+    } else if (pin.containerType) {
+      typeStr = `${pin.containerType}<${typeStr}>`;
+    }
     parts.push(typeStr);
   }
 
@@ -80,7 +85,7 @@ export const PinHandle: FC<PinHandleProps> = memo(({ pin, isConnected = false, e
           pin.category === 'delegate' && 'ueflow-handle--delegate',
         ].filter(Boolean).join(' ')}
         style={{ '--pin-color': color } as React.CSSProperties}
-        isConnectable={false}
+        isConnectable
       />
       {label && <span className="ueflow-pin-label">{label}</span>}
       {isInput && pin.defaultValue && !isExec && !isConnected && (() => {

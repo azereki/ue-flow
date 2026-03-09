@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, type FC } from 'react';
 import type { UEPin } from '../types/ue-graph';
 import type { PinCategory } from '../types/pin-types';
+import { getEnumValues, getEnumType } from '../utils/enum-registry';
 import type React from 'react';
 
 interface PinValueEditorProps {
@@ -13,6 +14,7 @@ function editorForCategory(
   category: PinCategory,
   value: string,
   onChange: (val: string) => void,
+  pin?: UEPin,
 ): React.ReactNode {
   switch (category) {
     case 'bool':
@@ -28,7 +30,6 @@ function editorForCategory(
       );
 
     case 'int':
-    case 'byte':
       return (
         <input
           type="number"
@@ -109,6 +110,30 @@ function editorForCategory(
           />
         );
       }
+      // Check for rotator pattern: (Pitch=0,Yaw=0,Roll=0)
+      const rotMatch = value.match(/^\(Pitch=([\d.-]+),Yaw=([\d.-]+),Roll=([\d.-]+)\)$/i);
+      if (rotMatch) {
+        const axes = ['Pitch', 'Yaw', 'Roll'];
+        return (
+          <div className="ueflow-editor-vector">
+            {axes.map((axis, i) => (
+              <input
+                key={axis}
+                type="number"
+                value={rotMatch[i + 1]}
+                step={1}
+                placeholder={axis}
+                onChange={(e) => {
+                  const vals = [rotMatch[1], rotMatch[2], rotMatch[3]];
+                  vals[i] = e.target.value;
+                  onChange(`(Pitch=${vals[0]},Yaw=${vals[1]},Roll=${vals[2]})`);
+                }}
+                className="ueflow-editor-number ueflow-editor-vector-input"
+              />
+            ))}
+          </div>
+        );
+      }
       // Fallback: text input for other structs
       return (
         <input
@@ -121,14 +146,28 @@ function editorForCategory(
     }
 
     case 'enum':
+    case 'byte': {
+      // For byte pins with subCategoryObject, treat as enum
+      if (category === 'byte' && !pin?.subCategoryObject) {
+        return (
+          <input type="number" value={value} step={1} min={0} max={255}
+            onChange={(e) => onChange(e.target.value)} className="ueflow-editor-number" />
+        );
+      }
+      const enumType = pin ? getEnumType(pin) : '';
+      const enumValues = enumType ? getEnumValues(enumType) : [];
+      if (enumValues.length > 0) {
+        return (
+          <select value={value} onChange={(e) => onChange(e.target.value)} className="ueflow-editor-enum">
+            {!enumValues.includes(value) && <option value={value}>{value}</option>}
+            {enumValues.map(v => <option key={v} value={v}>{v}</option>)}
+          </select>
+        );
+      }
       return (
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="ueflow-editor-text"
-        />
+        <input type="text" value={value} onChange={(e) => onChange(e.target.value)} className="ueflow-editor-text" />
       );
+    }
 
     default:
       return (
@@ -177,7 +216,7 @@ export const PinValueEditor: FC<PinValueEditorProps> = ({ pin, onValueChange }) 
 
   return (
     <div className="ueflow-pin-editor" onClick={(e) => e.stopPropagation()}>
-      {editorForCategory(pin.category, value, handleChange)}
+      {editorForCategory(pin.category, value, handleChange, pin)}
     </div>
   );
 };

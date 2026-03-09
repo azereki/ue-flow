@@ -4,6 +4,7 @@ interface NodeHeaderProps {
   title: string;
   ueType: string;
   isPure?: boolean;
+  isLatent?: boolean;
   /** Override header accent color (e.g. variable getters tinted by pin type). */
   headerAccent?: string;
 }
@@ -84,7 +85,7 @@ export const COMPACT_TITLE_ICONS: Record<string, string> = {
   'NOT Boolean':    '!',
 };
 
-export const NodeHeader: FC<NodeHeaderProps> = ({ title, ueType, isPure, headerAccent }) => {
+export const NodeHeader: FC<NodeHeaderProps> = ({ title, ueType, isPure, isLatent, headerAccent }) => {
   const color = headerAccent ?? TYPE_COLORS[ueType] ?? TYPE_COLORS.call_function;
   const icon = TYPE_ICONS[ueType];
   const compactIcon = COMPACT_TITLE_ICONS[title];
@@ -106,6 +107,7 @@ export const NodeHeader: FC<NodeHeaderProps> = ({ title, ueType, isPure, headerA
       className="ueflow-node-header"
       style={{ '--header-accent': color } as React.CSSProperties}
     >
+      {isLatent && <span className="ueflow-latent-icon" title="Latent function">&#9201;</span>}
       {isPure && <span className="ueflow-node-pure" title="Pure function">&#9671;</span>}
       {icon && <span className="ueflow-node-icon">{icon}</span>}
       <span className="ueflow-node-title">{title}</span>
