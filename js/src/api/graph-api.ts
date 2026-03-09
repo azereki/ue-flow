@@ -7,7 +7,7 @@
 import type { AnyFlowNode, BlueprintFlowNode, BlueprintFlowEdge, FlowNodeData, CommentFlowNode, CommentNodeData } from '../types/flow-types';
 import type { UEPin, UENode } from '../types/ue-graph';
 import type { PinCategory } from '../types/pin-types';
-import { getExtendedPinColor, isExecPin } from '../types/pin-types';
+import { getExtendedPinColor, isExecPin, classifyPinType } from '../types/pin-types';
 import { lookupFunction } from '../utils/signature-db';
 import { synthesizeNodePropertiesWithDB } from '../utils/ue-references';
 import { normalizeGeneratedPin } from '../utils/ai-generate';
@@ -172,6 +172,11 @@ function generateSpecialNodePins(shortCls: string, title: string): UEPin[] | nul
         pin(varName, varName, 'output', 'wildcard' as PinCategory),
       ];
     }
+    // Typed variants — when we know the variable type from sidebar
+    case '__K2Node_VariableGet_Typed':
+    case '__K2Node_VariableSet_Typed':
+      // Handled in addNode via spec.pins — should not reach here
+      return null;
     case 'K2Node_Knot':
       return [
         pin('InputPin', '', 'input', 'wildcard' as PinCategory),
@@ -616,6 +621,24 @@ export class GraphAPI {
       properties: { FunctionReference: refStr },
       pins,
     });
+  }
+
+  /** Create a typed variable get/set node with the correct pin category for the variable type. */
+  addVariableNode(varName: string, varType: string, mode: 'get' | 'set', position: { x: number; y: number }): CommandResult {
+    const category = classifyPinType(varType) as PinCategory;
+    const nodeClass = mode === 'get' ? 'K2Node_VariableGet' : 'K2Node_VariableSet';
+    const title = mode === 'get' ? varName : `Set ${varName}`;
+
+    const pins: Partial<UEPin>[] = mode === 'get'
+      ? [{ id: generateGuid(), name: varName, friendlyName: varName, direction: 'output' as const, category }]
+      : [
+          { id: generateGuid(), name: 'execute', friendlyName: '', direction: 'input' as const, category: 'exec' as PinCategory },
+          { id: generateGuid(), name: varName, friendlyName: varName, direction: 'input' as const, category },
+          { id: generateGuid(), name: 'then', friendlyName: '', direction: 'output' as const, category: 'exec' as PinCategory },
+          { id: generateGuid(), name: varName, friendlyName: varName, direction: 'output' as const, category },
+        ];
+
+    return this.addNode({ nodeClass, title, position, pins });
   }
 
   // ─── Layer 4: Property Editing ──────────────────────────────────────────────

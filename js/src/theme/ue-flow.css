@@ -1207,6 +1207,38 @@
 .ueflow-sidebar-item--clickable .ueflow-item-name { color: var(--uf-text-link); }
 .ueflow-sidebar-item--clickable:hover .ueflow-item-name { color: #b0d0ff; }
 
+/* ═══ Sidebar Item Row (with action buttons) ═══ */
+.ueflow-sidebar-item-row {
+  display: flex;
+  align-items: center;
+}
+.ueflow-sidebar-item-row .ueflow-sidebar-item { flex: 1; min-width: 0; }
+
+.ueflow-sidebar-item-actions {
+  display: none;
+  gap: 2px;
+  padding-right: 4px;
+  flex-shrink: 0;
+}
+.ueflow-sidebar-item-row:hover .ueflow-sidebar-item-actions { display: flex; }
+
+.ueflow-sidebar-action-btn {
+  background: none;
+  border: none;
+  color: var(--uf-text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  line-height: 1;
+}
+.ueflow-sidebar-action-btn:hover { background: var(--uf-surface-hover); color: var(--uf-text); }
+.ueflow-sidebar-action-btn--danger:hover { background: rgba(220, 50, 50, 0.2); color: #ff6666; }
+
+/* Draggable variable cursor */
+.ueflow-sidebar-item[draggable="true"] { cursor: grab; }
+.ueflow-sidebar-item[draggable="true"]:active { cursor: grabbing; }
+
 .ueflow-item-type {
   color: #8a8a94;
   font-size: 9px;

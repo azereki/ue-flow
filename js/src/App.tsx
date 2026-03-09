@@ -461,6 +461,26 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
     graphAPI.addEdge(connection.source, srcPin.name, connection.target, tgtPin.name);
   }, [graphAPI]);
 
+  // ─── Drag & drop variables from sidebar ─────────────────────────────────────
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('application/ue-flow-variable')) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    }
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    const raw = e.dataTransfer.getData('application/ue-flow-variable');
+    if (!raw || !screenToFlowRef.current) return;
+    e.preventDefault();
+    const { name, type } = JSON.parse(raw) as { name: string; type: string };
+    const pos = screenToFlowRef.current({ x: e.clientX, y: e.clientY });
+    // Ctrl/Shift held → Set, otherwise Get
+    const mode = e.ctrlKey || e.shiftKey ? 'set' : 'get';
+    graphAPI.addVariableNode(name, type, mode, pos);
+  }, [graphAPI]);
+
   const handleIsValidConnection = useCallback((connection: Connection) => {
     if (!connection.source || !connection.target || !connection.sourceHandle || !connection.targetHandle) return false;
     const sourceNode = nodesRef.current.find((n) => n.id === connection.source);
@@ -678,6 +698,8 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
           onEdgeDoubleClick={embedded ? undefined : handleEdgeDoubleClick as unknown as (event: React.MouseEvent, edge: { id: string }) => void}
           onContextMenu={embedded ? undefined : handleContextMenu}
           onMoveStart={handleMoveStart}
+          onDragOver={embedded ? undefined : handleDragOver}
+          onDrop={embedded ? undefined : handleDrop}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           colorMode="dark"
@@ -886,6 +908,41 @@ function MultiGraphView({ multiGraph: initialMultiGraph }: { multiGraph: UEMulti
     }
   }, []);
 
+  // ─── Rename / Delete events and variables ──────────────────────────────────
+
+  const handleRenameEvent = useCallback((oldName: string, newName: string) => {
+    setMultiGraph((prev) => ({
+      ...prev,
+      events: prev.events.map((e) => e.name === oldName ? { ...e, name: newName } : e),
+    }));
+  }, []);
+
+  const handleDeleteEvent = useCallback((name: string) => {
+    setMultiGraph((prev) => ({
+      ...prev,
+      events: prev.events.filter((e) => e.name !== name),
+    }));
+  }, []);
+
+  const handleRenameVariable = useCallback((oldName: string, newName: string) => {
+    setMultiGraph((prev) => ({
+      ...prev,
+      variables: prev.variables.map((v) => v.name === oldName ? { ...v, name: newName } : v),
+    }));
+  }, []);
+
+  const handleDeleteVariable = useCallback((name: string) => {
+    setMultiGraph((prev) => ({
+      ...prev,
+      variables: prev.variables.filter((v) => v.name !== name),
+    }));
+  }, []);
+
+  // Drag variable from sidebar → drop on graph to create Get/Set node
+  const handleDragVariable = useCallback((_name: string, _type: string, _mode: 'get' | 'set') => {
+    // Drag data is set via dataTransfer in Sidebar; drop is handled by SingleGraphView
+  }, []);
+
   // Separate abort controllers per resize handle — prevents one drag from cancelling the other
   const sidebarResizeAbortRef = useRef<AbortController | null>(null);
   const detailsResizeAbortRef = useRef<AbortController | null>(null);
@@ -980,14 +1037,14 @@ function MultiGraphView({ multiGraph: initialMultiGraph }: { multiGraph: UEMulti
             <>
               <div className="ueflow-drawer-backdrop" onClick={() => setDrawerOpen(false)} />
               <div className="ueflow-drawer">
-                <Sidebar multiGraph={multiGraph} onNavigateToGraph={(g, n) => { navigateToGraph(g, n); setDrawerOpen(false); }} onShowDetails={handleShowDetails} onOpenSpecialTab={(t) => { openSpecialTab(t); setDrawerOpen(false); }} onCreateVariable={handleCreateVariable} onCreateEvent={handleCreateEvent} onCreateFunction={handleCreateFunction} />
+                <Sidebar multiGraph={multiGraph} onNavigateToGraph={(g, n) => { navigateToGraph(g, n); setDrawerOpen(false); }} onShowDetails={handleShowDetails} onOpenSpecialTab={(t) => { openSpecialTab(t); setDrawerOpen(false); }} onCreateVariable={handleCreateVariable} onCreateEvent={handleCreateEvent} onCreateFunction={handleCreateFunction} onRenameEvent={handleRenameEvent} onDeleteEvent={handleDeleteEvent} onRenameVariable={handleRenameVariable} onDeleteVariable={handleDeleteVariable} onDragVariable={handleDragVariable} />
               </div>
             </>
           )
         ) : (
           <>
             <div ref={sidebarRef} style={{ width: sidebarWidth ?? 'max-content', minWidth: 160, maxWidth: 400, flexShrink: 0 }}>
-              <Sidebar multiGraph={multiGraph} onNavigateToGraph={navigateToGraph} onShowDetails={handleShowDetails} onOpenSpecialTab={openSpecialTab} onCreateVariable={handleCreateVariable} onCreateEvent={handleCreateEvent} onCreateFunction={handleCreateFunction} />
+              <Sidebar multiGraph={multiGraph} onNavigateToGraph={navigateToGraph} onShowDetails={handleShowDetails} onOpenSpecialTab={openSpecialTab} onCreateVariable={handleCreateVariable} onCreateEvent={handleCreateEvent} onCreateFunction={handleCreateFunction} onRenameEvent={handleRenameEvent} onDeleteEvent={handleDeleteEvent} onRenameVariable={handleRenameVariable} onDeleteVariable={handleDeleteVariable} onDragVariable={handleDragVariable} />
             </div>
             <div className="ueflow-sidebar-resize" onMouseDown={handleSidebarResize} />
           </>

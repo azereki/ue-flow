@@ -11,6 +11,12 @@ interface SidebarProps {
   onCreateVariable?: (name: string, type: string) => void;
   onCreateEvent?: (name: string) => void;
   onCreateFunction?: (name: string) => void;
+  onRenameEvent?: (oldName: string, newName: string) => void;
+  onDeleteEvent?: (name: string) => void;
+  onRenameVariable?: (oldName: string, newName: string) => void;
+  onDeleteVariable?: (name: string) => void;
+  /** Called when user drags a variable from sidebar — provides variable info for node creation. */
+  onDragVariable?: (name: string, type: string, mode: 'get' | 'set') => void;
 }
 
 interface SectionProps {
@@ -156,7 +162,7 @@ function findGraphForEvent(graphs: Record<string, { nodes: Array<{ title: string
   return 'EventGraph';
 }
 
-export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onShowDetails, onOpenSpecialTab, onCreateVariable, onCreateEvent, onCreateFunction }) => {
+export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onShowDetails, onOpenSpecialTab, onCreateVariable, onCreateEvent, onCreateFunction, onRenameEvent, onDeleteEvent, onRenameVariable, onDeleteVariable, onDragVariable }) => {
   const [search, setSearch] = useState('');
   const deferredSearch = useDeferredValue(search);
   const { events, functions, variables, structs, delegates, dataTables, graphs, components, macros } = multiGraph;
@@ -265,21 +271,28 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
               .join(', ');
             const evtClass = eventColorClass(evt.name);
             return (
-              <button
-                key={evt.name}
-                className={`ueflow-sidebar-item ueflow-sidebar-item--clickable ${evtClass}`}
-                title={params || undefined}
-                onClick={() => {
-                  const graphName = findGraphForEvent(graphs, evt.name);
-                  onNavigateToGraph(graphName, evt.name);
-                  const rawParams = (evt.params || evt.inputs || []);
-                  const parsed = rawParams.map(toParamObj).filter((p) => p.type !== 'Exec');
-                  onShowDetails?.({ kind: 'event', name: evt.name, params: parsed, replicates: evt.replicates, reliable: evt.reliable, callInEditor: evt.callInEditor, accessSpecifier: evt.accessSpecifier, keywords: evt.keywords });
-                }}
-              >
-                <span className={`ueflow-icon ueflow-icon--event ${evtClass ? 'ueflow-icon--' + evtClass.replace('ueflow-evt--', '') : ''}`}>E</span>
-                <span className="ueflow-item-name">{evt.name}</span>
-              </button>
+              <div key={evt.name} className="ueflow-sidebar-item-row">
+                <button
+                  className={`ueflow-sidebar-item ueflow-sidebar-item--clickable ${evtClass}`}
+                  title={params || undefined}
+                  onClick={() => {
+                    const graphName = findGraphForEvent(graphs, evt.name);
+                    onNavigateToGraph(graphName, evt.name);
+                    const rawParams = (evt.params || evt.inputs || []);
+                    const parsed = rawParams.map(toParamObj).filter((p) => p.type !== 'Exec');
+                    onShowDetails?.({ kind: 'event', name: evt.name, params: parsed, replicates: evt.replicates, reliable: evt.reliable, callInEditor: evt.callInEditor, accessSpecifier: evt.accessSpecifier, keywords: evt.keywords });
+                  }}
+                >
+                  <span className={`ueflow-icon ueflow-icon--event ${evtClass ? 'ueflow-icon--' + evtClass.replace('ueflow-evt--', '') : ''}`}>E</span>
+                  <span className="ueflow-item-name">{evt.name}</span>
+                </button>
+                {(onRenameEvent || onDeleteEvent) && (
+                  <span className="ueflow-sidebar-item-actions">
+                    {onRenameEvent && <button className="ueflow-sidebar-action-btn" title="Rename" onClick={(e) => { e.stopPropagation(); const n = prompt('Rename event:', evt.name); if (n && n !== evt.name) onRenameEvent(evt.name, n); }}>&#9998;</button>}
+                    {onDeleteEvent && <button className="ueflow-sidebar-action-btn ueflow-sidebar-action-btn--danger" title="Delete" onClick={(e) => { e.stopPropagation(); onDeleteEvent(evt.name); }}>&times;</button>}
+                  </span>
+                )}
+              </div>
             );
           })} />
         </Section>
@@ -348,13 +361,30 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
             ...vars.map((v: SidebarVariable) => {
               const typeStr = shortType(v.type || '');
               return (
-                <button key={v.name} className="ueflow-sidebar-item ueflow-sidebar-item--clickable" title={v.type} onClick={() => onShowDetails?.({ kind: 'variable', name: v.name, type: v.type, category: v.category, default: v.default, replication: v.replicationMode ?? (v.replicated ? 'Replicated' : undefined), containerType: v.containerType, innerType: v.innerType, keyType: v.keyType, instanceEditable: v.instanceEditable, exposeOnSpawn: v.exposeOnSpawn, private: v.private, transient: v.transient, saveGame: v.saveGame })}>
-                  <span className={`ueflow-icon ueflow-icon--type-${typeClass(v.type)}`} />
-                  <span className="ueflow-item-name">{v.name}</span>
-                  {v.instanceEditable && <span className="ueflow-badge-eye" title="Instance Editable">&#128065;</span>}
-                  <span className="ueflow-item-type">{typeStr}</span>
-                  {replicationBadge(v)}
-                </button>
+                <div key={v.name} className="ueflow-sidebar-item-row">
+                  <button
+                    className="ueflow-sidebar-item ueflow-sidebar-item--clickable"
+                    title={`${v.type}\nDrag to graph to create Get/Set`}
+                    draggable={!!onDragVariable}
+                    onDragStart={onDragVariable ? (e) => {
+                      e.dataTransfer.setData('application/ue-flow-variable', JSON.stringify({ name: v.name, type: v.type || 'Boolean' }));
+                      e.dataTransfer.effectAllowed = 'copy';
+                    } : undefined}
+                    onClick={() => onShowDetails?.({ kind: 'variable', name: v.name, type: v.type, category: v.category, default: v.default, replication: v.replicationMode ?? (v.replicated ? 'Replicated' : undefined), containerType: v.containerType, innerType: v.innerType, keyType: v.keyType, instanceEditable: v.instanceEditable, exposeOnSpawn: v.exposeOnSpawn, private: v.private, transient: v.transient, saveGame: v.saveGame })}
+                  >
+                    <span className={`ueflow-icon ueflow-icon--type-${typeClass(v.type)}`} />
+                    <span className="ueflow-item-name">{v.name}</span>
+                    {v.instanceEditable && <span className="ueflow-badge-eye" title="Instance Editable">&#128065;</span>}
+                    <span className="ueflow-item-type">{typeStr}</span>
+                    {replicationBadge(v)}
+                  </button>
+                  {(onRenameVariable || onDeleteVariable) && (
+                    <span className="ueflow-sidebar-item-actions">
+                      {onRenameVariable && <button className="ueflow-sidebar-action-btn" title="Rename" onClick={(e) => { e.stopPropagation(); const n = prompt('Rename variable:', v.name); if (n && n !== v.name) onRenameVariable(v.name, n); }}>&#9998;</button>}
+                      {onDeleteVariable && <button className="ueflow-sidebar-action-btn ueflow-sidebar-action-btn--danger" title="Delete" onClick={(e) => { e.stopPropagation(); onDeleteVariable(v.name); }}>&times;</button>}
+                    </span>
+                  )}
+                </div>
               );
             }),
           ])} />
