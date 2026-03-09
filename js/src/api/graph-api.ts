@@ -83,6 +83,123 @@ function generateGuid(): string {
   return guid;
 }
 
+/** Helper to create a standard UEPin. */
+function pin(name: string, friendlyName: string, direction: 'input' | 'output', category: PinCategory, opts?: { subCategoryObject?: string; defaultValue?: string; hidden?: boolean }): UEPin {
+  return {
+    id: generateGuid(), name, friendlyName: friendlyName || name, direction,
+    category, subCategory: '', subCategoryObject: opts?.subCategoryObject ?? '',
+    containerType: '', defaultValue: opts?.defaultValue ?? '',
+    isReference: false, isConst: false, isWeak: false,
+    hidden: opts?.hidden ?? false, advancedView: false,
+  };
+}
+
+/** Generate pins for special node classes that aren't in the signature DB. */
+function generateSpecialNodePins(shortCls: string, title: string): UEPin[] | null {
+  switch (shortCls) {
+    case 'K2Node_Event':
+      return [
+        pin('then', '', 'output', 'exec' as PinCategory),
+      ];
+    case 'K2Node_CustomEvent':
+      return [
+        pin('then', '', 'output', 'exec' as PinCategory),
+      ];
+    case 'K2Node_IfThenElse':
+      return [
+        pin('execute', '', 'input', 'exec' as PinCategory),
+        pin('Condition', 'Condition', 'input', 'bool' as PinCategory),
+        pin('then', 'True', 'output', 'exec' as PinCategory),
+        pin('else', 'False', 'output', 'exec' as PinCategory),
+      ];
+    case 'K2Node_ExecutionSequence':
+      return [
+        pin('execute', '', 'input', 'exec' as PinCategory),
+        pin('then_0', 'Then 0', 'output', 'exec' as PinCategory),
+        pin('then_1', 'Then 1', 'output', 'exec' as PinCategory),
+      ];
+    case 'K2Node_ForEachLoop':
+      return [
+        pin('execute', '', 'input', 'exec' as PinCategory),
+        pin('Array', 'Array', 'input', 'wildcard' as PinCategory),
+        pin('LoopBody', 'Loop Body', 'output', 'exec' as PinCategory),
+        pin('ArrayElement', 'Array Element', 'output', 'wildcard' as PinCategory),
+        pin('ArrayIndex', 'Array Index', 'output', 'int' as PinCategory),
+        pin('Completed', 'Completed', 'output', 'exec' as PinCategory),
+      ];
+    case 'K2Node_DoOnce':
+      return [
+        pin('execute', '', 'input', 'exec' as PinCategory),
+        pin('Reset', 'Reset', 'input', 'exec' as PinCategory),
+        pin('StartClosed', 'Start Closed', 'input', 'bool' as PinCategory, { defaultValue: 'false' }),
+        pin('Completed', 'Completed', 'output', 'exec' as PinCategory),
+      ];
+    case 'K2Node_Gate':
+      return [
+        pin('Enter', 'Enter', 'input', 'exec' as PinCategory),
+        pin('Open', 'Open', 'input', 'exec' as PinCategory),
+        pin('Close', 'Close', 'input', 'exec' as PinCategory),
+        pin('Toggle', 'Toggle', 'input', 'exec' as PinCategory),
+        pin('StartClosed', 'Start Closed', 'input', 'bool' as PinCategory, { defaultValue: 'false' }),
+        pin('Exit', 'Exit', 'output', 'exec' as PinCategory),
+      ];
+    case 'K2Node_FlipFlop':
+      return [
+        pin('execute', '', 'input', 'exec' as PinCategory),
+        pin('A', 'A', 'output', 'exec' as PinCategory),
+        pin('B', 'B', 'output', 'exec' as PinCategory),
+        pin('IsA', 'Is A', 'output', 'bool' as PinCategory),
+      ];
+    case 'K2Node_Delay':
+      return [
+        pin('execute', '', 'input', 'exec' as PinCategory),
+        pin('Duration', 'Duration', 'input', 'real' as PinCategory, { defaultValue: '0.2' }),
+        pin('then', '', 'output', 'exec' as PinCategory),
+        pin('Completed', 'Completed', 'output', 'exec' as PinCategory),
+      ];
+    case 'K2Node_VariableGet': {
+      const varName = title.replace(/^Get\s+/, '');
+      return [
+        pin(varName, varName, 'output', 'wildcard' as PinCategory),
+      ];
+    }
+    case 'K2Node_VariableSet': {
+      const varName = title.replace(/^Set\s+/, '');
+      return [
+        pin('execute', '', 'input', 'exec' as PinCategory),
+        pin(varName, varName, 'input', 'wildcard' as PinCategory),
+        pin('then', '', 'output', 'exec' as PinCategory),
+        pin(varName, varName, 'output', 'wildcard' as PinCategory),
+      ];
+    }
+    case 'K2Node_Knot':
+      return [
+        pin('InputPin', '', 'input', 'wildcard' as PinCategory),
+        pin('OutputPin', '', 'output', 'wildcard' as PinCategory),
+      ];
+    case 'K2Node_FunctionEntry':
+      return [
+        pin('then', '', 'output', 'exec' as PinCategory),
+      ];
+    case 'K2Node_FunctionResult':
+      return [
+        pin('execute', '', 'input', 'exec' as PinCategory),
+      ];
+    case 'K2Node_MultiGate':
+      return [
+        pin('execute', '', 'input', 'exec' as PinCategory),
+        pin('Reset', 'Reset', 'input', 'exec' as PinCategory),
+        pin('IsRandom', 'Is Random', 'input', 'bool' as PinCategory, { defaultValue: 'false' }),
+        pin('Loop', 'Loop', 'input', 'bool' as PinCategory, { defaultValue: 'false' }),
+        pin('StartIndex', 'Start Index', 'input', 'int' as PinCategory, { defaultValue: '-1' }),
+        pin('Out 0', 'Out 0', 'output', 'exec' as PinCategory),
+        pin('Out 1', 'Out 1', 'output', 'exec' as PinCategory),
+      ];
+    default:
+      return null;
+  }
+}
+
 // Layout constants (from json-to-flow.ts)
 const NODE_HEADER_HEIGHT = 30;
 const PIN_ROW_HEIGHT = 22;
@@ -365,8 +482,14 @@ export class GraphAPI {
       id: p.id ?? generateGuid(),
     }));
 
-    // K2Node_DynamicCast: auto-generate standard cast pins if none provided
+    // Auto-generate pins for known special node classes when none provided
     const shortCls = spec.nodeClass.includes('.') ? spec.nodeClass.split('.').pop()! : spec.nodeClass;
+    if (pins.length === 0) {
+      const generated = generateSpecialNodePins(shortCls, spec.title);
+      if (generated) pins = generated;
+    }
+
+    // K2Node_DynamicCast: auto-generate standard cast pins if none provided
     if ((shortCls === 'K2Node_DynamicCast' || shortCls === 'K2Node_ClassDynamicCast') && pins.length === 0) {
       const castTarget = spec.title.replace('Cast To ', '');
       pins = [

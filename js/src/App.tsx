@@ -332,14 +332,20 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
 
   const handlePaletteSelect = useCallback((entry: { label: string; nodeClass: string; memberName?: string; memberParent?: string }) => {
     if (!nodePalette) return;
+    const pos = { x: nodePalette.graphX, y: nodePalette.graphY };
     if (entry.memberName && entry.memberParent) {
-      graphAPI.addNodeFromSignature(entry.memberName, { x: nodePalette.graphX, y: nodePalette.graphY });
+      // Signature DB function — use addNodeFromSignature for full pin data
+      graphAPI.addNodeFromSignature(entry.memberName, pos);
+    } else if (entry.memberName) {
+      // Has a memberName but no parent (e.g. events) — try signature DB first
+      const result = graphAPI.addNodeFromSignature(entry.memberName, pos);
+      if (!result.success) {
+        // Not in DB — fall back to addNode which has hardcoded pin layouts
+        graphAPI.addNode({ nodeClass: entry.nodeClass, title: entry.label, position: pos });
+      }
     } else {
-      graphAPI.addNode({
-        nodeClass: entry.nodeClass,
-        title: entry.label,
-        position: { x: nodePalette.graphX, y: nodePalette.graphY },
-      });
+      // No memberName — use addNode with hardcoded pin layouts
+      graphAPI.addNode({ nodeClass: entry.nodeClass, title: entry.label, position: pos });
     }
     setNodePalette(null);
   }, [nodePalette, graphAPI]);
