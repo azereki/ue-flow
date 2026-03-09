@@ -290,11 +290,9 @@
   filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8));
 }
 
-/* Viewer mode: handles are not connectable */
-.ueflow-handle {
-  cursor: default !important;
-  pointer-events: none !important;
-}
+/* Handle interaction: React Flow manages pointer-events via .connectionindicator
+   and .connectingfrom classes. Do NOT add pointer-events: none here — it breaks
+   connection drawing by overriding React Flow's internal handle state management. */
 
 /* ===== React Flow Overrides (Blueprint Noir) ===== */
 

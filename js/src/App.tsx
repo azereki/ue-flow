@@ -274,17 +274,29 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
   const screenToFlowRef = useRef<((pos: { x: number; y: number }) => { x: number; y: number }) | null>(null);
 
   // ─── Right-click context menu (stationary clicks only) ──────────────────────
-  // Track right-click mousedown position; only open menu if mouse barely moved.
-  const rclickDown = useRef<{ x: number; y: number } | null>(null);
+  // Track right-mousedown position + max movement. The contextmenu event fires
+  // after mouseup, so we measure total drag distance to distinguish click vs pan.
+  const rclickDown = useRef<{ x: number; y: number; maxDist: number } | null>(null);
   const RCLICK_THRESHOLD = 5; // px — movement under this counts as stationary
 
   useEffect(() => {
-    const onRightDown = (e: MouseEvent) => {
+    const onDown = (e: MouseEvent) => {
       if (e.button !== 2) return;
-      rclickDown.current = { x: e.clientX, y: e.clientY };
+      rclickDown.current = { x: e.clientX, y: e.clientY, maxDist: 0 };
     };
-    document.addEventListener('mousedown', onRightDown);
-    return () => document.removeEventListener('mousedown', onRightDown);
+    const onMove = (e: MouseEvent) => {
+      if (!rclickDown.current) return;
+      const dx = e.clientX - rclickDown.current.x;
+      const dy = e.clientY - rclickDown.current.y;
+      const dist = dx * dx + dy * dy;
+      if (dist > rclickDown.current.maxDist) rclickDown.current.maxDist = dist;
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('mousemove', onMove);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('mousemove', onMove);
+    };
   }, []);
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
@@ -294,27 +306,27 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
     // If menu is already open, close it on any right-click
     if (contextMenu) {
       setContextMenu(null);
+      rclickDown.current = null;
       return;
     }
     if (nodePalette) {
       setNodePalette(null);
+      rclickDown.current = null;
       return;
     }
 
     // Only open on stationary right-click (no drag/pan)
-    if (rclickDown.current) {
-      const dx = e.clientX - rclickDown.current.x;
-      const dy = e.clientY - rclickDown.current.y;
-      if (dx * dx + dy * dy > RCLICK_THRESHOLD * RCLICK_THRESHOLD) {
-        rclickDown.current = null;
-        return; // was a drag — don't open menu
-      }
-    }
+    const wasDrag = rclickDown.current && rclickDown.current.maxDist > RCLICK_THRESHOLD * RCLICK_THRESHOLD;
     rclickDown.current = null;
+    if (wasDrag) return;
+
+    // Don't open context menu when right-clicking on pin handles (interferes with connections)
+    const target = e.target as HTMLElement;
+    if (target.closest('.ueflow-handle') || target.closest('.react-flow__handle')) return;
 
     // Check if right-clicked on a node
-    const nodeEl = (e.target as HTMLElement).closest('.react-flow__node');
-    const edgeEl = (e.target as HTMLElement).closest('.react-flow__edge');
+    const nodeEl = target.closest('.react-flow__node');
+    const edgeEl = target.closest('.react-flow__edge');
 
     if (nodeEl) {
       const nodeId = nodeEl.getAttribute('data-id');
@@ -324,7 +336,6 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
       }
     }
     if (edgeEl) {
-      // Extract edge ID from the SVG element's data-testid
       const edgeId = edgeEl.getAttribute('data-testid')?.replace('rf__edge-', '') ?? undefined;
       if (edgeId) {
         setContextMenu({ x: e.clientX, y: e.clientY, edgeId });
