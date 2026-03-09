@@ -4,23 +4,33 @@
 
 ### Added
 
-- Add natural language Blueprint generation — describe logic in chat, AI generates UEGraphJSON nodes that render on the canvas with preview modal for insert/open/discard
-- Add `ai-generate.ts` with generation system prompt (schema docs + few-shot example), `parseGeneratedGraph()` JSON extractor/validator, `normalizeGeneratedPin()` default filler, and `offsetGraphPositions()` for merge placement
+- Add full marketing landing page with live 6-node hero graph, interactive multi-graph showcase, feature cards, how-it-works steps, and paste CTA ([`23ec14b`][23ec14b], [`36730b6`][36730b6], [`68dde3b`][68dde3b])
+- Add interactive "Full Blueprint Viewer" showcase on landing page — live ReactFlow rendering with clickable sidebar items that switch graphs and animate zoom-to-node ([`68dde3b`][68dde3b])
+- Add client-side T3D paste-to-render — paste or drag-drop T3D text directly in browser without Python CLI ([`590d7b8`][590d7b8])
+- Add embed API for rendering Blueprint graphs on any webpage with callbacks, chrome toggles, theming, and lazy loading ([`f91dbb4`][f91dbb4], [`b33409a`][b33409a])
+- Add AI chat panel with graph-context-aware system prompt, message history, and thinking indicator ([`7286966`][7286966], [`0950cc5`][0950cc5])
+- Add AI toolbar with one-shot Document, Review, and Search actions ([`6345a00`][6345a00])
+- Add natural language Blueprint generation — describe logic in chat, AI generates UEGraphJSON nodes that render on the canvas with preview modal for insert/open/discard ([`07b1e1e`][07b1e1e])
+- Add `ai-generate.ts` with `GENERATE_SCHEMA_ADDENDUM` (XML-tagged schema, grounding, 3 few-shot examples, split rules/constraints), `parseGeneratedGraph()` JSON extractor/validator, `normalizeGeneratedPin()` default filler, and `offsetGraphPositions()` for merge placement
 - Add `GeneratePreview` component with contained ReactFlow preview of generated graph, Insert into Graph / Open as New Graph / Discard buttons, and node/connection count summary
-- Add generation detection in `useAIChat` via keyword heuristic — automatically uses generation prompt when message contains "generate", "create", "build", etc.
-- Add selection-aware chat — selected node title injected into AI system prompt, dynamic suggested prompts ("What does [title] do?", "What connects to [title]?", "Trace execution from [title]")
+- Add hybrid AI prompt architecture — analyst base prompt always present, generation schema appended only when `isGenerationRequest()` detects generation intent via two-tier matching (strong signals always trigger, weak signals suppressed by question anti-patterns)
+- Add selection-aware chat — selected node title injected as user message prefix, dynamic suggested prompts ("What does [title] do?", "What connects to [title]?", "Trace execution from [title]")
 - Add clickable node links in AI Review results — node titles in result text become navigation links with accent color and hover glow
 - Add `NodeExplainer` floating card — one-shot AI explanation of selected node with 800ms debounce, dismisses on deselect/Escape
-- Add generation-focused suggested prompts in chat panel: "Generate a health regen system", "Create a damage handler", "Build a simple timer"
-- Add 13 Vitest tests for ai-generate parser, normalizer, offset, and round-trip through `graphJsonToFlow()`
-- Add Google Gemini as free AI provider (30 req/min, no credit card required) with tabbed provider UI alongside OpenRouter BYOK
-- Add `gemini.ts` API client with chat completion, Gemini-format message conversion, and config storage
+- Add Google Gemini as free AI provider (30 req/min, no credit card required) with tabbed provider UI alongside OpenRouter BYOK ([`3e60b2c`][3e60b2c])
+- Add `gemini.ts` API client with `generationConfig` (temperature 1.0, maxOutputTokens 8192, topP 0.95), relaxed `safetySettings` (BLOCK_ONLY_HIGH), and config storage
 - Add status dot indicator on AI Settings button — red (no key), green (connected), orange (warning/error)
-- Add friendly 429 rate limit error messages instead of raw API JSON
-- Add dual-provider `AIProviderContext` with active provider tracking, warning state, and automatic fallback
+- Add dual-provider `AIProviderContext` with active provider tracking, warning state, and `chatCompletion()` dispatch
+- Add UE function signature database — 2,756 functions, 6,345 pins from 23 core classes in `ue-signatures.json` with lazy-loaded synchronous lookups and runtime learning from user-pasted T3D ([`ac55259`][ac55259])
+- Add `graph-validator.ts` post-generation validator — corrects wrong memberParent, fixes pin categories (float→real), fills missing defaults/subCategoryObject, adds missing pins from signatures, injects exec pins for impure functions ([`ac55259`][ac55259])
+- Add paste-back accuracy hardening — hidden pin injection (self, WorldContextObject, LatentInfo), GUID validation/dedup, comment dimension fallback, AGDV-only-when-set rule ([`518c491`][518c491])
+- Add mobile responsiveness with progressive media queries at 900px/768px/600px/480px — sidebar drawer, bottom sheet details, full-screen chat, icon-only toolbars, landscape support ([`15d1b27`][15d1b27])
+- Add 22 Vitest tests for ai-generate parser, normalizer, offset, isGenerationRequest, and round-trip through `graphJsonToFlow()`
+- Add Cloudflare Pages deployment config at `ue-flow.pages.dev` ([`0bd6734`][0bd6734])
 
 ### Changed
 
+- Remove Puter.js dependency — replaced by OpenRouter BYOK and Gemini free tier ([`48a666b`][48a666b])
 - Remove free-tier OpenRouter models (unreliable rate limits) — free access now via Gemini provider
 - Remove graph/function/variable count from TopBar (kept in StatusBar only)
 
@@ -138,6 +148,21 @@ _First release._
 [b1ee37d]: https://github.com/azereki/ue-flow/commit/b1ee37d
 [9649cb2]: https://github.com/azereki/ue-flow/commit/9649cb2
 [7286966]: https://github.com/azereki/ue-flow/commit/7286966
+
+[23ec14b]: https://github.com/azereki/ue-flow/commit/23ec14b
+[36730b6]: https://github.com/azereki/ue-flow/commit/36730b6
+[68dde3b]: https://github.com/azereki/ue-flow/commit/68dde3b
+[590d7b8]: https://github.com/azereki/ue-flow/commit/590d7b8
+[f91dbb4]: https://github.com/azereki/ue-flow/commit/f91dbb4
+[b33409a]: https://github.com/azereki/ue-flow/commit/b33409a
+[6345a00]: https://github.com/azereki/ue-flow/commit/6345a00
+[07b1e1e]: https://github.com/azereki/ue-flow/commit/07b1e1e
+[3e60b2c]: https://github.com/azereki/ue-flow/commit/3e60b2c
+[ac55259]: https://github.com/azereki/ue-flow/commit/ac55259
+[518c491]: https://github.com/azereki/ue-flow/commit/518c491
+[15d1b27]: https://github.com/azereki/ue-flow/commit/15d1b27
+[0bd6734]: https://github.com/azereki/ue-flow/commit/0bd6734
+[48a666b]: https://github.com/azereki/ue-flow/commit/48a666b
 
 [3e99964]: https://github.com/azereki/ue-flow/commit/3e99964
 [02cc3db]: https://github.com/azereki/ue-flow/commit/02cc3db
