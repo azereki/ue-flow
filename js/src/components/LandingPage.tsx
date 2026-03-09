@@ -377,7 +377,7 @@ export function LandingPage({ onGraphParsed, onExploreDemoBlueprint }: LandingPa
       </section>
 
       {/* Features */}
-      <section className="ueflow-landing-section">
+      <section className="ueflow-landing-section ueflow-landing-features-section">
         <h2 className="ueflow-landing-h2">Features</h2>
         <div className="ueflow-landing-features">
           {FEATURES.map((f) => (
@@ -391,7 +391,7 @@ export function LandingPage({ onGraphParsed, onExploreDemoBlueprint }: LandingPa
       </section>
 
       {/* How it works */}
-      <section className="ueflow-landing-section">
+      <section className="ueflow-landing-section ueflow-landing-howto">
         <h2 className="ueflow-landing-h2">How It Works</h2>
         <div className="ueflow-landing-steps">
           {STEPS.map((s) => (

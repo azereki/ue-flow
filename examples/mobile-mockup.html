@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ue-flow Mobile Mockup</title>
+<style>
+  :root {
+    --bg: #1a1d23;
+    --surface: #22252b;
+    --chrome: #191b20;
+    --border: #2a2d35;
+    --accent: #4a9eff;
+    --text: #c8cdd5;
+    --text-muted: #6b7280;
+    --text-link: #7ab4ff;
+    --green: #4ade80;
+    --red: #f87171;
+    --yellow: #fbbf24;
+    --purple: #a78bfa;
+    --radius: 8px;
+    --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0d0f12;
+    color: var(--text);
+    font-family: var(--font);
+    padding: 24px;
+    line-height: 1.5;
+  }
+
+  h1 {
+    color: var(--accent);
+    font-size: 24px;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+
+  .subtitle {
+    color: var(--text-muted);
+    text-align: center;
+    font-size: 13px;
+    margin-bottom: 32px;
+  }
+
+  /* ===== Mockup Grid ===== */
+  .mockup-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 32px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .mockup-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .mockup-card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .mockup-card-header h2 {
+    font-size: 15px;
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .mockup-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .mockup-badge--before { background: rgba(248, 113, 113, 0.15); color: var(--red); }
+  .mockup-badge--after { background: rgba(74, 158, 255, 0.15); color: var(--accent); }
+  .mockup-badge--new { background: rgba(74, 222, 128, 0.15); color: var(--green); }
+
+  .mockup-card-body {
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .mockup-notes {
+    padding: 12px 20px 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .mockup-notes strong { color: var(--text-link); font-weight: 600; }
+  .mockup-notes ul { margin: 4px 0 0 16px; }
+
+  /* ===== Phone Frame ===== */
+  .phone {
+    width: 280px;
+    height: 520px;
+    background: var(--bg);
+    border: 2px solid var(--border);
+    border-radius: 24px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  .phone--tall { height: 580px; }
+
+  .phone-status-bar {
+    height: 24px;
+    background: var(--chrome);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    font-size: 9px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .phone-notch {
+    width: 80px;
+    height: 20px;
+    background: #000;
+    border-radius: 0 0 12px 12px;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+  }
+
+  /* ===== Shared UI Elements ===== */
+  .w-topbar {
+    height: 36px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .w-topbar-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-link);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .w-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .w-btn--icon {
+    width: 28px;
+    height: 28px;
+    background: rgba(255,255,255,0.06);
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  .w-btn--primary {
+    background: var(--accent);
+    color: #fff;
+    padding: 10px 20px;
+    font-size: 13px;
+    min-height: 44px;
+  }
+
+  .w-btn--secondary {
+    background: rgba(255,255,255,0.06);
+    color: var(--text);
+    padding: 10px 16px;
+    font-size: 12px;
+    min-height: 44px;
+    border: 1px solid var(--border);
+  }
+
+  .w-graph-area {
+    flex: 1;
+    background: var(--bg);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .w-graph-placeholder {
+    width: 90%;
+    height: 80%;
+    border: 1px dashed rgba(255,255,255,0.08);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: var(--text-muted);
+    font-size: 10px;
+  }
+
+  .w-graph-nodes {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 8px;
+  }
+
+  .w-node {
+    width: 52px;
+    height: 32px;
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 7px;
+    color: rgba(255,255,255,0.5);
+    position: relative;
+  }
+
+  .w-node--event { background: rgba(255, 50, 50, 0.2); border-color: rgba(255, 50, 50, 0.3); }
+  .w-node--func { background: rgba(74, 158, 255, 0.2); border-color: rgba(74, 158, 255, 0.3); }
+  .w-node--pure { background: rgba(74, 222, 128, 0.2); border-color: rgba(74, 222, 128, 0.3); }
+  .w-node--macro { background: rgba(167, 139, 250, 0.2); border-color: rgba(167, 139, 250, 0.3); }
+
+  .w-wire {
+    position: absolute;
+    height: 1px;
+    background: rgba(255,255,255,0.15);
+    right: -8px;
+    top: 50%;
+    width: 8px;
+  }
+
+  .w-statusbar {
+    height: 22px;
+    background: var(--chrome);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    font-size: 8px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  /* ===== Specific Mockup Styles ===== */
+
+  /* Landing Page - Before */
+  .landing-hero {
+    padding: 16px;
+    text-align: center;
+  }
+
+  .landing-h1 {
+    font-size: 16px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 6px;
+    line-height: 1.2;
+  }
+
+  .landing-sub {
+    font-size: 9px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  .landing-graph-box {
+    width: 100%;
+    height: 100px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 9px;
+    margin-bottom: 10px;
+  }
+
+  .landing-btns {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .landing-features {
+    padding: 10px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .landing-feature {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 9px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .landing-feature-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    background: rgba(74, 158, 255, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+
+  /* Problems highlight */
+  .problem-highlight {
+    border: 1px dashed var(--red) !important;
+    position: relative;
+  }
+
+  .problem-label {
+    position: absolute;
+    top: -8px;
+    right: 4px;
+    background: var(--red);
+    color: #fff;
+    font-size: 7px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    white-space: nowrap;
+    z-index: 5;
+    font-weight: 600;
+  }
+
+  /* ===== Drawer Overlay ===== */
+  .w-drawer-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 20;
+  }
+
+  .w-drawer {
+    position: absolute;
+    left: 0;
+    top: 24px; /* below status bar */
+    bottom: 0;
+    width: 220px;
+    background: var(--chrome);
+    border-right: 1px solid var(--border);
+    z-index: 21;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .w-drawer-header {
+    padding: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .w-drawer-header span {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-link);
+  }
+
+  .w-drawer-search {
+    margin: 8px 10px;
+    height: 30px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    font-size: 9px;
+    color: var(--text-muted);
+  }
+
+  .w-drawer-section {
+    padding: 4px 10px;
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 6px;
+  }
+
+  .w-drawer-item {
+    padding: 10px 12px;
+    font-size: 10px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+  }
+
+  .w-drawer-item:hover,
+  .w-drawer-item--active {
+    background: rgba(74, 158, 255, 0.08);
+  }
+
+  .w-drawer-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+  }
+
+  .w-drawer-icon--event { background: rgba(255,50,50,0.2); color: #ff6b6b; }
+  .w-drawer-icon--func { background: rgba(74,158,255,0.2); color: #7ab4ff; }
+  .w-drawer-icon--var { background: rgba(74,222,128,0.2); color: #4ade80; }
+
+  /* ===== Bottom Sheet ===== */
+  .w-bottom-sheet {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 200px;
+    background: var(--chrome);
+    border-top: 1px solid var(--border);
+    border-radius: 12px 12px 0 0;
+    z-index: 15;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .w-sheet-handle {
+    width: 32px;
+    height: 4px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+    margin: 8px auto 4px;
+    flex-shrink: 0;
+  }
+
+  .w-sheet-header {
+    padding: 6px 16px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .w-sheet-header span {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .w-sheet-content {
+    padding: 10px 16px;
+    flex: 1;
+    overflow-y: auto;
+    font-size: 10px;
+  }
+
+  .w-sheet-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .w-sheet-row-label { color: var(--text-muted); }
+  .w-sheet-row-value { color: var(--text); font-weight: 500; }
+
+  /* ===== Chat Overlay ===== */
+  .w-chat-overlay {
+    position: absolute;
+    inset: 24px 0 0 0; /* below phone status bar */
+    background: var(--chrome);
+    z-index: 25;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .w-chat-header {
+    height: 44px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .w-chat-header-title {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .w-chat-messages {
+    flex: 1;
+    padding: 12px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .w-chat-msg {
+    max-width: 85%;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 10px;
+    line-height: 1.4;
+  }
+
+  .w-chat-msg--user {
+    background: var(--accent);
+    color: #fff;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+  }
+
+  .w-chat-msg--ai {
+    background: rgba(255,255,255,0.06);
+    color: var(--text);
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+  }
+
+  .w-chat-chips {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px;
+    overflow-x: auto;
+    flex-shrink: 0;
+  }
+
+  .w-chat-chip {
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    font-size: 9px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+  }
+
+  .w-chat-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .w-chat-textarea {
+    flex: 1;
+    height: 36px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 0 14px;
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+  }
+
+  .w-chat-send {
+    width: 36px;
+    height: 36px;
+    background: var(--accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  /* ===== FAB ===== */
+  .w-fab {
+    position: absolute;
+    bottom: 32px;
+    right: 12px;
+    width: 48px;
+    height: 48px;
+    background: var(--accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 18px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    z-index: 10;
+  }
+
+  /* ===== Tab Bar (Mobile) ===== */
+  .w-tab-bar-mobile {
+    display: flex;
+    overflow-x: auto;
+    gap: 2px;
+    padding: 4px 8px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .w-tab-chip {
+    padding: 6px 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 9px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .w-tab-chip--active {
+    background: rgba(74, 158, 255, 0.12);
+    border-color: var(--accent);
+    color: var(--text-link);
+  }
+
+  /* ===== Hamburger ===== */
+  .w-hamburger {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    cursor: pointer;
+  }
+
+  .w-hamburger-line {
+    width: 16px;
+    height: 2px;
+    background: var(--text-muted);
+    border-radius: 1px;
+  }
+
+  /* ===== Annotation Arrows ===== */
+  .annotation {
+    position: absolute;
+    font-size: 8px;
+    color: var(--yellow);
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    z-index: 30;
+    pointer-events: none;
+    font-weight: 600;
+  }
+
+  /* ===== Paste Landing Mockups ===== */
+  .paste-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    gap: 10px;
+  }
+
+  .paste-textarea-mock {
+    width: 100%;
+    height: 120px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px;
+    font-size: 8px;
+    color: var(--text-muted);
+    font-family: 'Consolas', monospace;
+  }
+
+  .paste-textarea-mock--small {
+    height: 80px;
+  }
+
+  .paste-or {
+    font-size: 9px;
+    color: var(--text-muted);
+  }
+
+  .paste-drop-zone {
+    width: 100%;
+    height: 48px;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    color: var(--text-muted);
+    min-height: 48px;
+  }
+
+  /* ===== Section Dividers ===== */
+  .section-title {
+    text-align: center;
+    color: var(--accent);
+    font-size: 18px;
+    font-weight: 700;
+    margin: 48px 0 8px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+  }
+
+  .section-subtitle {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-bottom: 24px;
+  }
+
+  /* ===== Comparison Layout ===== */
+  .comparison {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .comparison-label {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .comparison-label--before { color: var(--red); }
+  .comparison-label--after { color: var(--accent); }
+
+  .comparison-item { display: flex; flex-direction: column; align-items: center; }
+</style>
+</head>
+<body>
+
+<h1>ue-flow Mobile Mockups</h1>
+<p class="subtitle">Wireframe designs for mobile responsive treatment &mdash; 375px viewport (iPhone SE/12 Mini)</p>
+
+<!-- ==================== SECTION 1: LANDING PAGE ==================== -->
+<div class="section-title">1. Landing Page</div>
+<div class="section-subtitle">Hero, features, and paste CTA on mobile</div>
+
+<div class="mockup-grid">
+  <!-- BEFORE: Landing -->
+  <div class="mockup-card">
+    <div class="mockup-card-header">
+      <h2>Landing Page</h2>
+      <span class="mockup-badge mockup-badge--before">Current</span>
+    </div>
+    <div class="mockup-card-body">
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-status-bar">
+          <span>9:41</span>
+          <span>ue-flow.pages.dev</span>
+        </div>
+        <div style="flex:1; overflow-y:auto;">
+          <div class="landing-hero">
+            <div class="landing-h1">Blueprint<br>Visualization</div>
+            <div class="landing-sub" style="padding: 0 30px; position:relative">
+              Open-source UE Blueprint rendering suite
+              <span class="problem-label" style="top:-4px;right:-8px">40px padding</span>
+            </div>
+            <div class="landing-graph-box" style="height:80px; position:relative">
+              <span class="problem-label" style="top:-8px;right:4px">240px too small</span>
+              Graph Demo (cramped)
+            </div>
+            <div class="landing-btns">
+              <div class="w-btn w-btn--primary" style="min-height:34px; font-size:10px; padding:6px 14px; position:relative">
+                Paste T3D
+                <span class="problem-label" style="top:-10px;right:-12px">34px &lt; 44px</span>
+              </div>
+              <div class="w-btn w-btn--secondary" style="min-height:34px; font-size:10px; padding:6px 14px">
+                Explore Demo
+              </div>
+            </div>
+          </div>
+          <div class="landing-features">
+            <div class="landing-feature" style="position:relative">
+              <span class="problem-label" style="top:-8px;right:4px">24px padding</span>
+              <div class="landing-feature-icon">&#9670;</div>
+              <span>Interactive Blueprint graphs</span>
+            </div>
+            <div class="landing-feature">
+              <div class="landing-feature-icon">&#9997;</div>
+              <span>Edit pin values inline</span>
+            </div>
+            <div class="landing-feature">
+              <div class="landing-feature-icon">&#128640;</div>
+              <span>AI-powered chat</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mockup-notes">
+      <strong>Issues:</strong>
+      <ul>
+        <li>Buttons 34px tall (need 44px+)</li>
+        <li>24px section padding too wide for 375px</li>
+        <li>Hero graph 240px (unreadable at this zoom)</li>
+        <li>Showcase section overflows horizontally</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- AFTER: Landing -->
+  <div class="mockup-card">
+    <div class="mockup-card-header">
+      <h2>Landing Page</h2>
+      <span class="mockup-badge mockup-badge--after">Proposed</span>
+    </div>
+    <div class="mockup-card-body">
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-status-bar">
+          <span>9:41</span>
+          <span>ue-flow.pages.dev</span>
+        </div>
+        <div style="flex:1; overflow-y:auto;">
+          <div style="padding: 16px 16px 12px; text-align:center;">
+            <div class="landing-h1" style="font-size:18px">Blueprint<br>Visualization</div>
+            <div class="landing-sub" style="margin-bottom:12px">
+              Open-source UE Blueprint rendering suite
+            </div>
+            <div class="landing-graph-box" style="height:130px; margin-bottom:12px">
+              Hero Graph (taller, more readable)
+            </div>
+            <div class="landing-btns" style="flex-direction:column; gap:8px;">
+              <div class="w-btn w-btn--primary" style="width:100%">
+                Paste T3D Text
+              </div>
+              <div class="w-btn w-btn--secondary" style="width:100%">
+                Explore Demo Blueprint
+              </div>
+            </div>
+          </div>
+          <div style="padding: 10px 12px;">
+            <div class="landing-feature" style="margin-bottom:6px">
+              <div class="landing-feature-icon">&#9670;</div>
+              <span>Interactive Blueprint graphs</span>
+            </div>
+            <div class="landing-feature" style="margin-bottom:6px">
+              <div class="landing-feature-icon">&#9997;</div>
+              <span>Edit pin values inline</span>
+            </div>
+            <div class="landing-feature">
+              <div class="landing-feature-icon">&#128640;</div>
+              <span>AI-powered chat</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mockup-notes">
+      <strong>Changes:</strong>
+      <ul>
+        <li>Buttons 44px, full-width stacked</li>
+        <li>Padding reduced to 12-16px</li>
+        <li>Hero graph taller (280px actual)</li>
+        <li>CTAs in thumb zone (lower screen)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 2: PASTE LANDING ==================== -->
+<div class="section-title">2. Paste Landing</div>
+<div class="section-subtitle">Textarea and file drop on mobile</div>
+
+<div class="mockup-grid">
+  <div class="mockup-card">
+    <div class="mockup-card-header">
+      <h2>Paste Landing</h2>
+      <span class="mockup-badge mockup-badge--before">Current</span>
+    </div>
+    <div class="mockup-card-body">
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-status-bar">
+          <span>9:41</span>
+          <span></span>
+        </div>
+        <div class="paste-content" style="position:relative">
+          <div style="font-size:14px; font-weight:700; color:#fff">Paste T3D</div>
+          <div class="paste-textarea-mock" style="position:relative; height:180px">
+            Begin Object Class=...
+            <span class="problem-label" style="bottom:-8px;right:4px">280px fixed</span>
+          </div>
+          <div class="paste-or">or</div>
+          <div class="paste-drop-zone">Drop .txt file here</div>
+          <div style="position:relative">
+            <div class="w-btn w-btn--primary" style="min-height:34px; font-size:10px; padding:6px 20px">
+              Render
+            </div>
+            <span class="problem-label" style="top:-10px;right:-20px">below fold</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mockup-notes">
+      <strong>Issues:</strong>
+      <ul>
+        <li>280px textarea pushes Render button below fold</li>
+        <li>100vw causes horizontal scrollbar</li>
+        <li>Render button undersized</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="mockup-card">
+    <div class="mockup-card-header">
+      <h2>Paste Landing</h2>
+      <span class="mockup-badge mockup-badge--after">Proposed</span>
+    </div>
+    <div class="mockup-card-body">
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-status-bar">
+          <span>9:41</span>
+          <span></span>
+        </div>
+        <div class="paste-content">
+          <div style="font-size:14px; font-weight:700; color:#fff">Paste T3D</div>
+          <div class="paste-textarea-mock paste-textarea-mock--small">
+            Begin Object Class=...
+          </div>
+          <div class="paste-or">or</div>
+          <div class="paste-drop-zone">Drop .txt file here</div>
+          <div style="display:flex; gap:8px; width:100%">
+            <div class="w-btn w-btn--secondary" style="flex:1">&#8592; Back</div>
+            <div class="w-btn w-btn--primary" style="flex:2">Render Graph</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mockup-notes">
+      <strong>Changes:</strong>
+      <ul>
+        <li>Textarea 120px (fits with buttons visible)</li>
+        <li>width: 100% (no 100vw overflow)</li>
+        <li>Full-width 44px buttons in thumb zone</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 3: MULTI-GRAPH VIEW ==================== -->
+<div class="section-title">3. Multi-Graph View</div>
+<div class="section-subtitle">IDE layout adapted for mobile with drawer + bottom sheet pattern</div>
+
+<div class="mockup-grid">
+  <!-- BEFORE: MultiGraph -->
+  <div class="mockup-card">
+    <div class="mockup-card-header">
+      <h2>Multi-Graph View</h2>
+      <span class="mockup-badge mockup-badge--before">Current</span>
+    </div>
+    <div class="mockup-card-body">
+      <div class="phone" style="position:relative">
+        <div class="phone-notch"></div>
+        <div class="phone-status-bar">
+          <span>9:41</span>
+          <span></span>
+        </div>
+        <div class="w-topbar">
+          <span class="w-topbar-title">BP_PlayerCharacter</span>
+        </div>
+        <div style="display:flex; flex:1; min-height:0; position:relative">
+          <!-- Sidebar taking 140px of 280px phone -->
+          <div style="width:100px; background:var(--chrome); border-right:1px solid var(--border); flex-shrink:0; overflow:hidden; position:relative">
+            <div style="padding:6px; font-size:7px; color:var(--text-muted)">
+              <div style="padding:4px 6px; font-size:7px">EVENTS</div>
+              <div style="padding:3px 6px; font-size:6px; color:var(--text-link)">BeginPlay</div>
+              <div style="padding:3px 6px; font-size:6px; color:var(--text-link)">Tick</div>
+              <div style="padding:4px 6px; font-size:7px; margin-top:4px">FUNCTIONS</div>
+              <div style="padding:3px 6px; font-size:6px">GetHealth</div>
+              <div style="padding:3px 6px; font-size:6px">TakeDamage</div>
+            </div>
+            <span class="problem-label" style="bottom:4px;left:4px;font-size:6px">50% of width!</span>
+          </div>
+          <!-- Graph area (only ~180px left) -->
+          <div style="flex:1; display:flex; flex-direction:column; min-width:0">
+            <div style="display:flex; gap:2px; padding:2px 4px; background:var(--chrome); border-bottom:1px solid var(--border)">
+              <div style="padding:2px 6px; font-size:6px; color:var(--text-link); background:rgba(74,158,255,0.1); border-radius:3px">EventGraph</div>
+              <div style="padding:2px 6px; font-size:6px; color:var(--text-muted)">GetHealth</div>
+            </div>
+            <div class="w-graph-area">
+              <div class="w-graph-placeholder">
+                <span style="font-size:14px; opacity:0.3">&#9670;</span>
+                <span>Graph (tiny)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="w-statusbar">
+          <span>EventGraph &bull; 12 nodes</span>
+        </div>
+      </div>
+    </div>
+    <div class="mockup-notes">
+      <strong>Issues:</strong>
+      <ul>
+        <li>Sidebar takes ~40% of phone width, graph is unusable</li>
+        <li>Tabs unreadable at this size</li>
+        <li>Resize handles need mouse (no touch)</li>
+        <li>Details panel + Chat would add more columns to 280px</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- AFTER: MultiGraph - Default State -->
+  <div class="mockup-card">
+    <div class="mockup-card-header">
+      <h2>Multi-Graph: Default State</h2>
+      <span class="mockup-badge mockup-badge--after">Proposed</span>
+    </div>
+    <div class="mockup-card-body">
+      <div class="phone" style="position:relative">
+        <div class="phone-notch"></div>
+        <div class="phone-status-bar">
+          <span>9:41</span>
+          <span></span>
+        </div>
+        <!-- TopBar with hamburger -->
+        <div class="w-topbar" style="gap:10px">
+          <div class="w-hamburger">
+            <div class="w-hamburger-line"></div>
+            <div class="w-hamburger-line"></div>
+            <div class="w-hamburger-line"></div>
+          </div>
+          <span class="w-topbar-title">BP_PlayerCharacter</span>
+          <div class="w-btn w-btn--icon" style="font-size:11px">&#128269;</div>
+        </div>
+        <!-- Scrollable tab chips -->
+        <div class="w-tab-bar-mobile">
+          <div class="w-tab-chip w-tab-chip--active">EventGraph</div>
+          <div class="w-tab-chip">GetHealth</div>
+          <div class="w-tab-chip">TakeDamage</div>
+        </div>
+        <!-- Full-width graph -->
+        <div class="w-graph-area" style="position:relative">
+          <div class="w-graph-nodes">
+            <div class="w-node w-node--event"><div class="w-wire"></div>BeginPlay</div>
+            <div class="w-node w-node--func"><div class="w-wire"></div>PrintStr</div>
+            <div class="w-node w-node--pure">GetHealth</div>
+            <div class="w-node w-node--event"><div class="w-wire"></div>Tick</div>
+            <div class="w-node w-node--func"><div class="w-wire"></div>AddMove</div>
+            <div class="w-node w-node--macro">ForEach</div>
+          </div>
+          <!-- FAB -->
+          <div class="w-fab">&#128172;</div>
+          <!-- Annotations -->
+          <div class="annotation" style="top:8px;left:8px">Full-width graph!</div>
+        </div>
+        <!-- No status bar on mobile (hidden) -->
+      </div>
+    </div>
+    <div class="mockup-notes">
+      <strong>Changes:</strong>
+      <ul>
+        <li>Sidebar hidden, replaced by hamburger drawer</li>
+        <li>Graph fills full viewport width</li>
+        <li>Tabs as scrollable chips (touch-friendly)</li>
+        <li>Chat FAB in thumb zone (bottom-right)</li>
+        <li>Status bar hidden to maximize graph space</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- AFTER: MultiGraph - Drawer Open -->
+  <div class="mockup-card">
+    <div class="mockup-card-header">
+      <h2>Multi-Graph: Sidebar Drawer</h2>
+      <span class="mockup-badge mockup-badge--new">New Pattern</span>
+    </div>
+    <div class="mockup-card-body">
+      <div class="phone" style="position:relative">
+        <div class="phone-notch"></div>
+        <div class="phone-status-bar">
+          <span>9:41</span>
+          <span></span>
+        </div>
+        <!-- Dimmed background -->
+        <div class="w-drawer-overlay" style="top:24px"></div>
+        <!-- Drawer -->
+        <div class="w-drawer">
+          <div class="w-drawer-header">
+            <span>Explorer</span>
+            <div class="w-btn w-btn--icon" style="width:24px;height:24px;font-size:12px">&times;</div>
+          </div>
+          <div class="w-drawer-search">&#128269; Search sidebar...</div>
+          <div class="w-drawer-section">EVENTS (3)</div>
+          <div class="w-drawer-item w-drawer-item--active">
+            <div class="w-drawer-icon w-drawer-icon--event">E</div>
+            BeginPlay
+          </div>
+          <div class="w-drawer-item">
+            <div class="w-drawer-icon w-drawer-icon--event">E</div>
+            Tick
+          </div>
+          <div class="w-drawer-item">
+            <div class="w-drawer-icon w-drawer-icon--event">E</div>
+            AnyDamage
+          </div>
+          <div class="w-drawer-section">FUNCTIONS (4)</div>
+          <div class="w-drawer-item">
+            <div class="w-drawer-icon w-drawer-icon--func">f</div>
+            GetHealth
+          </div>
+          <div class="w-drawer-item">
+            <div class="w-drawer-icon w-drawer-icon--func">f</div>
+            TakeDamage
+          </div>
+          <div class="w-drawer-section">VARIABLES (6)</div>
+          <div class="w-drawer-item">
+            <div class="w-drawer-icon w-drawer-icon--var" style="font-size:7px">&#9679;</div>
+            Health
+          </div>
+          <div class="w-drawer-item">
+            <div class="w-drawer-icon w-drawer-icon--var" style="font-size:7px">&#9679;</div>
+            MaxHealth
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mockup-notes">
+      <strong>Drawer pattern:</strong>
+      <ul>
+        <li>Opens from left on hamburger tap</li>
+        <li>Overlay dims graph behind it</li>
+        <li>Tap outside or X to close</li>
+        <li>Items 40px+ tall for touch targets</li>
+        <li>Swipe left-edge to open (native iOS gesture)</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- AFTER: MultiGraph - Bottom Sheet (Details) -->
+  <div class="mockup-card">
+    <div class="mockup-card-header">
+      <h2>Multi-Graph: Details Sheet</h2>
+      <span class="mockup-badge mockup-badge--new">New Pattern</span>
+    </div>
+    <div class="mockup-card-body">
+      <div class="phone" style="position:relative">
+        <div class="phone-notch"></div>
+        <div class="phone-status-bar">
+          <span>9:41</span>
+          <span></span>
+        </div>
+        <div class="w-topbar" style="gap:10px">
+          <div class="w-hamburger">
+            <div class="w-hamburger-line"></div>
+            <div class="w-hamburger-line"></div>
+            <div class="w-hamburger-line"></div>
+          </div>
+          <span class="w-topbar-title">BP_PlayerCharacter</span>
+        </div>
+        <div class="w-tab-bar-mobile">
+          <div class="w-tab-chip w-tab-chip--active">EventGraph</div>
+          <div class="w-tab-chip">GetHealth</div>
+        </div>
+        <!-- Graph (compressed by sheet) -->
+        <div class="w-graph-area" style="position:relative">
+          <div class="w-graph-placeholder" style="height:60%">
+            <span style="font-size:14px; opacity:0.3">&#9670;</span>
+            <span>Graph (visible above sheet)</span>
+          </div>
+        </div>
+        <!-- Bottom Sheet -->
+        <div class="w-bottom-sheet">
+          <div class="w-sheet-handle"></div>
+          <div class="w-sheet-header">
+            <span>Health <span style="font-size:9px;color:var(--text-muted);font-weight:400">Variable</span></span>
+            <div class="w-btn w-btn--icon" style="width:24px;height:24px;font-size:12px">&times;</div>
+          </div>
+          <div class="w-sheet-content">
+            <div class="w-sheet-row">
+              <span class="w-sheet-row-label">Type</span>
+              <span class="w-sheet-row-value"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#4ade80;margin-right:4px;vertical-align:middle"></span>Float</span>
+            </div>
+            <div class="w-sheet-row">
+              <span class="w-sheet-row-label">Default</span>
+              <span class="w-sheet-row-value">100.0</span>
+            </div>
+            <div class="w-sheet-row">
+              <span class="w-sheet-row-label">Replication</span>
+              <span class="w-sheet-row-value">RepNotify</span>
+            </div>
+            <div class="w-sheet-row">
+              <span class="w-sheet-row-label">Instance Editable</span>
+              <span class="w-sheet-row-value">Yes</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mockup-notes">
+      <strong>Bottom sheet pattern:</strong>
+      <ul>
+        <li>Appears when tapping sidebar item with details</li>
+        <li>Drag handle to resize (half/full/dismiss)</li>
+        <li>Graph stays visible above the sheet</li>
+        <li>Replaces the right-side DetailsPanel on mobile</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- AFTER: MultiGraph - Chat Overlay -->
+  <div class="mockup-card">
+    <div class="mockup-card-header">
+      <h2>Multi-Graph: Chat</h2>
+      <span class="mockup-badge mockup-badge--new">New Pattern</span>
+    </div>
+    <div class="mockup-card-body">
+      <div class="phone" style="position:relative">
+        <div class="phone-notch"></div>
+        <div class="phone-status-bar">
+          <span>9:41</span>
+          <span></span>
+        </div>
+        <!-- Chat fullscreen overlay -->
+        <div class="w-chat-overlay">
+          <div class="w-chat-header">
+            <div class="w-btn w-btn--icon" style="font-size:16px">&#8592;</div>
+            <span class="w-chat-header-title">AI Chat</span>
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--green)"></div>
+          </div>
+          <div class="w-chat-messages">
+            <div class="w-chat-msg w-chat-msg--user">
+              What does the BeginPlay event do?
+            </div>
+            <div class="w-chat-msg w-chat-msg--ai">
+              The <strong>BeginPlay</strong> event fires once when the actor is spawned into the level. It's typically used for initialization logic like setting up timers, binding delegates, or caching component references.
+            </div>
+            <div class="w-chat-msg w-chat-msg--user">
+              Generate a health regen system
+            </div>
+            <div class="w-chat-msg w-chat-msg--ai">
+              Here's a health regeneration Blueprint that uses a looping timer...
+              <div style="margin-top:6px;padding:6px;background:rgba(74,158,255,0.1);border-radius:4px;font-size:8px">
+                [Preview: 4 nodes generated]<br>
+                <span style="color:var(--accent)">Insert</span> &bull; Open New &bull; Discard
+              </div>
+            </div>
+          </div>
+          <div class="w-chat-chips">
+            <div class="w-chat-chip">Explain selected</div>
+            <div class="w-chat-chip">Review graph</div>
+            <div class="w-chat-chip">Generate BP</div>
+          </div>
+          <div class="w-chat-input">
+            <div class="w-chat-textarea">Ask about this Blueprint...</div>
+            <div class="w-chat-send">&#8593;</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mockup-notes">
+      <strong>Full-screen chat:</strong>
+      <ul>
+        <li>Opens from FAB tap, fills entire screen</li>
+        <li>Back arrow (top-left) returns to graph</li>
+        <li>Suggested prompts as scrollable chips</li>
+        <li>Input pinned to bottom (above keyboard)</li>
+        <li>Same pattern for SingleGraphView</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- AFTER: MultiGraph - Single Graph with Chat FAB -->
+  <div class="mockup-card">
+    <div class="mockup-card-header">
+      <h2>Single Graph View</h2>
+      <span class="mockup-badge mockup-badge--after">Proposed</span>
+    </div>
+    <div class="mockup-card-body">
+      <div class="phone" style="position:relative">
+        <div class="phone-notch"></div>
+        <div class="phone-status-bar">
+          <span>9:41</span>
+          <span></span>
+        </div>
+        <!-- Minimal top bar -->
+        <div class="w-topbar">
+          <div class="w-btn w-btn--icon" style="font-size:12px">&#8592;</div>
+          <span class="w-topbar-title" style="font-size:10px">Pasted Graph</span>
+          <div class="w-btn w-btn--icon" style="font-size:10px">&#8943;</div>
+        </div>
+        <!-- Full viewport graph -->
+        <div class="w-graph-area" style="position:relative">
+          <div class="w-graph-nodes" style="padding:16px">
+            <div class="w-node w-node--event" style="width:60px;height:36px"><div class="w-wire"></div>BeginPlay</div>
+            <div class="w-node w-node--func" style="width:60px;height:36px"><div class="w-wire"></div>PrintStr</div>
+            <div class="w-node w-node--pure" style="width:60px;height:36px">GetVelocity</div>
+            <div class="w-node w-node--event" style="width:60px;height:36px"><div class="w-wire"></div>Tick</div>
+            <div class="w-node w-node--func" style="width:60px;height:36px"><div class="w-wire"></div>SetTimer</div>
+            <div class="w-node w-node--func" style="width:60px;height:36px">Branch</div>
+          </div>
+          <!-- Controls (bottom-left) -->
+          <div style="position:absolute;bottom:48px;left:10px;display:flex;flex-direction:column;gap:2px">
+            <div style="width:28px;height:28px;background:rgba(255,255,255,0.08);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-muted)">+</div>
+            <div style="width:28px;height:28px;background:rgba(255,255,255,0.08);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-muted)">&minus;</div>
+            <div style="width:28px;height:28px;background:rgba(255,255,255,0.08);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--text-muted)">FIT</div>
+          </div>
+          <!-- FAB -->
+          <div class="w-fab">&#128172;</div>
+        </div>
+      </div>
+    </div>
+    <div class="mockup-notes">
+      <strong>Single graph mobile:</strong>
+      <ul>
+        <li>Graph fills full viewport below thin topbar</li>
+        <li>Back button instead of "New Paste" text link</li>
+        <li>Chat FAB bottom-right (48px, in thumb zone)</li>
+        <li>Zoom controls bottom-left (standard ReactFlow)</li>
+        <li>MiniMap hidden on mobile (saves space)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 4: BREAKPOINT SUMMARY ==================== -->
+<div class="section-title">4. Breakpoint Strategy</div>
+<div class="section-subtitle">Progressive enhancement from mobile-up</div>
+
+<div class="mockup-grid">
+  <div class="mockup-card" style="grid-column: 1 / -1; max-width: 800px; margin: 0 auto;">
+    <div class="mockup-card-header">
+      <h2>Responsive Breakpoints</h2>
+    </div>
+    <div class="mockup-card-body" style="flex-direction:column; gap:12px; align-items:stretch; padding:20px 24px">
+      <!-- 480px -->
+      <div style="display:flex; align-items:center; gap:12px; padding:10px 14px; background:rgba(248,113,113,0.06); border:1px solid rgba(248,113,113,0.15); border-radius:8px">
+        <div style="width:60px; font-size:13px; font-weight:700; color:var(--red); flex-shrink:0">480px</div>
+        <div style="flex:1; font-size:11px; line-height:1.5">
+          <strong style="color:var(--text)">Small phones</strong> <span style="color:var(--text-muted)">&mdash; NEW breakpoint</span><br>
+          <span style="color:var(--text-muted)">Tighter padding (12px), stacked buttons, hidden minimap, showcase section simplified</span>
+        </div>
+      </div>
+      <!-- 600px -->
+      <div style="display:flex; align-items:center; gap:12px; padding:10px 14px; background:rgba(251,191,36,0.06); border:1px solid rgba(251,191,36,0.15); border-radius:8px">
+        <div style="width:60px; font-size:13px; font-weight:700; color:var(--yellow); flex-shrink:0">600px</div>
+        <div style="flex:1; font-size:11px; line-height:1.5">
+          <strong style="color:var(--text)">Standard phones</strong> <span style="color:var(--text-muted)">&mdash; enhanced existing</span><br>
+          <span style="color:var(--text-muted)">16px section padding, 44px buttons, textarea 150px, single-col features</span>
+        </div>
+      </div>
+      <!-- 768px -->
+      <div style="display:flex; align-items:center; gap:12px; padding:10px 14px; background:rgba(74,158,255,0.06); border:1px solid rgba(74,158,255,0.15); border-radius:8px">
+        <div style="width:60px; font-size:13px; font-weight:700; color:var(--accent); flex-shrink:0">768px</div>
+        <div style="flex:1; font-size:11px; line-height:1.5">
+          <strong style="color:var(--text)">Mobile/Tablet threshold</strong> <span style="color:var(--text-muted)">&mdash; NEW breakpoint (MultiGraph transition)</span><br>
+          <span style="color:var(--text-muted)">Below: drawer sidebar, bottom sheet, full-screen chat. Above: desktop IDE layout</span>
+        </div>
+      </div>
+      <!-- 900px -->
+      <div style="display:flex; align-items:center; gap:12px; padding:10px 14px; background:rgba(74,222,128,0.06); border:1px solid rgba(74,222,128,0.15); border-radius:8px">
+        <div style="width:60px; font-size:13px; font-weight:700; color:var(--green); flex-shrink:0">900px</div>
+        <div style="flex:1; font-size:11px; line-height:1.5">
+          <strong style="color:var(--text)">Tablet landscape</strong> <span style="color:var(--text-muted)">&mdash; existing, keep as-is</span><br>
+          <span style="color:var(--text-muted)">2-col features, sidebar visible, landing page 2-col hero</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 5: TOUCH TARGET COMPARISON ==================== -->
+<div class="section-title">5. Touch Targets</div>
+<div class="section-subtitle">Before/after sizing comparison</div>
+
+<div class="mockup-grid">
+  <div class="mockup-card" style="grid-column: 1 / -1; max-width: 700px; margin: 0 auto;">
+    <div class="mockup-card-header">
+      <h2>Touch Target Sizes</h2>
+    </div>
+    <div class="mockup-card-body" style="flex-direction:column; gap:16px; align-items:stretch; padding:20px 24px">
+      <!-- Row for each element -->
+      <div style="display:flex; align-items:center; gap:16px; font-size:11px">
+        <span style="width:120px; color:var(--text-muted)">CTA Buttons</span>
+        <div style="display:flex; align-items:center; gap:4px">
+          <div style="height:34px; padding:0 12px; background:rgba(248,113,113,0.15); border-radius:4px; display:flex; align-items:center; font-size:9px; color:var(--red)">34px</div>
+          <span style="color:var(--text-muted)">&rarr;</span>
+          <div style="height:44px; padding:0 16px; background:rgba(74,158,255,0.15); border-radius:6px; display:flex; align-items:center; font-size:9px; color:var(--accent)">44px</div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:16px; font-size:11px">
+        <span style="width:120px; color:var(--text-muted)">Sidebar Items</span>
+        <div style="display:flex; align-items:center; gap:4px">
+          <div style="height:28px; padding:0 10px; background:rgba(248,113,113,0.15); border-radius:4px; display:flex; align-items:center; font-size:9px; color:var(--red)">28px</div>
+          <span style="color:var(--text-muted)">&rarr;</span>
+          <div style="height:44px; padding:0 14px; background:rgba(74,158,255,0.15); border-radius:6px; display:flex; align-items:center; font-size:9px; color:var(--accent)">44px</div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:16px; font-size:11px">
+        <span style="width:120px; color:var(--text-muted)">Chat Chips</span>
+        <div style="display:flex; align-items:center; gap:4px">
+          <div style="height:28px; padding:0 8px; background:rgba(248,113,113,0.15); border-radius:4px; display:flex; align-items:center; font-size:9px; color:var(--red)">28px</div>
+          <span style="color:var(--text-muted)">&rarr;</span>
+          <div style="height:36px; padding:0 12px; background:rgba(74,158,255,0.15); border-radius:6px; display:flex; align-items:center; font-size:9px; color:var(--accent)">36px</div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:16px; font-size:11px">
+        <span style="width:120px; color:var(--text-muted)">Chat FAB</span>
+        <div style="display:flex; align-items:center; gap:4px">
+          <div style="height:36px; padding:0 10px; background:rgba(248,113,113,0.15); border-radius:16px; display:flex; align-items:center; font-size:9px; color:var(--red)">36px pill</div>
+          <span style="color:var(--text-muted)">&rarr;</span>
+          <div style="width:48px; height:48px; background:rgba(74,158,255,0.15); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9px; color:var(--accent)">48px</div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:16px; font-size:11px">
+        <span style="width:120px; color:var(--text-muted)">Tab Bar Tabs</span>
+        <div style="display:flex; align-items:center; gap:4px">
+          <div style="height:26px; padding:0 8px; background:rgba(248,113,113,0.15); border-radius:4px; display:flex; align-items:center; font-size:9px; color:var(--red)">26px</div>
+          <span style="color:var(--text-muted)">&rarr;</span>
+          <div style="height:36px; padding:0 14px; background:rgba(74,158,255,0.15); border-radius:6px; display:flex; align-items:center; font-size:9px; color:var(--accent)">36px</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="text-align:center; margin:48px 0 24px; color:var(--text-muted); font-size:11px">
+  ue-flow mobile mockup &mdash; open in browser at any size to review
+</div>
+
+</body>
+</html>
