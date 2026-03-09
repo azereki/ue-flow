@@ -255,7 +255,7 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
       )}
 
       {/* Events */}
-      {eventNodes.length > 0 && (
+      {(eventNodes.length > 0 || onCreateEvent) && (
         <Section title="EVENTS" count={eventNodes.length} onAdd={onCreateEvent ? () => { const name = prompt('Event name:'); if (name) onCreateEvent(name); } : undefined}>
           <TruncatedList items={eventNodes.map((evt: SidebarEvent) => {
             const params = (evt.params || evt.inputs || [])
@@ -286,7 +286,7 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
       )}
 
       {/* Functions */}
-      {filteredFunctions.length > 0 && (
+      {(filteredFunctions.length > 0 || onCreateFunction) && (
         <Section title="FUNCTIONS" count={filteredFunctions.length} onAdd={onCreateFunction ? () => { const name = prompt('Function name:'); if (name) onCreateFunction(name); } : undefined}>
           <TruncatedList items={Array.from(funcGroups.entries()).flatMap(([category, fns]) => [
             <div key={`cat-${category}`} className="ueflow-category-label">{category}</div>,
@@ -341,7 +341,7 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
       )}
 
       {/* Variables */}
-      {filteredVariables.length > 0 && (
+      {(filteredVariables.length > 0 || onCreateVariable) && (
         <Section title="VARIABLES" count={filteredVariables.length} defaultOpen={filteredVariables.length <= 30} onAdd={onCreateVariable ? () => { const name = prompt('Variable name:'); if (!name) return; const type = prompt('Variable type (e.g. Boolean, Float, Integer, String, Vector):') ?? 'Boolean'; onCreateVariable(name, type); } : undefined}>
           <TruncatedList items={Array.from(varGroups.entries()).flatMap(([category, vars]) => [
             ...(varGroups.size > 1 ? [<div key={`cat-${category}`} className="ueflow-category-label">{category}</div>] : []),

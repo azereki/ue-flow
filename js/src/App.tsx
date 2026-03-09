@@ -131,7 +131,7 @@ export interface DisplayOptions {
   showZoomIndicator?: boolean;
 }
 
-export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange, embedded, displayOptions, onReady, graphAPI: externalGraphAPI }: { graphJSON: UEGraphJSON; focusNodeTitle?: string | null; onSelectedNodeChange?: (title: string | null) => void; embedded?: boolean; displayOptions?: DisplayOptions; onReady?: () => void; graphAPI?: GraphAPI }) {
+export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange, embedded, displayOptions, onReady, graphAPI: externalGraphAPI, onNodeCreated }: { graphJSON: UEGraphJSON; focusNodeTitle?: string | null; onSelectedNodeChange?: (title: string | null) => void; embedded?: boolean; displayOptions?: DisplayOptions; onReady?: () => void; graphAPI?: GraphAPI; onNodeCreated?: (entry: { label: string; nodeClass: string }) => void }) {
   const initial = useMemo(() => graphJsonToFlow(graphJSON), [graphJSON]);
   const [nodes, setNodes, onNodesChange] = useNodesState<AnyFlowNode>(initial.nodes);
   // useEdgesState is kept untyped because its OnEdgesChange generic is contravariant —
@@ -273,9 +273,44 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
   // We store a ref that gets set by a child component.
   const screenToFlowRef = useRef<((pos: { x: number; y: number }) => { x: number; y: number }) | null>(null);
 
+  // ─── Right-click context menu (stationary clicks only) ──────────────────────
+  // Track right-click mousedown position; only open menu if mouse barely moved.
+  const rclickDown = useRef<{ x: number; y: number } | null>(null);
+  const RCLICK_THRESHOLD = 5; // px — movement under this counts as stationary
+
+  useEffect(() => {
+    const onRightDown = (e: MouseEvent) => {
+      if (e.button !== 2) return;
+      rclickDown.current = { x: e.clientX, y: e.clientY };
+    };
+    document.addEventListener('mousedown', onRightDown);
+    return () => document.removeEventListener('mousedown', onRightDown);
+  }, []);
+
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     // Prevent default browser context menu
     e.preventDefault();
+
+    // If menu is already open, close it on any right-click
+    if (contextMenu) {
+      setContextMenu(null);
+      return;
+    }
+    if (nodePalette) {
+      setNodePalette(null);
+      return;
+    }
+
+    // Only open on stationary right-click (no drag/pan)
+    if (rclickDown.current) {
+      const dx = e.clientX - rclickDown.current.x;
+      const dy = e.clientY - rclickDown.current.y;
+      if (dx * dx + dy * dy > RCLICK_THRESHOLD * RCLICK_THRESHOLD) {
+        rclickDown.current = null;
+        return; // was a drag — don't open menu
+      }
+    }
+    rclickDown.current = null;
 
     // Check if right-clicked on a node
     const nodeEl = (e.target as HTMLElement).closest('.react-flow__node');
@@ -302,7 +337,7 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
       const flowPos = screenToFlowRef.current({ x: e.clientX, y: e.clientY });
       setNodePalette({ x: e.clientX, y: e.clientY, graphX: flowPos.x, graphY: flowPos.y });
     }
-  }, [embedded]);
+  }, [embedded, contextMenu, nodePalette]);
 
   const contextMenuActions = useMemo((): ContextMenuAction[] => {
     if (!contextMenu) return [];
@@ -334,21 +369,18 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
     if (!nodePalette) return;
     const pos = { x: nodePalette.graphX, y: nodePalette.graphY };
     if (entry.memberName && entry.memberParent) {
-      // Signature DB function — use addNodeFromSignature for full pin data
       graphAPI.addNodeFromSignature(entry.memberName, pos);
     } else if (entry.memberName) {
-      // Has a memberName but no parent (e.g. events) — try signature DB first
       const result = graphAPI.addNodeFromSignature(entry.memberName, pos);
       if (!result.success) {
-        // Not in DB — fall back to addNode which has hardcoded pin layouts
         graphAPI.addNode({ nodeClass: entry.nodeClass, title: entry.label, position: pos });
       }
     } else {
-      // No memberName — use addNode with hardcoded pin layouts
       graphAPI.addNode({ nodeClass: entry.nodeClass, title: entry.label, position: pos });
     }
+    onNodeCreated?.({ label: entry.label, nodeClass: entry.nodeClass });
     setNodePalette(null);
-  }, [nodePalette, graphAPI]);
+  }, [nodePalette, graphAPI, onNodeCreated]);
 
   // ─── Alignment ─────────────────────────────────────────────────────────────
 
@@ -598,6 +630,12 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
     };
   }, []);
 
+  // Close context menu / node palette when viewport pans or zooms
+  const handleMoveStart = useCallback(() => {
+    setContextMenu(null);
+    setNodePalette(null);
+  }, []);
+
   const handleSelectionChange = useCallback(({ nodes: selectedNodes }: { nodes: AnyFlowNode[] }) => {
     setSelectedNodeIds(selectedNodes.map((n) => n.id));
     if (!onSelectedNodeChange) return;
@@ -625,6 +663,7 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
           isValidConnection={embedded ? undefined : handleIsValidConnection}
           onEdgeDoubleClick={embedded ? undefined : handleEdgeDoubleClick as unknown as (event: React.MouseEvent, edge: { id: string }) => void}
           onContextMenu={embedded ? undefined : handleContextMenu}
+          onMoveStart={handleMoveStart}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           colorMode="dark"
@@ -715,6 +754,7 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
             y={nodePalette.y}
             onSelect={handlePaletteSelect}
             onClose={() => setNodePalette(null)}
+            existingTitles={new Set(nodes.filter((n) => n.type === 'blueprintNode').map((n) => ((n.data as FlowNodeData).title ?? '').toLowerCase()))}
           />
         )}
       </div>
@@ -786,21 +826,50 @@ function MultiGraphView({ multiGraph: initialMultiGraph }: { multiGraph: UEMulti
   }, []);
 
   const handleCreateEvent = useCallback((name: string) => {
-    setMultiGraph((prev) => ({
-      ...prev,
-      events: [...prev.events, { name }],
-    }));
+    setMultiGraph((prev) => {
+      if (prev.events.some((e) => e.name.toLowerCase() === name.toLowerCase())) return prev;
+      return { ...prev, events: [...prev.events, { name }] };
+    });
   }, []);
 
   const handleCreateFunction = useCallback((name: string) => {
-    setMultiGraph((prev) => ({
-      ...prev,
-      functions: [...prev.functions, { name }],
-      graphs: {
-        ...prev.graphs,
-        [name]: { metadata: { title: name, assetPath: '' }, nodes: [], edges: [] },
-      },
-    }));
+    setMultiGraph((prev) => {
+      if (prev.functions.some((f) => f.name.toLowerCase() === name.toLowerCase())) return prev;
+      return {
+        ...prev,
+        functions: [...prev.functions, { name }],
+        graphs: {
+          ...prev.graphs,
+          [name]: { metadata: { title: name, assetPath: '' }, nodes: [], edges: [] },
+        },
+      };
+    });
+  }, []);
+
+  // Sync palette node creation → sidebar (events/functions appear in sidebar after palette add)
+  const handleNodeCreated = useCallback((entry: { label: string; nodeClass: string }) => {
+    const cls = entry.nodeClass;
+    if (cls === 'K2Node_Event' || cls === 'K2Node_CustomEvent') {
+      // Derive event name from label (e.g. "Event BeginPlay" → "BeginPlay")
+      const eventName = entry.label.replace(/^Event\s+/i, '') || entry.label;
+      setMultiGraph((prev) => {
+        if (prev.events.some((e) => e.name.toLowerCase() === eventName.toLowerCase())) return prev;
+        return { ...prev, events: [...prev.events, { name: eventName }] };
+      });
+    } else if (cls === 'K2Node_FunctionEntry') {
+      const fnName = entry.label;
+      setMultiGraph((prev) => {
+        if (prev.functions.some((f) => f.name.toLowerCase() === fnName.toLowerCase())) return prev;
+        return {
+          ...prev,
+          functions: [...prev.functions, { name: fnName }],
+          graphs: {
+            ...prev.graphs,
+            [fnName]: { metadata: { title: fnName, assetPath: '' }, nodes: [], edges: [] },
+          },
+        };
+      });
+    }
   }, []);
 
   // Separate abort controllers per resize handle — prevents one drag from cancelling the other
@@ -932,7 +1001,7 @@ function MultiGraphView({ multiGraph: initialMultiGraph }: { multiGraph: UEMulti
               })()
             ) : currentGraphJSON ? (
               <ErrorBoundary key={activeGraph}>
-                <SingleGraphView key={activeGraph} graphJSON={currentGraphJSON} focusNodeTitle={focusNodeTitle} onSelectedNodeChange={setSelectedNode} />
+                <SingleGraphView key={activeGraph} graphJSON={currentGraphJSON} focusNodeTitle={focusNodeTitle} onSelectedNodeChange={setSelectedNode} onNodeCreated={handleNodeCreated} />
               </ErrorBoundary>
             ) : (
               <div className="ueflow-empty-graph">

@@ -49,14 +49,17 @@ const SPECIAL_ENTRIES: Array<{ label: string; group: string; nodeClass: string; 
   }),
 ];
 
+/** Set of node titles already on the canvas — used to filter out duplicate unique nodes (e.g. events). */
 interface NodePaletteProps {
   x: number;
   y: number;
   onSelect: (entry: { label: string; nodeClass: string; memberName?: string; memberParent?: string; isPure?: boolean; isLatent?: boolean }) => void;
   onClose: () => void;
+  /** Node titles already on the canvas (for duplicate prevention on unique nodes like events). */
+  existingTitles?: Set<string>;
 }
 
-export const NodePalette: FC<NodePaletteProps> = ({ x, y, onSelect, onClose }) => {
+export const NodePalette: FC<NodePaletteProps> = ({ x, y, onSelect, onClose, existingTitles }) => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -86,25 +89,35 @@ export const NodePalette: FC<NodePaletteProps> = ({ x, y, onSelect, onClose }) =
     };
   }, [onClose]);
 
+  // Unique node classes — only one allowed per graph (events with specific memberName)
+  const isUniqueNode = (e: { nodeClass: string; memberName?: string }) =>
+    e.nodeClass === 'K2Node_Event' && !!e.memberName;
+
+  const isDuplicate = (e: { label: string; nodeClass: string; memberName?: string }) => {
+    if (!existingTitles || !isUniqueNode(e)) return false;
+    return existingTitles.has(e.label.toLowerCase());
+  };
+
   // Search results
   const results = useMemo(() => {
     const q = query.toLowerCase().trim();
     if (!q) {
-      // Show special entries grouped
-      return SPECIAL_ENTRIES.map((e) => ({
-        label: e.label,
-        group: e.group,
-        nodeClass: e.nodeClass,
-        memberName: e.memberName,
-        memberParent: undefined as string | undefined,
-        isPure: false,
-        isLatent: false,
-      }));
+      return SPECIAL_ENTRIES
+        .filter((e) => !isDuplicate(e))
+        .map((e) => ({
+          label: e.label,
+          group: e.group,
+          nodeClass: e.nodeClass,
+          memberName: e.memberName,
+          memberParent: undefined as string | undefined,
+          isPure: false,
+          isLatent: false,
+        }));
     }
 
     // Filter special entries
     const specialMatches = SPECIAL_ENTRIES
-      .filter((e) => e.label.toLowerCase().includes(q))
+      .filter((e) => e.label.toLowerCase().includes(q) && !isDuplicate(e))
       .map((e) => ({
         label: e.label,
         group: e.group,
@@ -127,7 +140,7 @@ export const NodePalette: FC<NodePaletteProps> = ({ x, y, onSelect, onClose }) =
     }));
 
     return [...specialMatches, ...dbMatches].slice(0, 40);
-  }, [query]);
+  }, [query, existingTitles]);
 
   // Reset selection when query changes
   useEffect(() => setSelectedIndex(0), [query]);
