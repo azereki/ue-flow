@@ -8,7 +8,8 @@ ue-flow is an open-source UE Blueprint rendering suite. It takes Unreal Engine T
 
 ## Project Structure
 - `js/` — React/Vite app (TypeScript, @xyflow/react v12, React 19)
-- `js/scripts/` — Build scripts (paste-tool generator)
+- `js/scripts/` — Build scripts (paste-tool generator, `export-signatures.py` extracts UE function signatures)
+- `js/public/` — Static assets (`ue-signatures.json` — 2,756 UE functions, 6,345 pins from 23 core classes)
 - `js/src/data/` — Demo data files (`demo-graph.ts` for hero, `demo-multigraph.ts` for full Blueprint demo)
 - `js/src/components/LandingPage.tsx` — Marketing landing page with hero demo, showcase section, feature cards, paste CTA
 - `python/` — Python renderer wrapper, outputs HTML/PNG
@@ -71,9 +72,12 @@ The end-to-end flow has two directions:
 - **Edges:** `BlueprintEdge.tsx` uses `getSmoothStepPath` with `borderRadius: 16` for UE-style right-angled wire routing — do NOT switch to `getBezierPath` (produces messy curves)
 - **Theme:** `js/src/theme/ue-flow.css` — all visual styling (Blueprint Noir dark theme)
 - **Types:** `ue-graph.ts` (UEPin, UENode, UEEdge, UEGraphJSON, UEMultiGraphJSON), `pin-types.ts` (PinCategory, PIN_COLORS), `flow-types.ts` (typed React Flow aliases)
-- **Transform:** `json-to-flow.ts` (UE JSON → React Flow with node size estimation), `flow-to-t3d.ts` (React Flow → UE T3D paste text), `t3d-to-json.ts` (raw T3D paste text → UEGraphJSON, client-side port of Python parser)
+- **Transform:** `json-to-flow.ts` (UE JSON → React Flow with node size estimation), `flow-to-t3d.ts` (React Flow → UE T3D paste text with hidden pin injection, GUID validation, comment dimension export), `t3d-to-json.ts` (raw T3D paste text → UEGraphJSON, client-side port of Python parser)
+- **Signature DB:** `utils/signature-db.ts` — lazy-loaded UE function signature database (`ue-signatures.json`). `lookupFunction(memberName, memberParent?)` returns `FunctionSig` with pins, isPure, isLatent. `learnFromGraph()` learns from user-pasted T3D at runtime
+- **Graph Validator:** `utils/graph-validator.ts` — post-generation validator using signature DB. Corrects wrong memberParent, fixes pin categories (float→real), fills missing defaults/subCategoryObject, adds missing pins from signatures, injects exec pins for impure functions
+- **UE References:** `utils/ue-references.ts` — `synthesizeNodeProperties()` (hardcoded ~170 entries) and `synthesizeNodePropertiesWithDB()` (2,700+ functions via signature DB). `qualifyNodeClass()` expands short class names to full `/Script/BlueprintGraph.` paths
 - **AI Chat:** `ChatPanel.tsx` renders the chat UI (header, message list, thinking indicator, suggested prompts, textarea input, GeneratePreview overlay). `useAIChat.ts` hook manages AI API calls with message history (last 10), generation detection, and error handling. `graph-context.ts` serializes UE graph data into compact text summaries (12K char cap) for the AI system prompt. Chat is docked in MultiGraphView (resizable right panel) and floating in SingleGraphView (FAB + overlay)
-- **AI Generation:** `ai-generate.ts` contains `GENERATE_SYSTEM_PROMPT` (UEGraphJSON schema + few-shot), `parseGeneratedGraph()` (extracts/validates JSON from AI response), `normalizeGeneratedPin()` (fills UEPin defaults), `offsetGraphPositions()` (for merge placement). `GeneratePreview.tsx` renders a contained ReactFlow preview with Insert/Open New/Discard. `NodeExplainer.tsx` shows a floating explanation card for selected nodes (800ms debounce)
+- **AI Generation:** `ai-generate.ts` contains `GENERATE_SYSTEM_PROMPT` (UEGraphJSON schema + few-shot), `parseGeneratedGraph()` (extracts/validates JSON from AI response with 32-char hex GUID generation, GUID dedup, edge-pin cross-validation, empty pin rejection, DB-backed property synthesis, and signature DB validation), `normalizeGeneratedPin()` (fills UEPin defaults), `offsetGraphPositions()` (for merge placement). `GeneratePreview.tsx` renders a contained ReactFlow preview with Insert/Open New/Discard. `NodeExplainer.tsx` shows a floating explanation card for selected nodes (800ms debounce)
 - **AI Result Modal:** `AIResultModal.tsx` supports clickable node links — `renderWithNodeLinks()` scans result text for known node titles and wraps them as navigation links
 - **AI Provider:** Dual-provider architecture with Gemini (free) and OpenRouter (BYOK). `AIProviderContext.tsx` manages active provider selection, API keys, model selection, warning state, and `chatCompletion()` dispatch. `gemini.ts` handles Google Gemini API (free tier, 30 req/min), `openrouter.ts` handles OpenRouter (budget/standard/premium tiers, no free models). Users configure via `AISettings.tsx` popover with tabbed provider UI. Keys stored in session or localStorage based on "remember" preference. Status dot on settings button shows red (no key), green (connected), orange (last call errored)
 - **Hooks:** `useTabNavigation.ts` — tab/breadcrumb/navigation state for MultiGraphView; `useUndoRedo.ts` — undo/redo with snapshot history; `useAIChat.ts` — AI chat with generation detection, selection-aware context, and message management; `useAIAction.ts` — one-shot AI actions (document, review, search, node explain); `useIsMobile.ts` — matchMedia-based hook (768px breakpoint) for mobile-responsive layout switching
@@ -136,3 +140,24 @@ The end-to-end flow has two directions:
 - CSS variable prefix: `--uf-` (e.g., `--uf-bg`, `--uf-text`, `--uf-accent`) — shorter prefix for design tokens. The two systems intentionally use different prefixes
 - Pin colors defined in `PIN_COLORS` map in `pin-types.ts`
 - Design direction: intentionally diverge from stock UE Blueprint visuals — "feel better and distinguishable," not strict UE fidelity
+
+## UE Data Accuracy Rules
+All Blueprint data — demo, AI-generated, or user-created — must use real UE properties that produce valid T3D when exported. Never use fake/placeholder properties.
+
+- **K2Node_Event** MUST have `EventReference: '(MemberParent="/Script/Engine.Actor",MemberName="ReceiveBeginPlay")'` and `bOverrideFunction: 'True'` — without these, UE shows "Event None"
+- **K2Node_CallFunction** MUST have `FunctionReference: '(MemberParent="...",MemberName="...")'` — without this, UE drops the function call entirely
+- **K2Node_VariableGet/Set** MUST have `VariableReference: '(MemberName="VarName",bSelfContext=True)'`
+- **K2Node_FunctionEntry/Result** MUST have `SignatureName` matching the function name
+- **Math operators** (K2Node_PromotableOperator, K2Node_CommutativeAssociativeBinaryOperator) need FunctionReference from KismetMathLibrary
+- Variable getter titles should be the variable name (e.g. `"Health"`), not `"Get Health"`
+- Pin IDs in T3D must be 32-char uppercase hex-only (0-9, A-F) — non-hex pin IDs cause UE to silently drop ALL connections
+- nodeGuids must be exactly 32-char uppercase hex (0-9, A-F) and unique across all nodes — both `parseGeneratedGraph()` and `flowToT3D()` enforce this with dedup
+- Pure functions (math ops, comparisons) must NOT have exec pins — `graph-validator.ts` uses `isPure` from signature DB to decide
+- Impure functions MUST have exec input/output pins — `graph-validator.ts` auto-injects them if missing
+- `flow-to-t3d.ts` injects hidden `self` and `WorldContextObject` pins for K2Node_CallFunction, plus `LatentInfo` for latent functions (Delay, etc.)
+- `AutogeneratedDefaultValue` is only emitted when explicitly set on the pin — no automatic mirroring from DefaultValue (preserves round-trip fidelity)
+- Comment node dimensions export from `properties.sizeX/sizeY` as fallback when React Flow `initialWidth/initialHeight` aren't set
+- Shared reference maps live in `js/src/utils/ue-references.ts` — add new entries there, not inline
+- `synthesizeNodePropertiesWithDB()` (2,700+ functions via signature DB) fills missing properties — used in both AI generation and T3D export
+- `parseGeneratedGraph()` runs a 4-layer validation pipeline: property synthesis → GUID dedup → edge-pin cross-validation → signature DB correction
+- `graph-validator.ts` is the final safety net: corrects wrong memberParent, fixes pin categories, fills defaults, adds missing pins, injects exec pins

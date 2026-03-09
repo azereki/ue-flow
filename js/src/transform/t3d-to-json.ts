@@ -369,7 +369,7 @@ function parseNodeBody(headerAttrs: Record<string, string>, body: string): Parse
     const propMatch = PROPERTY_LINE_RE.exec(line);
     if (propMatch) {
       const key = propMatch[1];
-      const value = propMatch[2];
+      const value = propMatch[2].replace(/\r$/, ''); // Strip trailing \r from CRLF
 
       if (key === 'NodePosX') {
         const parsed = parseInt(value, 10);

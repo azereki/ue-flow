@@ -59,6 +59,46 @@ describe('parseGeneratedGraph', () => {
     expect(parseGeneratedGraph(noPins)).toBeNull();
   });
 
+  it('returns null for nodes with empty pins array', () => {
+    const emptyPins = '```json\n{"metadata":{"title":"T"},"nodes":[{"id":"n","title":"N","nodeClass":"K2Node_Event","nodeGuid":"AAAA","position":{"x":0,"y":0},"properties":{},"pins":[]}],"edges":[]}\n```';
+    expect(parseGeneratedGraph(emptyPins)).toBeNull();
+  });
+
+  it('generates valid 32-char hex nodeGuids', () => {
+    const result = parseGeneratedGraph(VALID_RESPONSE);
+    expect(result).not.toBeNull();
+    for (const node of result!.nodes) {
+      expect(node.nodeGuid).toMatch(/^[0-9A-F]{32}$/);
+    }
+  });
+
+  it('deduplicates nodeGuids across nodes', () => {
+    const result = parseGeneratedGraph(VALID_RESPONSE);
+    expect(result).not.toBeNull();
+    const guids = result!.nodes.map((n) => n.nodeGuid);
+    expect(new Set(guids).size).toBe(guids.length);
+  });
+
+  it('drops edges referencing non-existent pins', () => {
+    const response = `\`\`\`json
+{
+  "metadata": { "title": "T", "assetPath": "/Game/T" },
+  "nodes": [
+    { "id": "A", "type": "event", "nodeClass": "K2Node_Event", "nodeGuid": "1234", "position": {"x":0,"y":0}, "title": "N", "properties": {}, "pins": [{"id": "p1", "name": "then", "direction": "output", "category": "exec"}] },
+    { "id": "B", "type": "call_function", "nodeClass": "K2Node_CallFunction", "nodeGuid": "5678", "position": {"x":300,"y":0}, "title": "M", "properties": {}, "pins": [{"id": "p2", "name": "execute", "direction": "input", "category": "exec"}] }
+  ],
+  "edges": [
+    { "id": "e0", "source": "A", "sourcePin": "then", "target": "B", "targetPin": "execute", "category": "exec" },
+    { "id": "e1", "source": "A", "sourcePin": "FAKE_PIN", "target": "B", "targetPin": "execute", "category": "exec" }
+  ]
+}
+\`\`\``;
+    const result = parseGeneratedGraph(response);
+    expect(result).not.toBeNull();
+    expect(result!.edges).toHaveLength(1);
+    expect(result!.edges[0].id).toBe('e0');
+  });
+
   it('normalizes invalid node types to call_function', () => {
     const response = '```json\n{"metadata":{"title":"T","assetPath":"/Game/T"},"nodes":[{"id":"n","type":"bogus","nodeClass":"K2Node","nodeGuid":"1234","position":{"x":0,"y":0},"title":"N","properties":{},"pins":[{"id":"p","name":"P","direction":"input","category":"exec"}]}],"edges":[]}\n```';
     const result = parseGeneratedGraph(response);

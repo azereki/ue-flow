@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { ReactFlow, ReactFlowProvider, Background, BackgroundVariant, useNodesState, useEdgesState, useStore, useReactFlow } from '@xyflow/react';
 import type { UEGraphJSON } from '../types/ue-graph';
 import { parseT3DToGraphJSON, isT3DText } from '../transform/t3d-to-json';
+import { learnFromGraph } from '../utils/signature-db';
 import { graphJsonToFlow } from '../transform/json-to-flow';
 import { BlueprintNode } from '../nodes/BlueprintNode';
 import { CommentNode } from '../nodes/CommentNode';
@@ -77,6 +78,7 @@ function PasteSection({ onGraphParsed }: { onGraphParsed: (g: UEGraphJSON) => vo
       const graph = parseT3DToGraphJSON(trimmed);
       if (graph.nodes.length === 0) { setError('No nodes found in T3D text.'); return; }
       setError('');
+      learnFromGraph(graph);
       onGraphParsed(graph);
     } catch (err) {
       setError(`Parse error: ${err instanceof Error ? err.message : String(err)}`);

@@ -1,6 +1,7 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAIProvider } from '../contexts/AIProviderContext';
 import { parseGeneratedGraph, GENERATE_SYSTEM_PROMPT } from '../utils/ai-generate';
+import { loadSignatureDB } from '../utils/signature-db';
 import type { ChatMessage } from '../utils/openrouter';
 import type { UEGraphJSON } from '../types/ue-graph';
 
@@ -19,6 +20,10 @@ function isGenerationRequest(msg: string): boolean {
 
 export function useAIChat(graphContext: string, selectedNodeTitle?: string | null) {
   const { chatCompletion } = useAIProvider();
+
+  // Eagerly load signature DB so it's ready when AI generates a graph
+  useEffect(() => { loadSignatureDB(); }, []);
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);

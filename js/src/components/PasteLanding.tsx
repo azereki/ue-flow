@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import type { UEGraphJSON } from '../types/ue-graph';
 import { parseT3DToGraphJSON, isT3DText } from '../transform/t3d-to-json';
+import { learnFromGraph } from '../utils/signature-db';
 
 interface PasteLandingProps {
   onGraphParsed: (graphJSON: UEGraphJSON) => void;
@@ -29,6 +30,7 @@ export function PasteLanding({ onGraphParsed }: PasteLandingProps) {
         return;
       }
       setError('');
+      learnFromGraph(graph);
       onGraphParsed(graph);
     } catch (err) {
       setError(`Parse error: ${err instanceof Error ? err.message : String(err)}`);

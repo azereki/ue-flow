@@ -122,3 +122,171 @@ describe('flowToT3D', () => {
     expect(t3d).toContain('NodePosY=300');
   });
 });
+
+// ===================================================================
+// Property synthesis — nodes with short class names and missing properties
+// ===================================================================
+
+describe('flowToT3D property synthesis', () => {
+  const DEMO_STYLE_GRAPH: UEGraphJSON = {
+    metadata: { title: 'EventGraph', assetPath: '' },
+    nodes: [
+      {
+        id: 'BeginPlay',
+        type: 'event',
+        nodeClass: 'K2Node_Event',
+        nodeGuid: 'E000000000000001',
+        position: { x: 0, y: 0 },
+        title: 'Event BeginPlay',
+        properties: {},
+        pins: [
+          { id: 'bp-then', name: 'then', friendlyName: '', direction: 'output', category: 'exec', subCategory: '', subCategoryObject: '', containerType: '', defaultValue: '', isReference: false, isConst: false, isWeak: false, hidden: false, advancedView: false },
+        ],
+      },
+      {
+        id: 'EventTick',
+        type: 'event',
+        nodeClass: 'K2Node_Event',
+        nodeGuid: 'E000000000000002',
+        position: { x: 0, y: 200 },
+        title: 'Event Tick',
+        properties: {},
+        pins: [
+          { id: 'tick-then', name: 'then', friendlyName: '', direction: 'output', category: 'exec', subCategory: '', subCategoryObject: '', containerType: '', defaultValue: '', isReference: false, isConst: false, isWeak: false, hidden: false, advancedView: false },
+        ],
+      },
+      {
+        id: 'PrintStr',
+        type: 'call_function',
+        nodeClass: 'K2Node_CallFunction',
+        nodeGuid: 'F000000000000001',
+        position: { x: 400, y: 0 },
+        title: 'Print String',
+        properties: {},
+        pins: [
+          { id: 'ps-exec', name: 'execute', friendlyName: '', direction: 'input', category: 'exec', subCategory: '', subCategoryObject: '', containerType: '', defaultValue: '', isReference: false, isConst: false, isWeak: false, hidden: false, advancedView: false },
+        ],
+      },
+    ],
+    edges: [
+      { id: 'e0', source: 'BeginPlay', sourcePin: 'then', target: 'PrintStr', targetPin: 'execute', category: 'exec' },
+    ],
+  };
+
+  it('qualifies short nodeClass to full /Script/ path', () => {
+    const { nodes, edges } = graphJsonToFlow(DEMO_STYLE_GRAPH);
+    const t3d = flowToT3D(nodes, edges);
+    expect(t3d).toContain('Class=/Script/BlueprintGraph.K2Node_Event');
+    expect(t3d).toContain('Class=/Script/BlueprintGraph.K2Node_CallFunction');
+    expect(t3d).not.toMatch(/Class=K2Node_Event[^.]/);
+  });
+
+  it('synthesizes EventReference for BeginPlay', () => {
+    const { nodes, edges } = graphJsonToFlow(DEMO_STYLE_GRAPH);
+    const t3d = flowToT3D(nodes, edges);
+    expect(t3d).toContain('EventReference=(MemberParent="/Script/Engine.Actor",MemberName="ReceiveBeginPlay")');
+    expect(t3d).toContain('bOverrideFunction=True');
+  });
+
+  it('synthesizes EventReference for Tick', () => {
+    const { nodes, edges } = graphJsonToFlow(DEMO_STYLE_GRAPH);
+    const t3d = flowToT3D(nodes, edges);
+    expect(t3d).toContain('MemberName="ReceiveTick"');
+  });
+
+  it('synthesizes FunctionReference for Print String', () => {
+    const { nodes, edges } = graphJsonToFlow(DEMO_STYLE_GRAPH);
+    const t3d = flowToT3D(nodes, edges);
+    expect(t3d).toContain('FunctionReference=(MemberParent="/Script/Engine.KismetSystemLibrary",MemberName="PrintString")');
+  });
+
+  it('does not overwrite existing properties', () => {
+    const { nodes, edges } = graphJsonToFlow(SAMPLE_GRAPH);
+    const t3d = flowToT3D(nodes, edges);
+    // Original EventReference should be preserved as-is
+    expect(t3d).toContain('MemberName="ReceiveBeginPlay"');
+    // Should not double-emit
+    expect(t3d.match(/EventReference=/g)?.length).toBe(1);
+  });
+
+  it('converts non-hex pin IDs to valid hex GUIDs', () => {
+    const { nodes, edges } = graphJsonToFlow(DEMO_STYLE_GRAPH);
+    const t3d = flowToT3D(nodes, edges);
+    // Should not contain any non-hex pin IDs in PinId= fields
+    const pinIdMatches = t3d.match(/PinId=([A-Fa-f0-9]+)/g) ?? [];
+    expect(pinIdMatches.length).toBeGreaterThan(0);
+    for (const m of pinIdMatches) {
+      const id = m.replace('PinId=', '');
+      expect(id).toMatch(/^[0-9A-F]+$/);
+      expect(id.length).toBe(32);
+    }
+  });
+
+  it('LinkedTo references use matching hex pin IDs', () => {
+    const { nodes, edges } = graphJsonToFlow(DEMO_STYLE_GRAPH);
+    const t3d = flowToT3D(nodes, edges);
+    // Extract all PinId values and LinkedTo references
+    const pinIds = new Set((t3d.match(/PinId=([A-F0-9]+)/g) ?? []).map(m => m.replace('PinId=', '')));
+    const linkedRefs = t3d.match(/LinkedTo=\(([^)]+)\)/g) ?? [];
+    for (const ref of linkedRefs) {
+      // Extract pin IDs from LinkedTo=(NodeName PINID,)
+      const innerPinIds = (ref.match(/\s([A-F0-9]+)/g) ?? []).map(m => m.trim());
+      for (const id of innerPinIds) {
+        expect(pinIds.has(id)).toBe(true);
+      }
+    }
+  });
+
+  it('only emits AutogeneratedDefaultValue when explicitly set on pin', () => {
+    const { nodes, edges } = graphJsonToFlow(DEMO_STYLE_GRAPH);
+    const t3d = flowToT3D(nodes, edges);
+    // Pins with DefaultValue but no autogeneratedDefaultValue should NOT get AGDV
+    const agdvMatches = t3d.match(/AutogeneratedDefaultValue="[^"]+"/g) ?? [];
+    // DEMO_STYLE_GRAPH pins have no explicit autogeneratedDefaultValue field, so none should appear
+    expect(agdvMatches).toHaveLength(0);
+  });
+
+  it('injects hidden self and WorldContextObject pins for CallFunction nodes', () => {
+    const { nodes, edges } = graphJsonToFlow(DEMO_STYLE_GRAPH);
+    const t3d = flowToT3D(nodes, edges);
+    // Print String is a K2Node_CallFunction — should get hidden pins
+    expect(t3d).toContain('PinName="self"');
+    expect(t3d).toContain('PinName="WorldContextObject"');
+    // They should be marked hidden
+    const selfLine = t3d.split('\n').find((l) => l.includes('PinName="self"'));
+    expect(selfLine).toContain('bHidden=True');
+  });
+
+  it('validates nodeGuids at export time (32-char hex)', () => {
+    const { nodes, edges } = graphJsonToFlow(DEMO_STYLE_GRAPH);
+    const t3d = flowToT3D(nodes, edges);
+    const guidMatches = t3d.match(/NodeGuid=([A-F0-9]+)/g) ?? [];
+    expect(guidMatches.length).toBeGreaterThan(0);
+    for (const m of guidMatches) {
+      const guid = m.replace('NodeGuid=', '');
+      expect(guid).toMatch(/^[0-9A-F]{32}$/);
+    }
+  });
+
+  it('synthesizes VariableReference for variable get nodes', () => {
+    const varGraph: UEGraphJSON = {
+      metadata: { title: 'EventGraph', assetPath: '' },
+      nodes: [{
+        id: 'GetHealth',
+        type: 'variable_get',
+        nodeClass: 'K2Node_VariableGet',
+        nodeGuid: 'V000000000000001',
+        position: { x: 0, y: 0 },
+        title: 'Health',
+        properties: {},
+        pins: [
+          { id: 'gh-out', name: 'Health', friendlyName: '', direction: 'output', category: 'real', subCategory: '', subCategoryObject: '', containerType: '', defaultValue: '', isReference: false, isConst: false, isWeak: false, hidden: false, advancedView: false },
+        ],
+      }],
+      edges: [],
+    };
+    const { nodes, edges } = graphJsonToFlow(varGraph);
+    const t3d = flowToT3D(nodes, edges);
+    expect(t3d).toContain('VariableReference=(MemberName="Health",bSelfContext=True)');
+  });
+});
