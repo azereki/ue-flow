@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseGeneratedGraph, normalizeGeneratedPin, offsetGraphPositions } from '../ai-generate';
+import { isGenerationRequest } from '../../hooks/useAIChat';
 import { graphJsonToFlow } from '../../transform/json-to-flow';
 
 const VALID_RESPONSE = `Here's your Blueprint:
@@ -156,6 +157,41 @@ describe('offsetGraphPositions', () => {
     expect(offset.nodes[1].position).toEqual({ x: 800, y: 200 });
     // Original unchanged
     expect(result.nodes[0].position).toEqual({ x: 0, y: 0 });
+  });
+});
+
+describe('isGenerationRequest', () => {
+  it('triggers on strong generation signals', () => {
+    expect(isGenerationRequest('generate a health system')).toBe(true);
+    expect(isGenerationRequest('create a blueprint for damage')).toBe(true);
+    expect(isGenerationRequest('build me a movement system')).toBe(true);
+    expect(isGenerationRequest('add nodes for health regen')).toBe(true);
+    expect(isGenerationRequest('wire up a timer loop')).toBe(true);
+    expect(isGenerationRequest('implement a save system')).toBe(true);
+  });
+
+  it('triggers on blueprint/graph/nodes phrases', () => {
+    expect(isGenerationRequest('I need a blueprint that handles input')).toBe(true);
+    expect(isGenerationRequest('give me nodes for jumping')).toBe(true);
+    expect(isGenerationRequest('a graph that manages inventory')).toBe(true);
+  });
+
+  it('does NOT trigger on questions with weak signals', () => {
+    expect(isGenerationRequest('what does this node make?')).toBe(false);
+    expect(isGenerationRequest('how does this build work?')).toBe(false);
+    expect(isGenerationRequest('why does this create an error?')).toBe(false);
+    expect(isGenerationRequest('what is this set up for?')).toBe(false);
+  });
+
+  it('triggers weak signals when not a question', () => {
+    expect(isGenerationRequest('make a damage calculation')).toBe(true);
+    expect(isGenerationRequest('set up a timer loop')).toBe(true);
+  });
+
+  it('does NOT trigger on plain analytical questions', () => {
+    expect(isGenerationRequest('what does this graph do?')).toBe(false);
+    expect(isGenerationRequest('explain the execution flow')).toBe(false);
+    expect(isGenerationRequest('how many nodes are there?')).toBe(false);
   });
 });
 

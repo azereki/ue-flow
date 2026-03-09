@@ -67,7 +67,20 @@ export async function geminiChat(
   const model = config.model || DEFAULT_GEMINI_MODEL;
   const { systemInstruction, contents } = toGeminiFormat(messages);
 
-  const body: Record<string, unknown> = { contents };
+  const body: Record<string, unknown> = {
+    contents,
+    generationConfig: {
+      temperature: 1.0,       // Gemini strongly recommends 1.0 — deviating causes looping
+      maxOutputTokens: 8192,  // Prevents runaway responses eating free-tier quota
+      topP: 0.95,
+    },
+    safetySettings: [
+      { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+    ],
+  };
   if (systemInstruction) {
     body.system_instruction = systemInstruction;
   }

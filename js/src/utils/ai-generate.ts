@@ -14,7 +14,15 @@ const VALID_PIN_CATEGORIES = new Set<PinCategory>([
   'delegate', 'softclass', 'softobject',
 ]);
 
-export const GENERATE_SYSTEM_PROMPT = `You are a UE Blueprint generator. Given a natural language description, output a valid UEGraphJSON object as a JSON code block.
+/** Generation schema addendum — appended to system prompt only for generation requests. */
+export const GENERATE_SCHEMA_ADDENDUM = `
+<generation-instructions>
+If the user asks you to generate, create, or build Blueprint nodes, output a valid UEGraphJSON as a \`\`\`json\`\`\` code block following the schema below. Otherwise, answer their question analytically.
+</generation-instructions>
+
+<grounding>
+The schema below is the absolute source of truth. Do not invent fields, node classes, or pin categories beyond what is listed.
+</grounding>
 
 ## UEGraphJSON Schema
 
@@ -26,7 +34,8 @@ export const GENERATE_SYSTEM_PROMPT = `You are a UE Blueprint generator. Given a
 }
 \`\`\`
 
-**UENode**: \`{ id, type, nodeClass, nodeGuid, position: {x, y}, title, properties: {}, pins: [UEPin] }\`
+## UENode
+\`{ id, type, nodeClass, nodeGuid, position: {x, y}, title, properties: {}, pins: [UEPin] }\`
 - Valid \`type\` values: \`event\`, \`call_function\`, \`variable_get\`, \`variable_set\`, \`flow_control\`, \`cast\`, \`comment\`
 - Common nodeClass values: \`K2Node_Event\`, \`K2Node_CallFunction\`, \`K2Node_IfThenElse\`, \`K2Node_VariableGet\`, \`K2Node_VariableSet\`, \`K2Node_DynamicCast\`, \`K2Node_ForEachLoop\`, \`K2Node_Delay\`, \`K2Node_Timeline\`, \`EdGraphNode_Comment\`
 - nodeGuid: unique 32-char hex string per node (0-9, A-F only, e.g. "A000B000C000D000E000F00011112222")
@@ -39,13 +48,16 @@ export const GENERATE_SYSTEM_PROMPT = `You are a UE Blueprint generator. Given a
 - **K2Node_VariableGet/Set** MUST have \`VariableReference\`:
   \`"properties": { "VariableReference": "(MemberName=\\"VarName\\",bSelfContext=True)" }\`
 - **K2Node_IfThenElse** (Branch) needs no special properties: \`"properties": {}\`
+  - Branch output pins MUST use \`name: "then"\` (true path) and \`name: "else"\` (false path) — NOT "True"/"False"
 - For custom/self functions, use \`MemberParent="Self"\`
 
-**UEPin**: \`{ id, name, direction: "input"|"output", category }\`
+## UEPin
+\`{ id, name, direction: "input"|"output", category }\`
 - Optional: \`defaultValue\`, \`subType\`
 - Valid \`category\` values: \`exec\`, \`bool\`, \`real\`, \`int\`, \`byte\`, \`string\`, \`name\`, \`text\`, \`object\`, \`struct\`, \`enum\`, \`wildcard\`
 
-**UEEdge**: \`{ id, source, sourcePin, target, targetPin, category }\`
+## UEEdge
+\`{ id, source, sourcePin, target, targetPin, category }\`
 - \`source\`/\`target\` are node IDs; \`sourcePin\`/\`targetPin\` are pin names
 - \`category\` matches the pin type being connected
 
@@ -54,9 +66,11 @@ export const GENERATE_SYSTEM_PROMPT = `You are a UE Blueprint generator. Given a
 - ~160px vertical offset for branches
 - Events start at x:0, y:0
 
-## Few-Shot Example
+## Few-Shot Examples
 
-User: "When the game starts, check if health is above 50, print 'Health OK' if true, destroy the actor if false"
+### Example 1: Simple linear (BeginPlay → PrintString)
+
+User: "Print hello when the game starts"
 
 \`\`\`json
 {
@@ -70,15 +84,48 @@ User: "When the game starts, check if health is above 50, print 'Health OK' if t
       "pins": [{ "id": "bp-then", "name": "then", "direction": "output", "category": "exec" }]
     },
     {
+      "id": "PrintString", "type": "call_function", "nodeClass": "K2Node_CallFunction",
+      "nodeGuid": "A100B100C100D100E100F10011112222", "position": { "x": 280, "y": 0 },
+      "title": "Print String",
+      "properties": { "FunctionReference": "(MemberParent=\\"/Script/Engine.KismetSystemLibrary\\",MemberName=\\"PrintString\\")" },
+      "pins": [
+        { "id": "ps-exec", "name": "execute", "direction": "input", "category": "exec" },
+        { "id": "ps-then", "name": "then", "direction": "output", "category": "exec" },
+        { "id": "ps-str", "name": "In String", "direction": "input", "category": "string", "defaultValue": "Hello" }
+      ]
+    }
+  ],
+  "edges": [
+    { "id": "e0", "source": "Event_BeginPlay", "sourcePin": "then", "target": "PrintString", "targetPin": "execute", "category": "exec" }
+  ]
+}
+\`\`\`
+
+### Example 2: Branching (health check with true/false paths)
+
+User: "When the game starts, check if health is above 50, print 'Health OK' if true, destroy the actor if false"
+
+\`\`\`json
+{
+  "metadata": { "title": "EventGraph", "assetPath": "/Game/BP_Generated" },
+  "nodes": [
+    {
+      "id": "Event_BeginPlay", "type": "event", "nodeClass": "K2Node_Event",
+      "nodeGuid": "B000B000C000D000E000F00011112222", "position": { "x": 0, "y": 0 },
+      "title": "Event BeginPlay",
+      "properties": { "EventReference": "(MemberParent=\\"/Script/Engine.Actor\\",MemberName=\\"ReceiveBeginPlay\\")", "bOverrideFunction": "True" },
+      "pins": [{ "id": "bp-then", "name": "then", "direction": "output", "category": "exec" }]
+    },
+    {
       "id": "GetHealth", "type": "variable_get", "nodeClass": "K2Node_VariableGet",
-      "nodeGuid": "A100B100C100D100E100F10011112222", "position": { "x": 40, "y": 180 },
+      "nodeGuid": "B100B100C100D100E100F10011112222", "position": { "x": 40, "y": 180 },
       "title": "Health",
       "properties": { "VariableReference": "(MemberName=\\"Health\\",bSelfContext=True)" },
       "pins": [{ "id": "gh-out", "name": "Health", "direction": "output", "category": "real", "subType": "double" }]
     },
     {
       "id": "GreaterThan", "type": "call_function", "nodeClass": "K2Node_CallFunction",
-      "nodeGuid": "A200B200C200D200E200F20011112222", "position": { "x": 300, "y": 140 },
+      "nodeGuid": "B200B200C200D200E200F20011112222", "position": { "x": 300, "y": 140 },
       "title": "> (Greater Than)",
       "properties": { "FunctionReference": "(MemberParent=\\"/Script/Engine.KismetMathLibrary\\",MemberName=\\"Greater_FloatFloat\\")" },
       "pins": [
@@ -89,18 +136,18 @@ User: "When the game starts, check if health is above 50, print 'Health OK' if t
     },
     {
       "id": "Branch", "type": "flow_control", "nodeClass": "K2Node_IfThenElse",
-      "nodeGuid": "A300B300C300D300E300F30011112222", "position": { "x": 320, "y": 0 },
+      "nodeGuid": "B300B300C300D300E300F30011112222", "position": { "x": 320, "y": 0 },
       "title": "Branch", "properties": {},
       "pins": [
         { "id": "br-exec", "name": "execute", "direction": "input", "category": "exec" },
         { "id": "br-cond", "name": "Condition", "direction": "input", "category": "bool" },
-        { "id": "br-true", "name": "True", "direction": "output", "category": "exec" },
-        { "id": "br-false", "name": "False", "direction": "output", "category": "exec" }
+        { "id": "br-true", "name": "then", "direction": "output", "category": "exec" },
+        { "id": "br-false", "name": "else", "direction": "output", "category": "exec" }
       ]
     },
     {
       "id": "PrintString", "type": "call_function", "nodeClass": "K2Node_CallFunction",
-      "nodeGuid": "A400B400C400D400E400F40011112222", "position": { "x": 660, "y": -30 },
+      "nodeGuid": "B400B400C400D400E400F40011112222", "position": { "x": 660, "y": -30 },
       "title": "Print String",
       "properties": { "FunctionReference": "(MemberParent=\\"/Script/Engine.KismetSystemLibrary\\",MemberName=\\"PrintString\\")" },
       "pins": [
@@ -111,7 +158,7 @@ User: "When the game starts, check if health is above 50, print 'Health OK' if t
     },
     {
       "id": "DestroyActor", "type": "call_function", "nodeClass": "K2Node_CallFunction",
-      "nodeGuid": "A500B500C500D500E500F50011112222", "position": { "x": 660, "y": 160 },
+      "nodeGuid": "B500B500C500D500E500F50011112222", "position": { "x": 660, "y": 160 },
       "title": "Destroy Actor",
       "properties": { "FunctionReference": "(MemberParent=\\"/Script/Engine.Actor\\",MemberName=\\"K2_DestroyActor\\")" },
       "pins": [
@@ -125,22 +172,92 @@ User: "When the game starts, check if health is above 50, print 'Health OK' if t
     { "id": "e0", "source": "Event_BeginPlay", "sourcePin": "then", "target": "Branch", "targetPin": "execute", "category": "exec" },
     { "id": "e1", "source": "GetHealth", "sourcePin": "Health", "target": "GreaterThan", "targetPin": "A", "category": "real" },
     { "id": "e2", "source": "GreaterThan", "sourcePin": "ReturnValue", "target": "Branch", "targetPin": "Condition", "category": "bool" },
-    { "id": "e3", "source": "Branch", "sourcePin": "True", "target": "PrintString", "targetPin": "execute", "category": "exec" },
-    { "id": "e4", "source": "Branch", "sourcePin": "False", "target": "DestroyActor", "targetPin": "execute", "category": "exec" }
+    { "id": "e3", "source": "Branch", "sourcePin": "then", "target": "PrintString", "targetPin": "execute", "category": "exec" },
+    { "id": "e4", "source": "Branch", "sourcePin": "else", "target": "DestroyActor", "targetPin": "execute", "category": "exec" }
   ]
 }
 \`\`\`
 
-## Rules
-- Output ONLY a \`\`\`json\`\`\` code block with valid UEGraphJSON
-- Every node MUST have at least one pin
-- Every exec-flow node should have exec input and output pins
-- Use descriptive node IDs and titles
-- Generate unique 32-char hex nodeGuid strings for each node (0-9, A-F only)
-- Connect nodes with proper edges matching pin names and categories
-- ALWAYS include required properties (EventReference, FunctionReference, VariableReference) — nodes without these will appear as "None" when pasted into UE
-- Variable getter titles should be the variable name (e.g. "Health"), not "Get Health"
-- Variable setter titles should be "Set VariableName" (e.g. "Set Health")`;
+### Example 3: Loop pattern (EventTick → ForEachLoop → SetVisibility)
+
+User: "Every tick, loop through an array of meshes and set them all visible"
+
+\`\`\`json
+{
+  "metadata": { "title": "EventGraph", "assetPath": "/Game/BP_Generated" },
+  "nodes": [
+    {
+      "id": "Event_Tick", "type": "event", "nodeClass": "K2Node_Event",
+      "nodeGuid": "C000C000C000D000E000F00011112222", "position": { "x": 0, "y": 0 },
+      "title": "Event Tick",
+      "properties": { "EventReference": "(MemberParent=\\"/Script/Engine.Actor\\",MemberName=\\"ReceiveTick\\")", "bOverrideFunction": "True" },
+      "pins": [
+        { "id": "et-then", "name": "then", "direction": "output", "category": "exec" },
+        { "id": "et-dt", "name": "Delta Seconds", "direction": "output", "category": "real", "subType": "float" }
+      ]
+    },
+    {
+      "id": "GetMeshes", "type": "variable_get", "nodeClass": "K2Node_VariableGet",
+      "nodeGuid": "C100C100C100D100E100F10011112222", "position": { "x": 40, "y": 160 },
+      "title": "Meshes",
+      "properties": { "VariableReference": "(MemberName=\\"Meshes\\",bSelfContext=True)" },
+      "pins": [{ "id": "gm-out", "name": "Meshes", "direction": "output", "category": "object" }]
+    },
+    {
+      "id": "ForEachLoop", "type": "flow_control", "nodeClass": "K2Node_ForEachLoop",
+      "nodeGuid": "C200C200C200D200E200F20011112222", "position": { "x": 280, "y": 0 },
+      "title": "For Each Loop", "properties": {},
+      "pins": [
+        { "id": "fe-exec", "name": "execute", "direction": "input", "category": "exec" },
+        { "id": "fe-array", "name": "Array", "direction": "input", "category": "object" },
+        { "id": "fe-body", "name": "Loop Body", "direction": "output", "category": "exec" },
+        { "id": "fe-elem", "name": "Array Element", "direction": "output", "category": "object" },
+        { "id": "fe-idx", "name": "Array Index", "direction": "output", "category": "int" },
+        { "id": "fe-done", "name": "Completed", "direction": "output", "category": "exec" }
+      ]
+    },
+    {
+      "id": "SetVisibility", "type": "call_function", "nodeClass": "K2Node_CallFunction",
+      "nodeGuid": "C300C300C300D300E300F30011112222", "position": { "x": 600, "y": 0 },
+      "title": "Set Visibility",
+      "properties": { "FunctionReference": "(MemberParent=\\"/Script/Engine.SceneComponent\\",MemberName=\\"SetVisibility\\")" },
+      "pins": [
+        { "id": "sv-exec", "name": "execute", "direction": "input", "category": "exec" },
+        { "id": "sv-then", "name": "then", "direction": "output", "category": "exec" },
+        { "id": "sv-target", "name": "Target", "direction": "input", "category": "object" },
+        { "id": "sv-vis", "name": "bNewVisibility", "direction": "input", "category": "bool", "defaultValue": "true" }
+      ]
+    }
+  ],
+  "edges": [
+    { "id": "e0", "source": "Event_Tick", "sourcePin": "then", "target": "ForEachLoop", "targetPin": "execute", "category": "exec" },
+    { "id": "e1", "source": "GetMeshes", "sourcePin": "Meshes", "target": "ForEachLoop", "targetPin": "Array", "category": "object" },
+    { "id": "e2", "source": "ForEachLoop", "sourcePin": "Loop Body", "target": "SetVisibility", "targetPin": "execute", "category": "exec" },
+    { "id": "e3", "source": "ForEachLoop", "sourcePin": "Array Element", "target": "SetVisibility", "targetPin": "Target", "category": "object" }
+  ]
+}
+\`\`\`
+
+<rules>
+1. Output ONLY a \`\`\`json\`\`\` code block with valid UEGraphJSON
+2. Every node MUST have at least one pin
+3. Every exec-flow (impure) node must have exec input and output pins
+4. Use descriptive node IDs and titles
+5. Generate unique 32-char hex nodeGuid strings for each node (0-9, A-F only)
+6. Connect nodes with proper edges matching pin names and categories
+7. ALWAYS include required properties (EventReference, FunctionReference, VariableReference) — nodes without these will appear as "None" when pasted into UE
+8. Variable getter titles should be the variable name (e.g. "Health"), not "Get Health"
+9. Variable setter titles should be "Set VariableName" (e.g. "Set Health")
+10. Pure functions (math, comparisons) must NOT have exec pins
+</rules>
+
+<constraints>
+- Do not use pin categories outside the valid set listed above
+- Do not invent nodeClass names — use only the common values listed
+- Do not omit properties for Event, CallFunction, or Variable nodes
+- Do not create edges that reference non-existent pins or nodes
+- Do not use non-hex characters in nodeGuid (no lowercase, no special chars)
+</constraints>`;
 
 /** Generate a proper 32-char uppercase hex GUID for UE nodes. */
 function generateNodeGuid(): string {

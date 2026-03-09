@@ -72,8 +72,8 @@ export const DEMO_GRAPH: UEGraphJSON = {
       pins: [
         { id: 'A400000000000000A400000000000001', name: 'execute', direction: 'input', category: 'exec' },
         { id: 'A400000000000000A400000000000002', name: 'Condition', direction: 'input', category: 'bool' },
-        { id: 'A400000000000000A400000000000003', name: 'True', direction: 'output', category: 'exec' },
-        { id: 'A400000000000000A400000000000004', name: 'False', direction: 'output', category: 'exec' },
+        { id: 'A400000000000000A400000000000003', name: 'then', friendlyName: 'True', direction: 'output', category: 'exec' },
+        { id: 'A400000000000000A400000000000004', name: 'else', friendlyName: 'False', direction: 'output', category: 'exec' },
       ],
     },
     {
@@ -114,7 +114,7 @@ export const DEMO_GRAPH: UEGraphJSON = {
     { id: 'e0', source: 'Event_BeginPlay', sourcePin: 'then', target: 'Branch', targetPin: 'execute', category: 'exec' },
     { id: 'e1', source: 'GetHealth', sourcePin: 'Health', target: 'GreaterThan', targetPin: 'A', category: 'real' },
     { id: 'e2', source: 'GreaterThan', sourcePin: 'ReturnValue', target: 'Branch', targetPin: 'Condition', category: 'bool' },
-    { id: 'e3', source: 'Branch', sourcePin: 'True', target: 'PrintString', targetPin: 'execute', category: 'exec' },
-    { id: 'e4', source: 'Branch', sourcePin: 'False', target: 'DestroyActor', targetPin: 'execute', category: 'exec' },
+    { id: 'e3', source: 'Branch', sourcePin: 'then', target: 'PrintString', targetPin: 'execute', category: 'exec' },
+    { id: 'e4', source: 'Branch', sourcePin: 'else', target: 'DestroyActor', targetPin: 'execute', category: 'exec' },
   ],
 };

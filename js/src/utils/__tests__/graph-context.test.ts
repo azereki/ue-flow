@@ -24,8 +24,8 @@ describe('serializeGraphContext', () => {
   it('includes edge connections with node titles', () => {
     const result = serializeGraphContext(DEMO_GRAPH);
     expect(result).toContain('Event BeginPlay.then');
-    expect(result).toContain('Branch.True');
-    expect(result).toContain('Branch.False');
+    expect(result).toContain('Branch.then');
+    expect(result).toContain('Branch.else');
   });
 
   it('stays under the 12K char limit', () => {

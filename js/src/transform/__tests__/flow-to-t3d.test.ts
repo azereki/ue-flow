@@ -255,6 +255,34 @@ describe('flowToT3D property synthesis', () => {
     // They should be marked hidden
     const selfLine = t3d.split('\n').find((l) => l.includes('PinName="self"'));
     expect(selfLine).toContain('bHidden=True');
+    // Self pin should have NSLOCTEXT Target friendly name
+    expect(selfLine).toContain('PinFriendlyName=NSLOCTEXT("K2Node", "Target", "Target")');
+  });
+
+  it('emits DefaultObject on self pin when FunctionReference has library class', () => {
+    const graphWithRef: UEGraphJSON = {
+      metadata: { title: 'EventGraph', assetPath: '' },
+      nodes: [{
+        id: 'PrintStr',
+        type: 'call_function',
+        nodeClass: 'K2Node_CallFunction',
+        nodeGuid: 'F000000000000001',
+        position: { x: 0, y: 0 },
+        title: 'Print String',
+        properties: {
+          FunctionReference: '(MemberParent="/Script/Engine.KismetSystemLibrary",MemberName="PrintString")',
+        },
+        pins: [
+          { id: 'ps-exec', name: 'execute', friendlyName: '', direction: 'input', category: 'exec', subCategory: '', subCategoryObject: '', containerType: '', defaultValue: '', isReference: false, isConst: false, isWeak: false, hidden: false, advancedView: false },
+        ],
+      }],
+      edges: [],
+    };
+    const { nodes, edges } = graphJsonToFlow(graphWithRef);
+    const t3d = flowToT3D(nodes, edges);
+    const selfLine = t3d.split('\n').find((l) => l.includes('PinName="self"'));
+    expect(selfLine).toContain('DefaultObject="/Script/Engine.Default__KismetSystemLibrary"');
+    expect(selfLine).toContain('PinSubCategoryObject=/Script/CoreUObject.Class');
   });
 
   it('validates nodeGuids at export time (32-char hex)', () => {

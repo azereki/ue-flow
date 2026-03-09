@@ -197,8 +197,8 @@ export const DEMO_MULTIGRAPH: UEMultiGraphJSON = {
           pins: [
             { id: 'B8000000000000010000000000000001', name: 'execute', direction: 'input', category: 'exec' },
             { id: 'B8000000000000010000000000000002', name: 'Condition', direction: 'input', category: 'bool' },
-            { id: 'B8000000000000010000000000000003', name: 'True', direction: 'output', category: 'exec' },
-            { id: 'B8000000000000010000000000000004', name: 'False', direction: 'output', category: 'exec' },
+            { id: 'B8000000000000010000000000000003', name: 'then', friendlyName: 'True', direction: 'output', category: 'exec' },
+            { id: 'B8000000000000010000000000000004', name: 'else', friendlyName: 'False', direction: 'output', category: 'exec' },
           ],
         },
         // <= comparison — pure function, no exec pins
@@ -292,8 +292,8 @@ export const DEMO_MULTIGRAPH: UEMultiGraphJSON = {
           pins: [
             { id: 'BD000000000000010000000000000001', name: 'execute', direction: 'input', category: 'exec' },
             { id: 'BD000000000000010000000000000002', name: 'Condition', direction: 'input', category: 'bool' },
-            { id: 'BD000000000000010000000000000003', name: 'True', direction: 'output', category: 'exec' },
-            { id: 'BD000000000000010000000000000004', name: 'False', direction: 'output', category: 'exec' },
+            { id: 'BD000000000000010000000000000003', name: 'then', friendlyName: 'True', direction: 'output', category: 'exec' },
+            { id: 'BD000000000000010000000000000004', name: 'else', friendlyName: 'False', direction: 'output', category: 'exec' },
           ],
         },
         // Drain Stamina
@@ -347,13 +347,13 @@ export const DEMO_MULTIGRAPH: UEMultiGraphJSON = {
         { id: 'e08', source: 'SetHealthDmg', sourcePin: 'then', target: 'BranchDeath', targetPin: 'execute', category: 'exec' },
         { id: 'e09', source: 'Clamp', sourcePin: 'ReturnValue', target: 'LessEqual', targetPin: 'A', category: 'real' },
         { id: 'e10', source: 'LessEqual', sourcePin: 'ReturnValue', target: 'BranchDeath', targetPin: 'Condition', category: 'bool' },
-        { id: 'e11', source: 'BranchDeath', sourcePin: 'True', target: 'CallDie', targetPin: 'execute', category: 'exec' },
+        { id: 'e11', source: 'BranchDeath', sourcePin: 'then', target: 'CallDie', targetPin: 'execute', category: 'exec' },
 
         // Tick flow
         { id: 'e12', source: 'EventTick', sourcePin: 'then', target: 'BranchSprint', targetPin: 'execute', category: 'exec' },
         { id: 'e13', source: 'GetIsSprinting', sourcePin: 'Is Sprinting', target: 'BranchSprint', targetPin: 'Condition', category: 'bool' },
-        { id: 'e14', source: 'BranchSprint', sourcePin: 'True', target: 'DrainStamina', targetPin: 'execute', category: 'exec' },
-        { id: 'e15', source: 'BranchSprint', sourcePin: 'False', target: 'RegenStamina', targetPin: 'execute', category: 'exec' },
+        { id: 'e14', source: 'BranchSprint', sourcePin: 'then', target: 'DrainStamina', targetPin: 'execute', category: 'exec' },
+        { id: 'e15', source: 'BranchSprint', sourcePin: 'else', target: 'RegenStamina', targetPin: 'execute', category: 'exec' },
         { id: 'e16', source: 'EventTick', sourcePin: 'Delta Seconds', target: 'DrainStamina', targetPin: 'Delta Time', category: 'real' },
         { id: 'e17', source: 'EventTick', sourcePin: 'Delta Seconds', target: 'RegenStamina', targetPin: 'Delta Time', category: 'real' },
       ],
@@ -464,8 +464,8 @@ export const DEMO_MULTIGRAPH: UEMultiGraphJSON = {
           pins: [
             { id: 'D3000000000000010000000000000001', name: 'execute', direction: 'input', category: 'exec' },
             { id: 'D3000000000000010000000000000002', name: 'Condition', direction: 'input', category: 'bool' },
-            { id: 'D3000000000000010000000000000003', name: 'True', direction: 'output', category: 'exec' },
-            { id: 'D3000000000000010000000000000004', name: 'False', direction: 'output', category: 'exec' },
+            { id: 'D3000000000000010000000000000003', name: 'then', friendlyName: 'True', direction: 'output', category: 'exec' },
+            { id: 'D3000000000000010000000000000004', name: 'else', friendlyName: 'False', direction: 'output', category: 'exec' },
           ],
         },
         // Apply crit multiplier — pure function, no exec pins
@@ -522,8 +522,8 @@ export const DEMO_MULTIGRAPH: UEMultiGraphJSON = {
       edges: [
         // Exec flow
         { id: 'cd-e1', source: 'CD_Entry', sourcePin: 'then', target: 'CD_Branch', targetPin: 'execute', category: 'exec' },
-        { id: 'cd-e2', source: 'CD_Branch', sourcePin: 'True', target: 'CD_ReturnCrit', targetPin: 'execute', category: 'exec' },
-        { id: 'cd-e3', source: 'CD_Branch', sourcePin: 'False', target: 'CD_ReturnNormal', targetPin: 'execute', category: 'exec' },
+        { id: 'cd-e2', source: 'CD_Branch', sourcePin: 'then', target: 'CD_ReturnCrit', targetPin: 'execute', category: 'exec' },
+        { id: 'cd-e3', source: 'CD_Branch', sourcePin: 'else', target: 'CD_ReturnNormal', targetPin: 'execute', category: 'exec' },
         // Data flow
         { id: 'cd-e4', source: 'CD_Entry', sourcePin: 'Base Damage', target: 'CD_Multiply', targetPin: 'A', category: 'real' },
         { id: 'cd-e5', source: 'CD_Entry', sourcePin: 'Multiplier', target: 'CD_Multiply', targetPin: 'B', category: 'real' },
