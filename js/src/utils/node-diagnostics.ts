@@ -43,14 +43,17 @@ export function diagnoseNode(
     }
   }
 
-  // Unreachable impure node: has exec input pin but no incoming exec connection
+  // Unreachable impure node: has exec input pin but no incoming exec connection.
+  // Only warn when the node has at least one outgoing edge (i.e. it's wired into the graph
+  // but missing its exec input). Isolated/freshly-placed nodes are not flagged.
   const hasExecInput = data.pins?.some((p) => p.direction === 'input' && isExecPin(p.category));
   if (hasExecInput) {
     const execInputPins = data.pins.filter((p) => p.direction === 'input' && isExecPin(p.category));
     const hasIncomingExec = execInputPins.some((pin) =>
       edges.some((e) => e.target === nodeId && e.targetHandle === pin.id),
     );
-    if (!hasIncomingExec && data.ueType !== 'event' && data.ueType !== 'function_entry' && data.ueType !== 'input' && data.ueType !== 'component_event') {
+    const hasAnyConnection = edges.some((e) => e.source === nodeId || e.target === nodeId);
+    if (!hasIncomingExec && hasAnyConnection && data.ueType !== 'event' && data.ueType !== 'function_entry' && data.ueType !== 'input' && data.ueType !== 'component_event') {
       diagnostics.push({ severity: 'warning', message: 'No incoming exec connection — node may be unreachable' });
     }
   }

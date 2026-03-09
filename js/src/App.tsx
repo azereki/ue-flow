@@ -276,6 +276,8 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
   // ─── Right-click context menu (stationary clicks only) ──────────────────────
   // Track right-mousedown position + max movement. The contextmenu event fires
   // after mouseup, so we measure total drag distance to distinguish click vs pan.
+  // IMPORTANT: capture phase (true) so it fires BEFORE the rpan handler which
+  // calls stopPropagation and would block bubble-phase listeners.
   const rclickDown = useRef<{ x: number; y: number; maxDist: number } | null>(null);
   const RCLICK_THRESHOLD = 5; // px — movement under this counts as stationary
 
@@ -291,10 +293,11 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
       const dist = dx * dx + dy * dy;
       if (dist > rclickDown.current.maxDist) rclickDown.current.maxDist = dist;
     };
-    document.addEventListener('mousedown', onDown);
+    // capture: true so this fires before rpan's capture-phase stopPropagation
+    document.addEventListener('mousedown', onDown, true);
     document.addEventListener('mousemove', onMove);
     return () => {
-      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('mousedown', onDown, true);
       document.removeEventListener('mousemove', onMove);
     };
   }, []);
