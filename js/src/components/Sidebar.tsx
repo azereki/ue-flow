@@ -17,6 +17,8 @@ interface SidebarProps {
   onDeleteVariable?: (name: string) => void;
   /** Called when user drags a variable from sidebar — provides variable info for node creation. */
   onDragVariable?: (name: string, type: string, mode: 'get' | 'set') => void;
+  /** Called when user drags a custom event from sidebar — provides event name for node creation. */
+  onDragEvent?: (name: string) => void;
 }
 
 interface SectionProps {
@@ -162,7 +164,7 @@ function findGraphForEvent(graphs: Record<string, { nodes: Array<{ title: string
   return 'EventGraph';
 }
 
-export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onShowDetails, onOpenSpecialTab, onCreateVariable, onCreateEvent, onCreateFunction, onRenameEvent, onDeleteEvent, onRenameVariable, onDeleteVariable, onDragVariable }) => {
+export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onShowDetails, onOpenSpecialTab, onCreateVariable, onCreateEvent, onCreateFunction, onRenameEvent, onDeleteEvent, onRenameVariable, onDeleteVariable, onDragVariable, onDragEvent }) => {
   const [search, setSearch] = useState('');
   const deferredSearch = useDeferredValue(search);
   const { events, functions, variables, structs, delegates, dataTables, graphs, components, macros } = multiGraph;
@@ -274,7 +276,12 @@ export const Sidebar: FC<SidebarProps> = ({ multiGraph, onNavigateToGraph, onSho
               <div key={evt.name} className="ueflow-sidebar-item-row">
                 <button
                   className={`ueflow-sidebar-item ueflow-sidebar-item--clickable ${evtClass}`}
-                  title={params || undefined}
+                  title={params ? `${params}\nDrag to graph to place event node` : 'Drag to graph to place event node'}
+                  draggable={!!onDragEvent}
+                  onDragStart={onDragEvent ? (e) => {
+                    e.dataTransfer.setData('application/ue-flow-event', JSON.stringify({ name: evt.name }));
+                    e.dataTransfer.effectAllowed = 'copy';
+                  } : undefined}
                   onClick={() => {
                     const graphName = findGraphForEvent(graphs, evt.name);
                     onNavigateToGraph(graphName, evt.name);

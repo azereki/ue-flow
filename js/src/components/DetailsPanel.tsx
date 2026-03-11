@@ -23,6 +23,8 @@ interface DetailsPanelProps {
   item: DetailsItem;
   onClose: () => void;
   structs?: StructDef[];
+  /** Called when user renames an event via the details panel Name field. */
+  onUpdateEvent?: (oldName: string, newName: string) => void;
 }
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
@@ -109,10 +111,10 @@ const ParamRow: FC<{ name: string; type: string; value?: string; structs?: Struc
 
 // ─── Editable Field Components ───────────────────────────────────────────────
 
-const FieldText: FC<{ label: string; value: string; onChange: (v: string) => void; mono?: boolean }> = ({ label, value, onChange, mono }) => (
+const FieldText: FC<{ label: string; value: string; onChange: (v: string) => void; onBlur?: () => void; mono?: boolean }> = ({ label, value, onChange, onBlur, mono }) => (
   <div className="ueflow-field-row">
     <span className="ueflow-field-label">{label}</span>
-    <input className={`ueflow-field-text${mono ? ' ueflow-field-mono' : ''}`} type="text" value={value} onChange={(e) => onChange(e.target.value)} />
+    <input className={`ueflow-field-text${mono ? ' ueflow-field-mono' : ''}`} type="text" value={value} onChange={(e) => onChange(e.target.value)} onBlur={onBlur} />
   </div>
 );
 
@@ -184,7 +186,7 @@ const FieldArrayBadge: FC<{ label: string; count: number }> = ({ label, count })
 
 // ─── Detail Section: Events ──────────────────────────────────────────────────
 
-function EventDetails({ item, search, edits, set, structs }: { item: Extract<DetailsItem, { kind: 'event' }>; search: string; edits: Record<string, unknown>; set: (k: string, v: unknown) => void; structs?: StructDef[] }) {
+function EventDetails({ item, search, edits, set, structs, onNameChange }: { item: Extract<DetailsItem, { kind: 'event' }>; search: string; edits: Record<string, unknown>; set: (k: string, v: unknown) => void; structs?: StructDef[]; onNameChange?: (oldName: string, newName: string) => void }) {
   const replicateOptions = ['NotReplicated', 'Multicast', 'RunOnServer', 'RunOnClient'];
   const accessOptions = ['Public', 'Protected', 'Private'];
 
@@ -197,8 +199,23 @@ function EventDetails({ item, search, edits, set, structs }: { item: Extract<Det
   ];
   const graphVisible = graphFields.some(f => f.show && shouldShow(search, 'Graph', f.label));
 
+  const pendingName = (edits['name'] as string) ?? item.name;
+
   return (
     <>
+      {shouldShow(search, 'Name') && onNameChange && (
+        <FieldText
+          label="Name"
+          value={pendingName}
+          onChange={(v) => set('name', v)}
+          onBlur={() => {
+            const newName = (edits['name'] as string | undefined)?.trim();
+            if (newName && newName !== item.name) {
+              onNameChange(item.name, newName);
+            }
+          }}
+        />
+      )}
       {graphVisible && (
         <CollapsibleSection title="Graph">
           {shouldShow(search, 'Graph', 'Replicates') && (
@@ -550,7 +567,7 @@ function DataTableDetails({ item, search }: { item: Extract<DetailsItem, { kind:
 
 // ─── Main Panel ──────────────────────────────────────────────────────────────
 
-export const DetailsPanel: FC<DetailsPanelProps> = ({ item, onClose, structs }) => {
+export const DetailsPanel: FC<DetailsPanelProps> = ({ item, onClose, structs, onUpdateEvent }) => {
   const [search, setSearch] = useState('');
   const [edits, setEdits] = useState<Record<string, unknown>>({});
 
@@ -583,7 +600,7 @@ export const DetailsPanel: FC<DetailsPanelProps> = ({ item, onClose, structs }) 
       <div className="ueflow-details-badge">{item.kind}</div>
       <div className="ueflow-details-readonly">Read-only preview</div>
       <div className="ueflow-details-content">
-        {item.kind === 'event' && <EventDetails item={item} search={search} edits={edits} set={set} structs={structs} />}
+        {item.kind === 'event' && <EventDetails item={item} search={search} edits={edits} set={set} structs={structs} onNameChange={onUpdateEvent} />}
         {item.kind === 'function' && <FunctionDetails item={item} search={search} edits={edits} set={set} structs={structs} />}
         {item.kind === 'variable' && <VariableDetails item={item} search={search} edits={edits} set={set} />}
         {item.kind === 'struct' && <StructDetails item={item} search={search} structs={structs} />}
