@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import {
   ReactFlow,
+  ReactFlowProvider,
   Background,
   BackgroundVariant,
   Controls,
@@ -801,6 +802,7 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
   }, [onSelectedNodeChange]);
 
   return (
+    <ReactFlowProvider>
     <GraphAPIProvider value={graphAPI}>
       <div style={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }}>
         <ReactFlow
@@ -924,6 +926,7 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
         {shortcutsOpen && <ShortcutPanel onClose={() => setShortcutsOpen(false)} />}
       </div>
     </GraphAPIProvider>
+    </ReactFlowProvider>
   );
 }
 
