@@ -348,27 +348,18 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
   // after mouseup, so we measure total drag distance to distinguish click vs pan.
   // IMPORTANT: capture phase (true) so it fires BEFORE the rpan handler which
   // calls stopPropagation and would block bubble-phase listeners.
-  const rclickDown = useRef<{ x: number; y: number; maxDist: number } | null>(null);
+  const rclickDown = useRef<{ x: number; y: number } | null>(null);
   const RCLICK_THRESHOLD = 5; // px — movement under this counts as stationary
 
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
       if (e.button !== 2) return;
-      rclickDown.current = { x: e.clientX, y: e.clientY, maxDist: 0 };
-    };
-    const onMove = (e: MouseEvent) => {
-      if (!rclickDown.current) return;
-      const dx = e.clientX - rclickDown.current.x;
-      const dy = e.clientY - rclickDown.current.y;
-      const dist = dx * dx + dy * dy;
-      if (dist > rclickDown.current.maxDist) rclickDown.current.maxDist = dist;
+      rclickDown.current = { x: e.clientX, y: e.clientY };
     };
     // capture: true so this fires before rpan's capture-phase stopPropagation
     document.addEventListener('mousedown', onDown, true);
-    document.addEventListener('mousemove', onMove);
     return () => {
       document.removeEventListener('mousedown', onDown, true);
-      document.removeEventListener('mousemove', onMove);
     };
   }, []);
 
@@ -388,10 +379,16 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
       return;
     }
 
-    // Only open on stationary right-click (no drag/pan)
-    const wasDrag = rclickDown.current && rclickDown.current.maxDist > RCLICK_THRESHOLD * RCLICK_THRESHOLD;
+    // Only open on stationary right-click (no drag/pan).
+    // Compare mousedown vs contextmenu positions directly — mousemove tracking
+    // is unreliable because d3-zoom calls stopImmediatePropagation during panning.
+    const down = rclickDown.current;
     rclickDown.current = null;
-    if (wasDrag) return;
+    if (down) {
+      const dx = e.clientX - down.x;
+      const dy = e.clientY - down.y;
+      if (dx * dx + dy * dy > RCLICK_THRESHOLD * RCLICK_THRESHOLD) return;
+    }
 
     const target = e.target as HTMLElement;
 
