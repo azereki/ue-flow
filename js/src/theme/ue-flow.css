@@ -567,10 +567,6 @@
 .react-flow__node-commentNode {
   pointer-events: none !important;
 }
-/* During right-click pan: make all nodes transparent to pointer events so d3-zoom receives the event on the pane */
-.react-flow.ueflow-rpan .react-flow__node {
-  pointer-events: none !important;
-}
 
 .ueflow-comment-node {
   min-width: 150px;

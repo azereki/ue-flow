@@ -356,44 +356,23 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
       if (e.button !== 2) return;
       rclickDown.current = { x: e.clientX, y: e.clientY };
     };
-    // capture: true so this fires before rpan's capture-phase stopPropagation
     document.addEventListener('mousedown', onDown, true);
-    return () => {
-      document.removeEventListener('mousedown', onDown, true);
-    };
+    return () => document.removeEventListener('mousedown', onDown, true);
   }, []);
 
-  const handleContextMenu = useCallback((e: React.MouseEvent) => {
-    // Prevent default browser context menu
+  // ─── Context menus: use React Flow's dedicated per-target callbacks ────────
+  // onNodeContextMenu / onEdgeContextMenu / onPaneContextMenu are non-overlapping.
+  // The generic onContextMenu fires for ALL targets and would override node menus
+  // with the palette — so we don't use it.
+
+  const handleNodeContextMenu = useCallback((e: React.MouseEvent, node: { id: string }) => {
     e.preventDefault();
-
-    // If menu is already open, close it on any right-click
-    if (contextMenu) {
-      setContextMenu(null);
-      rclickDown.current = null;
-      return;
-    }
-    if (nodePalette) {
-      setNodePalette(null);
-      rclickDown.current = null;
-      return;
-    }
-
-    // Only open on stationary right-click (no drag/pan).
-    // Compare mousedown vs contextmenu positions directly — mousemove tracking
-    // is unreliable because d3-zoom calls stopImmediatePropagation during panning.
-    const down = rclickDown.current;
+    if (embedded) return;
+    setNodePalette(null);
     rclickDown.current = null;
-    if (down) {
-      const dx = e.clientX - down.x;
-      const dy = e.clientY - down.y;
-      if (dx * dx + dy * dy > RCLICK_THRESHOLD * RCLICK_THRESHOLD) return;
-    }
 
-    const target = e.target as HTMLElement;
-
-    // Right-click on a pin handle — show "Delete Connection(s)" for connected edges
-    const handleEl = target.closest('.ueflow-handle, .react-flow__handle') as HTMLElement | null;
+    // Check if right-click was on a pin handle — show "Delete Connection(s)"
+    const handleEl = (e.target as HTMLElement).closest('.ueflow-handle, .react-flow__handle') as HTMLElement | null;
     if (handleEl) {
       const handleId = handleEl.getAttribute('data-handleid');
       if (handleId) {
@@ -407,31 +386,36 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
       return;
     }
 
-    // Check if right-clicked on a node
-    const nodeEl = target.closest('.react-flow__node');
-    const edgeEl = target.closest('.react-flow__edge');
+    setContextMenu({ x: e.clientX, y: e.clientY, nodeId: node.id });
+  }, [embedded]);
 
-    if (nodeEl) {
-      const nodeId = nodeEl.getAttribute('data-id');
-      if (nodeId) {
-        setContextMenu({ x: e.clientX, y: e.clientY, nodeId });
-      }
-      return; // Always bail — never fall through to palette from a node click
-    }
-    if (edgeEl) {
-      const edgeId = edgeEl.getAttribute('data-testid')?.replace('rf__edge-', '') ?? undefined;
-      if (edgeId) {
-        setContextMenu({ x: e.clientX, y: e.clientY, edgeId });
-      }
-      return; // Always bail — never fall through to palette from an edge click
+  const handleEdgeContextMenu = useCallback((e: React.MouseEvent, edge: { id: string }) => {
+    e.preventDefault();
+    if (embedded) return;
+    setNodePalette(null);
+    rclickDown.current = null;
+    setContextMenu({ x: e.clientX, y: e.clientY, edgeId: edge.id });
+  }, [embedded]);
+
+  const handlePaneContextMenu = useCallback((e: React.MouseEvent | MouseEvent) => {
+    e.preventDefault();
+    if (embedded) return;
+    setContextMenu(null);
+
+    // Only open palette on stationary right-click (not after a pan drag).
+    const down = rclickDown.current;
+    rclickDown.current = null;
+    if (down) {
+      const dx = (e as MouseEvent).clientX - down.x;
+      const dy = (e as MouseEvent).clientY - down.y;
+      if (dx * dx + dy * dy > RCLICK_THRESHOLD * RCLICK_THRESHOLD) return;
     }
 
-    // Right-click on empty canvas → show node palette
-    if (!embedded && screenToFlowRef.current) {
-      const flowPos = screenToFlowRef.current({ x: e.clientX, y: e.clientY });
-      setNodePalette({ x: e.clientX, y: e.clientY, graphX: flowPos.x, graphY: flowPos.y });
+    if (screenToFlowRef.current) {
+      const flowPos = screenToFlowRef.current({ x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY });
+      setNodePalette({ x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY, graphX: flowPos.x, graphY: flowPos.y });
     }
-  }, [embedded, contextMenu, nodePalette]);
+  }, [embedded]);
 
   const contextMenuActions = useMemo((): ContextMenuAction[] => {
     if (!contextMenu) return [];
@@ -720,60 +704,15 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
     return () => window.removeEventListener('keydown', handler);
   }, [embedded, graphAPI, handleStraighten]);
 
-  // ─── Right-click pan through nodes ──────────────────────────────────────────
-
-  const rpanTarget = useRef<Element | null>(null);
-
+  // Suppress browser context menu inside React Flow — our custom menus handle it
   useEffect(() => {
-    const BYPASS = '__ueflow_rpan';
-
-    const onMouseDown = (e: MouseEvent) => {
-      if (e.button !== 2) return;
-      if ((e as unknown as Record<string, unknown>)[BYPASS]) return;
-      const rf = (e.target as HTMLElement).closest('.react-flow');
-      if (!rf) return;
-      const node = (e.target as HTMLElement).closest('.react-flow__node');
-      if (!node) return;
-
-      e.stopPropagation();
-      e.preventDefault();
-
-      rf.classList.add('ueflow-rpan');
-      rpanTarget.current = rf;
-
-      const pane = rf.querySelector('.react-flow__pane');
-      if (pane) {
-        const synth = new MouseEvent('mousedown', {
-          bubbles: true, cancelable: true,
-          button: 2, buttons: 2,
-          clientX: e.clientX, clientY: e.clientY,
-          screenX: e.screenX, screenY: e.screenY,
-          view: window,
-        });
-        (synth as unknown as Record<string, unknown>)[BYPASS] = true;
-        pane.dispatchEvent(synth);
-      }
-    };
-
-    const onMouseUp = () => {
-      rpanTarget.current?.classList.remove('ueflow-rpan');
-      rpanTarget.current = null;
-    };
-
     const onContextMenu = (e: Event) => {
       if ((e.target as HTMLElement).closest('.react-flow')) {
         e.preventDefault();
       }
     };
-
-    document.addEventListener('mousedown', onMouseDown, true);
-    document.addEventListener('mouseup', onMouseUp);
     document.addEventListener('contextmenu', onContextMenu);
-    return () => {
-      document.removeEventListener('mousedown', onMouseDown, true);
-      document.removeEventListener('mouseup', onMouseUp);
-      document.removeEventListener('contextmenu', onContextMenu);
-    };
+    return () => document.removeEventListener('contextmenu', onContextMenu);
   }, []);
 
   // Close context menu / node palette when viewport pans or zooms
@@ -816,7 +755,9 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
           onEdgeDoubleClick={embedded ? undefined : handleEdgeDoubleClick as unknown as (event: React.MouseEvent, edge: { id: string }) => void}
           onNodeDoubleClick={embedded ? undefined : handleNodeDoubleClick as unknown as (event: React.MouseEvent, node: { id: string }) => void}
           onPaneClick={handlePaneClick}
-          onContextMenu={embedded ? undefined : handleContextMenu}
+          onNodeContextMenu={embedded ? undefined : handleNodeContextMenu as unknown as (event: React.MouseEvent, node: { id: string }) => void}
+          onEdgeContextMenu={embedded ? undefined : handleEdgeContextMenu as unknown as (event: React.MouseEvent, edge: { id: string }) => void}
+          onPaneContextMenu={embedded ? undefined : handlePaneContextMenu}
           onMoveStart={handleMoveStart}
           onDragOver={embedded ? undefined : handleDragOver}
           onDrop={embedded ? undefined : handleDrop}

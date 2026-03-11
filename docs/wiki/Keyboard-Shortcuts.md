@@ -29,7 +29,7 @@ All keyboard shortcuts available in ue-flow's interactive graph editor. Shortcut
 | Shortcut | Action | Notes |
 |----------|--------|-------|
 | Scroll wheel | Zoom in/out | Centered on cursor position |
-| Click + drag (canvas) | Pan viewport | Right-click panning also works through nodes |
+| Click + drag (canvas) | Pan viewport | Right-click drag pans on empty canvas |
 | Click + drag (node) | Move node | Comment nodes also move enclosed nodes |
 | Double-click (edge) | Insert reroute node | Creates a K2Node_Knot routing dot at the click position |
 | Double-click (event node) | Execution flow visualization | Highlights exec chain, dims unreachable nodes |

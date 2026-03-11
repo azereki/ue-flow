@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.1] - 2026-03-11
+
+### Fixed
+
+- Fix "Failed to render blueprint graph" zustand provider error in SingleGraphView by wrapping in `ReactFlowProvider`
+- Fix node palette opening after right-click panning — compare mousedown vs contextmenu positions directly instead of tracking mousemove (d3-zoom eats bubble-phase events)
+- Fix right-click on nodes opening palette instead of context menu — use dedicated React Flow `onNodeContextMenu`/`onEdgeContextMenu`/`onPaneContextMenu` props instead of generic `onContextMenu`
+
+### Changed
+
+- Remove right-click-pan-through-nodes (rpan) handler — right-click drag to pan now only works on empty canvas, not through nodes. Fixes context menu reliability.
+
 ## [0.5.0] - 2026-03-10
 
 ### Added
@@ -236,6 +248,7 @@ _First release._
 - Move Components section to top of sidebar for default layout ([`0082ea8`][0082ea8])
 - Reduce segment button padding and field label min-width for compact details panel ([`0082ea8`][0082ea8])
 
+[0.5.1]: https://github.com/azereki/ue-flow/releases/tag/v0.5.1
 [0.5.0]: https://github.com/azereki/ue-flow/releases/tag/v0.5.0
 [0.4.0]: https://github.com/azereki/ue-flow/releases/tag/v0.4.0
 [0.3.0]: https://github.com/azereki/ue-flow/releases/tag/v0.3.0
