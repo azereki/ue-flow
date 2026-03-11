@@ -119,31 +119,40 @@ interface ConnectionValidation {
 | **Category compatibility** | Pin types must match (with aliases) |
 | **No self-connections** | Cannot connect a node to itself |
 | **No duplicate edges** | Same connection cannot exist twice (checked bidirectionally) |
-| **Exec input limit** | An exec input pin can only have one incoming connection (UE rule) |
-| **Exec output replacement** | Exec output pins auto-replace existing connections (matches UE behavior) |
-| **Implicit type conversion** | `canImplicitlyConvert()` allows int→real, byte→int, name→string, and object subclass hierarchy |
+| **Struct type matching** | Struct pins with different `subCategoryObject` values cannot connect |
 | **Enum type matching** | Enum pins with different `subCategoryObject` values cannot connect |
+| **Data input auto-replace** | Data input pins auto-replace existing connections (matches UE behavior) |
+| **Exec output auto-replace** | Exec output pins auto-replace existing connections (matches UE behavior) |
+| **Exec input convergence** | Exec input pins accept multiple incoming connections (flow convergence) |
+| **Implicit type conversion** | `canImplicitlyConvert()` allows int→real, int→int64, byte→int, name→string, float↔double, and object subclass hierarchy |
 
 ### Category Compatibility
 
 Pin categories must match exactly, with these exceptions:
 
-- **`float` and `real`** are interchangeable (UE uses both names for the same type)
+- **`float`, `real`, and `double`** are interchangeable (UE uses all three for floating-point types)
 - **`wildcard`** matches any category
-- **Implicit type conversions** via `canImplicitlyConvert()`: `int`→`real`, `byte`→`int`, `name`→`string`, and object subclass hierarchy connections are allowed
+- **Implicit type conversions** via `canImplicitlyConvert()`: `int`→`real`, `int`→`int64`, `int`→`double`, `byte`→`int`, `name`→`string`, `float`↔`double`, and object subclass hierarchy connections are allowed
 - **Enum validation:** Enum pins must share the same `subCategoryObject` (enum type path) to connect -- two different enum types are incompatible even though both are category `byte`
+- **Struct validation:** Struct pins must share the same `subCategoryObject` (struct type path) to connect -- a `Vector` output cannot connect to a `Rotator` input
 
-All other categories (exec, bool, int, string, object, struct, etc.) require exact matches.
+### Data Input Auto-Replacement
 
-### Exec Output Auto-Replacement
-
-Exec output pins allow only one outgoing connection, matching UE editor behavior. When creating a new edge from an exec output pin that already has an outgoing connection:
+Data input pins (all non-exec categories) allow only one incoming connection, matching UE editor behavior. When creating a new edge to a data input that already has an incoming connection:
 
 1. `canConnect()` returns `valid: true` with the existing edge in the `replaces` field
 2. `addEdge()` automatically removes the existing connection before creating the new one
 3. The replacement is captured as part of the same undo snapshot
 
-This means dragging a new exec wire from an output that is already connected will seamlessly replace the old connection rather than being rejected.
+This means dragging a new data wire to an occupied input will seamlessly replace the old connection.
+
+### Exec Output Auto-Replacement
+
+Exec output pins allow only one outgoing connection, matching UE editor behavior. The same `replaces` mechanism applies — dragging a new exec wire from an already-connected output seamlessly replaces the old connection.
+
+### Exec Input Convergence
+
+Unlike data inputs and exec outputs, exec **input** pins accept **multiple incoming connections**. This enables flow convergence — e.g., both True and False branches of a Branch node connecting to the same cleanup function.
 
 ### Example: Custom validation
 

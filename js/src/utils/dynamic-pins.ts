@@ -44,6 +44,12 @@ export const DYNAMIC_PIN_CLASSES: Map<string, DynamicPinConfig> = new Map([
     category: 'exec',
     minPins: 1,
   }],
+  ['K2Node_MultiGate', {
+    direction: 'output' as const,
+    namePattern: 'Out {n}',
+    category: 'exec' as PinCategory,
+    minPins: 2,
+  }],
 ]);
 
 /** Generate a 32-char uppercase hex GUID. */

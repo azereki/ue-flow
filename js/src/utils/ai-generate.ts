@@ -37,7 +37,7 @@ The schema below is the absolute source of truth. Do not invent fields, node cla
 ## UENode
 \`{ id, type, nodeClass, nodeGuid, position: {x, y}, title, properties: {}, pins: [UEPin] }\`
 - Valid \`type\` values: \`event\`, \`call_function\`, \`variable_get\`, \`variable_set\`, \`flow_control\`, \`cast\`, \`comment\`
-- Common nodeClass values: \`K2Node_Event\`, \`K2Node_CallFunction\`, \`K2Node_IfThenElse\`, \`K2Node_VariableGet\`, \`K2Node_VariableSet\`, \`K2Node_DynamicCast\`, \`K2Node_ForEachLoop\`, \`K2Node_Delay\`, \`K2Node_Timeline\`, \`EdGraphNode_Comment\`
+- Common nodeClass values: \`K2Node_Event\`, \`K2Node_CustomEvent\`, \`K2Node_CallFunction\`, \`K2Node_IfThenElse\`, \`K2Node_VariableGet\`, \`K2Node_VariableSet\`, \`K2Node_DynamicCast\`, \`K2Node_ForEachLoop\`, \`K2Node_MacroInstance\`, \`K2Node_ExecutionSequence\`, \`K2Node_DoOnce\`, \`K2Node_Gate\`, \`K2Node_FlipFlop\`, \`K2Node_MultiGate\`, \`K2Node_Delay\`, \`K2Node_Timeline\`, \`K2Node_SpawnActorFromClass\`, \`K2Node_Self\`, \`K2Node_CallDelegate\`, \`K2Node_AddDelegate\`, \`K2Node_RemoveDelegate\`, \`K2Node_ComponentBoundEvent\`, \`K2Node_EnhancedInputAction\`, \`EdGraphNode_Comment\`
 - nodeGuid: unique 32-char hex string per node (0-9, A-F only, e.g. "A000B000C000D000E000F00011112222")
 
 ## Required Properties (critical for UE paste accuracy)

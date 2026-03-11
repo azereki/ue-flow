@@ -8,9 +8,11 @@ import type { PinCategory } from '../types/pin-types';
 
 /** Directed graph: key can implicitly convert to all values in the Set. */
 export const TYPE_PROMOTIONS: Map<PinCategory, Set<PinCategory>> = new Map([
-  ['int', new Set<PinCategory>(['real', 'float', 'int64'])],
-  ['byte', new Set<PinCategory>(['int', 'real', 'float'])],
-  ['float', new Set<PinCategory>(['real'])],
+  ['int', new Set<PinCategory>(['real', 'float', 'int64', 'double'])],
+  ['int64', new Set<PinCategory>(['real', 'float', 'double'])],
+  ['byte', new Set<PinCategory>(['int', 'int64', 'real', 'float', 'double'])],
+  ['float', new Set<PinCategory>(['real', 'double'])],
+  ['double', new Set<PinCategory>(['real', 'float'])],
   ['name', new Set<PinCategory>(['string'])],
   ['text', new Set<PinCategory>(['string'])],
 ]);

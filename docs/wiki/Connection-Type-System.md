@@ -7,12 +7,14 @@ ue-flow validates pin connections using a multi-layered type compatibility syste
 When a user drags a wire from one pin to another, the following checks run in order:
 
 1. **Direction check** — output must connect to input (or vice versa)
-2. **Self-connection check** — source and target cannot be the same node
-3. **Duplicate edge check** — the exact connection must not already exist
-4. **Exec input limit** — exec input pins allow only one incoming connection
-5. **Exec output replacement** — exec output pins auto-replace existing connections (returns `replaces` field)
-6. **Category compatibility** — pin types must be compatible (see below)
-7. **Enum type matching** — enum pins must share the same enum type
+2. **Category compatibility** — pin types must be compatible (see below)
+3. **Enum type matching** — enum pins must share the same enum type
+4. **Struct type matching** — struct pins must share the same struct type
+5. **Self-connection check** — source and target cannot be the same node
+6. **Duplicate edge check** — the exact connection must not already exist
+7. **Data input auto-replace** — data input pins auto-replace existing connections (returns `replaces` field)
+8. **Exec output auto-replace** — exec output pins auto-replace existing connections (returns `replaces` field)
+9. **Exec input convergence** — exec input pins allow multiple incoming connections (flow convergence)
 
 ## Category Compatibility
 
@@ -25,7 +27,8 @@ Most pin categories require an exact match between source and target:
 | `exec` | Execution flow |
 | `bool` | Boolean values |
 | `int` | Integer values |
-| `real` / `float` | Floating-point values |
+| `real` / `float` / `double` | Floating-point values |
+| `int64` | 64-bit integer values |
 | `string` | String values |
 | `object` | UObject references |
 | `struct` | Struct instances |
@@ -34,7 +37,7 @@ Most pin categories require an exact match between source and target:
 
 These categories are treated as identical:
 
-- **`float` ↔ `real`** — UE uses both names for the same underlying type
+- **`float` ↔ `real` ↔ `double`** — UE uses all three names for floating-point types; they are fully interchangeable
 
 ### Wildcard
 
@@ -51,10 +54,19 @@ Beyond exact matches, the system supports implicit promotions matching UE's type
 | `int` | `real` | Widening |
 | `int` | `float` | Widening |
 | `int` | `int64` | Widening |
+| `int` | `double` | Widening |
+| `int64` | `real` | Widening |
+| `int64` | `float` | Widening |
+| `int64` | `double` | Widening |
 | `byte` | `int` | Widening |
+| `byte` | `int64` | Widening |
 | `byte` | `real` | Widening |
 | `byte` | `float` | Widening |
+| `byte` | `double` | Widening |
 | `float` | `real` | Alias |
+| `float` | `double` | Widening |
+| `double` | `real` | Alias |
+| `double` | `float` | Alias |
 
 ### String promotions
 
@@ -137,6 +149,53 @@ The enum registry (`enum-registry.ts`) pre-populates values for common UE enums,
 | `EObjectTypeQuery` | ObjectTypeQuery1-6 |
 | `ENetRole` | ROLE_None, ROLE_SimulatedProxy, ROLE_AutonomousProxy, ROLE_Authority |
 | `ETextCommit` | Default, OnEnter, OnUserMovedFocus, OnCleared |
+
+## Struct Type Validation
+
+Struct pins require additional validation beyond category matching:
+
+### Matching rule
+
+When both pins have category `struct` and both have a non-empty `subCategoryObject`, the paths must match exactly:
+
+```ts
+// Valid: same struct type
+Pin A: { category: 'struct', subCategoryObject: '/Script/CoreUObject.Vector' }
+Pin B: { category: 'struct', subCategoryObject: '/Script/CoreUObject.Vector' }
+// → Compatible ✓
+
+// Invalid: different struct types
+Pin A: { category: 'struct', subCategoryObject: '/Script/CoreUObject.Vector' }
+Pin B: { category: 'struct', subCategoryObject: '/Script/CoreUObject.Rotator' }
+// → Incompatible ✗ — "Incompatible struct types"
+
+// Valid: one pin has no subCategoryObject (generic struct)
+Pin A: { category: 'struct', subCategoryObject: '/Script/CoreUObject.Vector' }
+Pin B: { category: 'struct', subCategoryObject: '' }
+// → Compatible ✓ (unspecified struct accepts any)
+```
+
+## Data Input Auto-Replacement
+
+Data input pins (all non-exec categories) allow only one incoming connection, matching UE editor behavior. When creating a new edge to a data input that already has an incoming connection:
+
+1. `canConnect()` returns `valid: true` with the existing edge in the `replaces` field
+2. `addEdge()` automatically removes the existing connection before creating the new one
+3. The replacement is captured as part of the same undo snapshot
+
+This means dragging a new data wire to an input pin that is already connected will seamlessly replace the old connection.
+
+## Exec Input Convergence
+
+Unlike data inputs (single connection) and exec outputs (single connection with auto-replace), exec **input** pins accept **multiple incoming connections**. This enables flow convergence — a fundamental Blueprint pattern where multiple execution paths merge into a single node:
+
+```
+Branch
+├── True  ──→ Print String (exec input)
+└── False ──→ Print String (same exec input)
+```
+
+Both True and False can connect to the same exec input, allowing cleanup or continuation logic after conditional branches.
 
 ## Key Files
 

@@ -47,6 +47,14 @@ Certain node classes automatically generate their full pin sets when created via
 - **`K2Node_DynamicCast`** -- generates Object input pin, exec in/out pins, Cast Failed exec output, and `As [Class]` output pin based on the target class
 - **`K2Node_BreakStruct`** -- generates a struct input pin plus individual field output pins from the struct registry (`struct-registry.ts`)
 - **`K2Node_MakeStruct`** -- generates individual field input pins plus a struct output pin from the struct registry
+- **`K2Node_MacroInstance`** -- generates pins based on title: For Loop (exec + First/Last Index + Index + Loop Body/Completed), For Loop With Break (same + Break exec input), While Loop (exec + Condition + Loop Body/Completed)
+- **`K2Node_Timeline`** -- generates exec in, Play/PlayFromStart/Stop/Reverse/ReverseFromEnd/SetNewTime exec inputs, NewTime real input, Update/Finished exec outputs, Direction enum output
+- **`K2Node_SpawnActorFromClass`** -- generates exec in/out, Class input, Spawn Transform struct input, Owner object input, Return Value object output
+- **`K2Node_Self`** -- generates a single "Self" object output (pure node, no exec pins)
+- **`K2Node_CallDelegate`** -- generates exec in/out and Delegate input
+- **`K2Node_AddDelegate`** / **`K2Node_RemoveDelegate`** -- generates exec in/out, Delegate input, and Target object input
+- **`K2Node_ComponentBoundEvent`** -- generates exec output plus event-specific outputs (overlap events include OtherActor, OtherComp, OtherBodyIndex, FromSweep, SweepResult)
+- **`K2Node_EnhancedInputAction`** -- generates Started/Ongoing/Triggered/Completed/Canceled exec outputs, ActionValue struct output, ElapsedSeconds/TriggeredSeconds real outputs
 
 ### Examples
 
@@ -295,10 +303,13 @@ When `NodeSpec.type` is omitted, `addNode` infers the UE semantic type from the 
 | `VariableGet` | `variable_get` |
 | `VariableSet` | `variable_set` |
 | `IfThenElse`, `ForEach`, `Sequence`, `DoOnce`, `Gate`, `FlipFlop`, `MultiGate`, `Delay` | `flow_control` |
+| `MacroInstance`, `Timeline` | `flow_control` |
 | `DynamicCast`, `ClassDynamicCast` | `cast` |
+| `ComponentBoundEvent`, `EnhancedInput` | `event` |
 | `Comment` | `comment` |
 | `Knot` | `reroute` |
 | `BreakStruct`, `MakeStruct` | `call_function` |
+| `SpawnActor`, `CallDelegate`, `AddDelegate`, `RemoveDelegate`, `K2Node_Self` | `call_function` |
 | `Select` | `select` |
 | `Switch` | `switch` |
 | *(default)* | `call_function` |

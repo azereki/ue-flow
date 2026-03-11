@@ -17,8 +17,9 @@ export interface ConnectionValidation {
 
 /** Pin categories that are compatible with each other (float↔real aliases). */
 const COMPATIBLE_CATEGORIES: Record<string, Set<string>> = {
-  real: new Set(['real', 'float']),
-  float: new Set(['float', 'real']),
+  real: new Set(['real', 'float', 'double']),
+  float: new Set(['float', 'real', 'double']),
+  double: new Set(['double', 'real', 'float']),
 };
 
 /** Check if two pin categories are compatible for connection. */
@@ -45,9 +46,14 @@ function categoriesCompatible(a: PinCategory, b: PinCategory, aSub?: string, bSu
  *
  * Rules:
  * - Pins must have opposite directions (output → input)
- * - Pin categories must be compatible
+ * - Pin categories must be compatible (float↔real↔double aliases, implicit promotions)
+ * - Enum pins must share the same enum type (subCategoryObject match)
+ * - Struct pins must share the same struct type (subCategoryObject match)
  * - No self-connections (same node)
  * - No duplicate edges
+ * - Data input pins auto-replace their existing connection (UE behavior)
+ * - Exec output pins auto-replace their existing connection (UE behavior)
+ * - Exec input pins allow multiple incoming connections (flow convergence)
  */
 export function canConnect(
   sourcePin: UEPin,
@@ -79,6 +85,14 @@ export function canConnect(
     }
   }
 
+  // Struct pins: must share the same struct type
+  if (outPin.category === 'struct' && inPin.category === 'struct') {
+    if (outPin.subCategoryObject && inPin.subCategoryObject &&
+        outPin.subCategoryObject !== inPin.subCategoryObject) {
+      return { valid: false, reason: `Incompatible struct types: ${outPin.subCategoryObject} vs ${inPin.subCategoryObject}` };
+    }
+  }
+
   // No self-connections
   if (sourceNodeId === targetNodeId) {
     return { valid: false, reason: 'Cannot connect a node to itself' };
@@ -97,15 +111,15 @@ export function canConnect(
     }
   }
 
-  // Exec pins: only one connection per exec input (UE rule)
-  if (inPin.category === 'exec' && existingEdges) {
+  // Data input pins: replace existing connection (UE auto-disconnects old wire)
+  if (inPin.category !== 'exec' && existingEdges) {
     const realTargetId = sourcePin.direction === 'input' ? sourceNodeId : targetNodeId;
     const realTargetHandle = inPin.id;
-    const existingExecIn = existingEdges.some((e) =>
+    const existingDataIn = existingEdges.find((e) =>
       e.target === realTargetId && e.targetHandle === realTargetHandle,
     );
-    if (existingExecIn) {
-      return { valid: false, reason: 'Exec input already connected — disconnect first' };
+    if (existingDataIn) {
+      return { valid: true, replaces: existingDataIn };
     }
   }
 

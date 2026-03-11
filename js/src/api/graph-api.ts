@@ -200,6 +200,113 @@ function generateSpecialNodePins(shortCls: string, title: string): UEPin[] | nul
         pin('Out 0', 'Out 0', 'output', 'exec' as PinCategory),
         pin('Out 1', 'Out 1', 'output', 'exec' as PinCategory),
       ];
+    case 'K2Node_MacroInstance': {
+      if (title === 'For Loop' || title === 'ForLoop') {
+        return [
+          pin('execute', '', 'input', 'exec' as PinCategory),
+          pin('FirstIndex', 'First Index', 'input', 'int' as PinCategory, { defaultValue: '0' }),
+          pin('LastIndex', 'Last Index', 'input', 'int' as PinCategory, { defaultValue: '0' }),
+          pin('LoopBody', 'Loop Body', 'output', 'exec' as PinCategory),
+          pin('Index', 'Index', 'output', 'int' as PinCategory),
+          pin('Completed', 'Completed', 'output', 'exec' as PinCategory),
+        ];
+      }
+      if (title === 'For Loop With Break' || title === 'ForLoopWithBreak') {
+        return [
+          pin('execute', '', 'input', 'exec' as PinCategory),
+          pin('Break', 'Break', 'input', 'exec' as PinCategory),
+          pin('FirstIndex', 'First Index', 'input', 'int' as PinCategory, { defaultValue: '0' }),
+          pin('LastIndex', 'Last Index', 'input', 'int' as PinCategory, { defaultValue: '0' }),
+          pin('LoopBody', 'Loop Body', 'output', 'exec' as PinCategory),
+          pin('Index', 'Index', 'output', 'int' as PinCategory),
+          pin('Completed', 'Completed', 'output', 'exec' as PinCategory),
+        ];
+      }
+      if (title === 'While Loop' || title === 'WhileLoop') {
+        return [
+          pin('execute', '', 'input', 'exec' as PinCategory),
+          pin('Condition', 'Condition', 'input', 'bool' as PinCategory),
+          pin('LoopBody', 'Loop Body', 'output', 'exec' as PinCategory),
+          pin('Completed', 'Completed', 'output', 'exec' as PinCategory),
+        ];
+      }
+      return null;
+    }
+    case 'K2Node_Timeline':
+      return [
+        pin('execute', '', 'input', 'exec' as PinCategory),
+        pin('Play', 'Play', 'input', 'exec' as PinCategory),
+        pin('PlayFromStart', 'Play from Start', 'input', 'exec' as PinCategory),
+        pin('Stop', 'Stop', 'input', 'exec' as PinCategory),
+        pin('Reverse', 'Reverse', 'input', 'exec' as PinCategory),
+        pin('ReverseFromEnd', 'Reverse from End', 'input', 'exec' as PinCategory),
+        pin('SetNewTime', 'Set New Time', 'input', 'exec' as PinCategory),
+        pin('NewTime', 'New Time', 'input', 'real' as PinCategory, { defaultValue: '0.0' }),
+        pin('Update', 'Update', 'output', 'exec' as PinCategory),
+        pin('Finished', 'Finished', 'output', 'exec' as PinCategory),
+        pin('Direction', 'Direction', 'output', 'enum' as PinCategory),
+      ];
+    case 'K2Node_SpawnActorFromClass':
+      return [
+        pin('execute', '', 'input', 'exec' as PinCategory),
+        pin('Class', 'Class', 'input', 'class' as PinCategory),
+        pin('SpawnTransform', 'Spawn Transform', 'input', 'struct' as PinCategory),
+        pin('Owner', 'Owner', 'input', 'object' as PinCategory),
+        pin('then', '', 'output', 'exec' as PinCategory),
+        pin('ReturnValue', 'Return Value', 'output', 'object' as PinCategory),
+      ];
+    case 'K2Node_Self':
+      return [
+        pin('self', 'Self', 'output', 'object' as PinCategory),
+      ];
+    case 'K2Node_CallDelegate':
+      return [
+        pin('execute', '', 'input', 'exec' as PinCategory),
+        pin('Delegate', 'Delegate', 'input', 'delegate' as PinCategory),
+        pin('then', '', 'output', 'exec' as PinCategory),
+      ];
+    case 'K2Node_AddDelegate':
+      return [
+        pin('execute', '', 'input', 'exec' as PinCategory),
+        pin('Delegate', 'Delegate', 'input', 'delegate' as PinCategory),
+        pin('Target', 'Target', 'input', 'object' as PinCategory),
+        pin('then', '', 'output', 'exec' as PinCategory),
+      ];
+    case 'K2Node_RemoveDelegate':
+      return [
+        pin('execute', '', 'input', 'exec' as PinCategory),
+        pin('Delegate', 'Delegate', 'input', 'delegate' as PinCategory),
+        pin('Target', 'Target', 'input', 'object' as PinCategory),
+        pin('then', '', 'output', 'exec' as PinCategory),
+      ];
+    case 'K2Node_ComponentBoundEvent': {
+      const isOverlap = title.includes('Overlap');
+      if (isOverlap) {
+        return [
+          pin('then', '', 'output', 'exec' as PinCategory),
+          pin('OtherActor', 'Other Actor', 'output', 'object' as PinCategory),
+          pin('OtherComp', 'Other Comp', 'output', 'object' as PinCategory),
+          pin('OtherBodyIndex', 'Other Body Index', 'output', 'int' as PinCategory),
+          pin('bFromSweep', 'From Sweep', 'output', 'bool' as PinCategory),
+          pin('SweepResult', 'Sweep Result', 'output', 'struct' as PinCategory),
+        ];
+      }
+      // Default: generic component event with exec out only
+      return [
+        pin('then', '', 'output', 'exec' as PinCategory),
+      ];
+    }
+    case 'K2Node_EnhancedInputAction':
+      return [
+        pin('Started', 'Started', 'output', 'exec' as PinCategory),
+        pin('Ongoing', 'Ongoing', 'output', 'exec' as PinCategory),
+        pin('Triggered', 'Triggered', 'output', 'exec' as PinCategory),
+        pin('Completed', 'Completed', 'output', 'exec' as PinCategory),
+        pin('Canceled', 'Canceled', 'output', 'exec' as PinCategory),
+        pin('ActionValue', 'Action Value', 'output', 'struct' as PinCategory),
+        pin('ElapsedSeconds', 'Elapsed Seconds', 'output', 'real' as PinCategory),
+        pin('TriggeredSeconds', 'Triggered Seconds', 'output', 'real' as PinCategory),
+      ];
     default:
       return null;
   }
@@ -236,6 +343,13 @@ function inferUEType(nodeClass: string): string {
   if (nodeClass.includes('DynamicCast') || nodeClass.includes('ClassDynamicCast')) return 'cast';
   if (nodeClass.includes('Comment')) return 'comment';
   if (nodeClass.includes('Knot')) return 'reroute';
+  if (nodeClass.includes('MacroInstance')) return 'flow_control';
+  if (nodeClass.includes('Timeline')) return 'flow_control';
+  if (nodeClass.includes('SpawnActor')) return 'call_function';
+  if (nodeClass.includes('CallDelegate') || nodeClass.includes('AddDelegate') || nodeClass.includes('RemoveDelegate')) return 'call_function';
+  if (nodeClass.includes('ComponentBoundEvent')) return 'event';
+  if (nodeClass.includes('EnhancedInput')) return 'event';
+  if (nodeClass.includes('K2Node_Self')) return 'call_function';
   return 'call_function';
 }
 

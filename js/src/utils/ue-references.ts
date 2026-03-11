@@ -40,6 +40,12 @@ export const CLASS_PREFIX_MAP: Record<string, string> = {
   K2Node_FlipFlop: '/Script/BlueprintGraph.K2Node_FlipFlop',
   K2Node_MultiGate: '/Script/BlueprintGraph.K2Node_MultiGate',
   K2Node_Delay: '/Script/BlueprintGraph.K2Node_Delay',
+  K2Node_Self: '/Script/BlueprintGraph.K2Node_Self',
+  K2Node_CallDelegate: '/Script/BlueprintGraph.K2Node_CallDelegate',
+  K2Node_AddDelegate: '/Script/BlueprintGraph.K2Node_AddDelegate',
+  K2Node_RemoveDelegate: '/Script/BlueprintGraph.K2Node_RemoveDelegate',
+  K2Node_ComponentBoundEvent: '/Script/BlueprintGraph.K2Node_ComponentBoundEvent',
+  K2Node_EnhancedInputAction: '/Script/EnhancedInput.K2Node_EnhancedInputAction',
   EdGraphNode_Comment: '/Script/UnrealEd.EdGraphNode_Comment',
 };
 
@@ -201,6 +207,44 @@ export function synthesizeNodeProperties(
     const mathRef = MATH_FUNCTION_MAP[title];
     if (mathRef) {
       props['FunctionReference'] = `(MemberParent="${mathRef.memberParent}",MemberName="${mathRef.memberName}")`;
+    }
+  }
+
+  // MacroInstance needs MacroGraphReference
+  if (shortClass === 'K2Node_MacroInstance' && !props['MacroGraphReference']) {
+    const macroMap: Record<string, string> = {
+      'For Loop': 'ForLoop',
+      'ForLoop': 'ForLoop',
+      'For Loop With Break': 'ForLoopWithBreak',
+      'ForLoopWithBreak': 'ForLoopWithBreak',
+      'While Loop': 'WhileLoop',
+      'WhileLoop': 'WhileLoop',
+      'Do N': 'DoN',
+      'Do Once': 'DoOnce',
+      'IsValid': 'IsValid',
+    };
+    const macroName = macroMap[title] ?? title;
+    props['MacroGraphReference'] = `(MacroGraph="/Script/Engine.EdGraph'/Engine/EditorBlueprintResources/StandardMacros.StandardMacros:${macroName}'")`;
+  }
+
+  // Timeline needs TimelineName
+  if (shortClass === 'K2Node_Timeline' && !props['TimelineName']) {
+    props['TimelineName'] = title.replace(/^Timeline\s*[-:]?\s*/, '') || 'Timeline_0';
+  }
+
+  // ComponentBoundEvent needs DelegatePropertyName
+  if (shortClass === 'K2Node_ComponentBoundEvent' && !props['DelegatePropertyName']) {
+    const delegateMap: Record<string, string> = {
+      'Component Begin Overlap': 'OnComponentBeginOverlap',
+      'OnComponentBeginOverlap': 'OnComponentBeginOverlap',
+      'Component End Overlap': 'OnComponentEndOverlap',
+      'OnComponentEndOverlap': 'OnComponentEndOverlap',
+      'Component Hit': 'OnComponentHit',
+      'OnComponentHit': 'OnComponentHit',
+    };
+    const delegateName = delegateMap[title];
+    if (delegateName) {
+      props['DelegatePropertyName'] = delegateName;
     }
   }
 
