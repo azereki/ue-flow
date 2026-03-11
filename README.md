@@ -6,50 +6,51 @@ An open-source Unreal Engine 5 Blueprint rendering suite. Parses UE5 T3D clipboa
 
 ## Features
 
-- **Interactive graph viewer** built on React Flow with pan, zoom, selection, and node drag
-- **16+ semantic node types** with type-colored headers (events, functions, branches, variables, macros, casts, switches, reroutes, comments, and more)
-- **18 pin categories** with distinct colors, plus extended sub-type colors for Vector, Rotator, Transform, LinearColor, GameplayTag, and others
-- **Exec pin arrows** rendered via CSS `clip-path` with connected/disconnected states
-- **Pin value editing** for bool, int, float, string, vector, color, and enum types with undo/redo
-- **Multi-graph viewer** with closeable tabs, breadcrumb navigation, and sidebar with search
-- **Details panel** with 8 property inspector views (event, function, variable, struct, delegate, datatable, component, macro)
-- **Comment nodes** with custom UE color parsing, frosted glass effect, resize, and group-drag
-- **Export toolbar** with T3D copy, file download, editor push, LLM context, and markdown export
-- **Bi-directional editing** — edit pin values in the browser, export modified T3D back to UE
-- **Self-contained HTML** output with all JS, CSS, and fonts inlined (no external dependencies)
-- **Python CLI** for rendering T3D files to HTML or PNG from the command line
-- **AI chat panel** with dual-provider support — free via Google Gemini or BYOK via OpenRouter with curated model selection
-- **AI Blueprint generation** — describe logic in natural language, AI generates Blueprint nodes that render on canvas with preview modal
-- **Selection-aware AI** — selected node context injected into AI prompts, dynamic suggested prompts, and one-shot node explanation cards
-- **Clickable AI findings** — node titles in Review results become navigation links
-- **Graph analysis** API for execution tracing, data dependencies, dead end detection, and diff
-- **Node alignment toolbar** — align, distribute, and straighten selected nodes (Q key for wire straightening)
-- **Search across graphs** — Ctrl+F full-text search over node titles, pin names, comments, and pin values
-- **Bookmarks** — Ctrl+B to save and restore named viewport locations across graphs
-- **Implicit type conversions** — int→real, byte→int, name→string, and UE object class hierarchy awareness
-- **Enum registry** with 23+ common UE enums for dropdown pin editors and connection validation
-- **Node diagnostics** — error/warning badges for missing references, unreachable nodes, and latent function clock icons
-- **Wildcard pin type locking** — connecting to a wildcard pin locks sibling wildcards to the resolved type
-- **Advanced pin editors** — enum dropdowns, rotator struct fields, vector/color pickers, bool checkboxes
-- **Per-node annotations** — add notes above any node via right-click context menu
-- **Copy-paste between graphs** — Ctrl+C/V/X with automatic ID remapping
-- **Dynamic pin nodes** — "+" button on Sequence, MakeArray, Select, Switch, and operator nodes
-- **Struct registry** with Break/Make palette entries for 23+ UE structs (Vector, Rotator, Transform, HitResult, Quat, DateTime, and more)
-- **Context menu** — right-click nodes (Duplicate, Delete, Add Note) and edges (Delete Connection)
-- **Node palette** — Tab key or right-click canvas to search 2,700+ UE functions, events, flow control, variables, casts, and structs
-- **Connection drawing** with real-time validation — drag between pins to create edges
-- **Export Selected** — export only selected nodes as T3D, or full graph
+### Rendering
+- **16+ node types** with type-colored headers — events, functions, branches, variables, macros, casts, switches, reroutes, comments
+- **18 pin categories** with distinct colors, plus extended sub-type colors (Vector, Rotator, Transform, LinearColor, GameplayTag, etc.)
+- **Multi-graph viewer** with tabbed navigation, sidebar, details panel, and breadcrumbs
+- **Self-contained HTML** — all JS, CSS, and fonts inlined; zero external dependencies
+- **Python CLI** — render T3D to HTML or PNG from the command line
+
+### Editing
+- **Bi-directional** — edit pin values in-browser, export modified T3D back to UE
+- **Node palette** — Tab or right-click canvas to search 2,700+ UE functions, events, structs, and casts
+- **Connection drawing** with real-time type validation, implicit conversions (int→real, byte→int, etc.), and wildcard type locking
+- **Copy-paste** (Ctrl+C/V/X) between graphs with automatic ID remapping
+- **Dynamic pins** — add/remove pins on Sequence, MakeArray, Select, Switch, and operator nodes
+- **Alignment toolbar** — align, distribute, and straighten (Q) selected nodes
+- **Context menu** — right-click nodes (Duplicate, Delete, Add Note) or edges (Delete Connection)
+- **Undo/redo** (Ctrl+Z / Ctrl+Shift+Z) with 50-level snapshot stack
+
+### AI Assistant
+- **Chat panel** with dual-provider support — free via Google Gemini or BYOK via OpenRouter
+- **Blueprint generation** — describe logic in natural language, preview and insert generated nodes
+- **Selection-aware** — selected node context in prompts, one-shot explanation cards, clickable node links in results
+- **Resilient** — request timeout, retry with backoff, offline detection, provider fallback
+
+### Analysis & Navigation
+- **Search** (Ctrl+F) across node titles, pin names, comments, and pin values
+- **Bookmarks** (Ctrl+B) — save and restore named viewport locations
+- **Execution flow visualization** — highlight exec chains, dim unreachable nodes
+- **Node diagnostics** — error/warning badges for missing references and unreachable nodes
+- **Graph diff** — side-by-side comparison with added/removed/modified visualization
+- **Graph statistics** — node/edge counts, complexity score, unreachable warnings
+
+### UE Parity
+- **23+ enum** and **23+ struct** registries for dropdown editors, connection validation, and Break/Make nodes
+- **Signature DB** — 2,756 functions from 23 core UE classes with pin-level accuracy
 - **T3D Property Inspector** — raw key-value editing of UE node properties
-- **Graph Statistics Panel** — node/edge counts, complexity score, unreachable node warnings
-- **Execution flow visualization** — double-click event nodes to highlight exec chains
-- **Guided tour** — 6-step interactive walkthrough for new users
-- **Blueprint templates** — 8 quick-start scenarios (Health Regen, AI Patrol, Sprint+Stamina, etc.)
-- **Offline node descriptions** for 52 common nodes (no AI required)
-- **AI resilience** — request timeout, retry with backoff, offline detection, provider fallback
-- **Multi-graph T3D import** — parse T3D into multi-graph view with auto-detected events/functions/variables
-- **Graph diff view** — compare two graphs with added/removed/modified node visualization
-- **Keyboard shortcut panel** — press `?` to see all shortcuts
-- **~540 tests** across Python (215 pytest) and JavaScript (304 Vitest + 28 Playwright)
+- **Multi-graph T3D import** — auto-detects events, functions, and variables
+
+### Onboarding
+- **Guided tour** — 6-step interactive walkthrough
+- **8 Blueprint templates** — Health Regen, AI Patrol, Sprint+Stamina, and more
+- **Offline node descriptions** for 52 common nodes
+
+### Quality
+- **~540 tests** — Python (215 pytest), JavaScript (304 Vitest + 28 Playwright E2E)
+- **ESLint + Prettier** with CI enforcement
 
 ## Quick Start
 
