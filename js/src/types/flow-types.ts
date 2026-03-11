@@ -21,6 +21,8 @@ export interface FlowNodeData {
   pins: UEPin[];
   /** Override header accent color — e.g. variable getters tinted by pin type. */
   headerAccent?: string;
+  /** True when the function is latent (async/blocking) — shows clock badge on header. */
+  isLatent?: boolean;
   /** User-set annotation note displayed above the node. */
   annotation?: string;
   /**

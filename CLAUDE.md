@@ -16,13 +16,15 @@ ue-flow is an open-source UE Blueprint rendering suite. It takes Unreal Engine T
 - `schema/` — JSON schema for UE graph data (`ue-graph.schema.json`)
 - `examples/` — mock-render.html for visual testing, paste-tool.html for standalone paste-to-render
 - `python/ue_flow/assets/ue-flow.iife.js` — built JS bundle consumed by Python renderer
-- `.github/workflows/pages.yml` — CI build & test workflow (runs on push to main/dev and PRs)
+- `.github/workflows/pages.yml` — CI workflow: build, unit tests, Python tests, lint, E2E (Playwright), bundle size check
 - `wrangler.toml` — Cloudflare Pages deployment config
 
 ## Build & Test
 - `npm run build` — build JS bundle, copy IIFE to `python/ue_flow/assets/`, regenerate `examples/paste-tool.html`
 - `npm test` — run Vitest unit tests (transform logic, T3D parsing, round-trip fidelity)
-- `npm run test:e2e` — run Playwright e2e smoke tests (auto-starts http-server on port 4173)
+- `npm run test:e2e` — run Playwright e2e tests (28 specs across 7 files, auto-starts http-server on port 4173)
+- `npm run lint` — ESLint 9 + typescript-eslint + react-hooks
+- `npm run format:check` — Prettier check
 - `npm run dev` — start Vite dev server with hot reload (shows paste landing page)
 - All root `npm` commands proxy into `js/` via `--prefix` — you can also run directly with `cd js && npm run ...`
 - Validation cycle: `npm run build && npm test` — always run both after changes (build catches TS errors, tests catch logic errors)
@@ -77,8 +79,8 @@ The end-to-end flow has two directions:
 - **Graph Validator:** `utils/graph-validator.ts` — post-generation validator using signature DB. Corrects wrong memberParent, fixes pin categories (float→real), fills missing defaults/subCategoryObject, adds missing pins from signatures, injects exec pins for impure functions
 - **UE References:** `utils/ue-references.ts` — `synthesizeNodeProperties()` (hardcoded ~170 entries) and `synthesizeNodePropertiesWithDB()` (2,700+ functions via signature DB). `qualifyNodeClass()` expands short class names to full `/Script/BlueprintGraph.` paths
 - **GraphAPI:** `api/graph-api.ts` — unified mutation layer for all graph changes (UI + AI). Class wrapping React Flow state with undo/redo (full-state snapshots, max 50). Methods: `deleteNodes`, `deleteEdges`, `duplicateNodes`, `addEdge`, `addNode`, `addNodeFromSignature`, `setPinValue`, `setNodeProperty`, `setNodeTitle`, `moveNodes`, `executeBatch`, `insertRerouteNode`, `pasteNodes`, `setNodeAnnotation`, `addDynamicPin`, `removeDynamicPin`. Query: `findNodesByTitle`, `getNode`, `getEdge`, `getConnectedPins`, `getSelectedNodeIds`. Auto-generates pins for `K2Node_DynamicCast` (cast nodes), `K2Node_BreakStruct`/`K2Node_MakeStruct` (from struct registry). Accessed via `useGraphAPI()` from `contexts/GraphAPIContext.tsx`
-- **Connection Validator:** `api/connection-validator.ts` — `canConnect()` validates pin compatibility (direction, category with float↔real↔double compat, implicit type conversions via `canImplicitlyConvert()` incl. int64/double, wildcard, no self-connections, no duplicates, struct subCategoryObject matching, enum subCategoryObject matching, data input auto-replacement via `replaces` field, exec output auto-replacement via `replaces` field, exec input allows multiple connections for flow convergence)
-- **AI Commands:** `api/ai-commands.ts` — AI command protocol for incremental graph modification. `isCommandRequest()` detects modification intent, `parseAICommands()` parses command JSON, `executeAICommands()` resolves titles to IDs and executes. Commands: `deleteNode`, `deleteEdge`, `addEdge`, `addNode`, `setPinValue`, `setNodeTitle`, `duplicateNode`, `annotateNode`. `COMMAND_SCHEMA_ADDENDUM` documents available commands for the AI
+- **Connection Validator:** `api/connection-validator.ts` — `canConnect()` validates pin compatibility (direction, category with float↔real↔double compat, implicit type conversions via `canImplicitlyConvert()` incl. int64/double, wildcard with type locking via `effectiveCategory()`, no self-connections, no duplicates, struct subCategoryObject matching, enum subCategoryObject matching, data input auto-replacement via `replaces` field, exec output auto-replacement via `replaces` field, exec input allows multiple connections for flow convergence)
+- **AI Commands:** `api/ai-commands.ts` — AI command protocol for incremental graph modification. `isCommandRequest()` detects modification intent, `parseAICommands()` parses command JSON, `executeAICommands()` resolves titles to IDs and executes. Commands: `deleteNode`, `deleteEdge`, `addEdge`, `addNode`, `setPinValue`, `setNodeTitle`, `duplicateNode`, `annotateNode`, `moveNode`, `addComment`. `COMMAND_SCHEMA_ADDENDUM` documents available commands for the AI
 - **Context Menu:** `components/ContextMenu.tsx` — right-click menu on nodes (Duplicate, Delete, Add Note/Edit Note) and edges (Delete Connection)
 - **Node Palette:** `components/NodePalette.tsx` — searchable palette (Tab key or right-click canvas) with 2,700+ functions from signature DB + special entries (events, component events, enhanced input, flow control incl. ForLoop/WhileLoop/Timeline, delegates, spawning, variables, utility incl. Self/PrintString/IsValid, comments, reroute, 8 cast nodes, Break/Make for 12 UE structs)
 - **Keyboard Shortcuts:** Delete/Backspace (delete selected), Ctrl+D (duplicate), Ctrl+Z / Ctrl+Shift+Z (undo/redo), Ctrl+C/V/X (copy/paste/cut), Ctrl+F (search), Ctrl+B (bookmarks), Tab (node palette), Q (straighten connections) — editing shortcuts disabled in embedded mode

@@ -91,15 +91,29 @@ export function serializeMultiGraphContext(
   // Active graph in full detail
   const activeGraph = multi.graphs[activeGraphName];
   if (activeGraph) {
-    lines.push(`\n--- Active Graph Detail ---`);
+    lines.push(`\n--- Active Graph: "${activeGraphName}" (currently viewed) ---`);
     lines.push(serializeSingleGraph(activeGraph));
   }
 
-  // Other graphs: brief summaries
+  // Other graphs: brief summaries with key node info
   for (const name of graphNames) {
     if (name === activeGraphName) continue;
     const g = multi.graphs[name];
-    lines.push(`\n[${name}]: ${g.nodes.length} nodes, ${g.edges.length} connections`);
+    const eventNodes = g.nodes.filter((n) => n.type === 'event' || n.type === 'custom-event');
+    const funcNodes = g.nodes.filter((n) => n.type === 'function' || n.type === 'function-entry');
+    const summary: string[] = [`${g.nodes.length} nodes, ${g.edges.length} connections`];
+    if (eventNodes.length > 0) {
+      summary.push(`events: ${eventNodes.map((n) => n.title).join(', ')}`);
+    }
+    if (funcNodes.length > 0) {
+      summary.push(`functions: ${funcNodes.map((n) => n.title).join(', ')}`);
+    }
+    lines.push(`\n[${name}]: ${summary.join(' | ')}`);
+  }
+
+  // Graph switching note for AI awareness
+  if (graphNames.length > 1) {
+    lines.push(`\nNote: The user is viewing "${activeGraphName}". Other graphs exist in this blueprint but are not shown in detail. Reference them by name if relevant.`);
   }
 
   const result = lines.join('\n');

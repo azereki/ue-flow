@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect, type FC } from 'react';
 import { PIN_COLORS, classifyPinType } from '../types/pin-types';
 import type { PropertyField } from '../types/ue-graph';
+import { PropertyInspector } from './PropertyInspector';
+import { useGraphAPIMaybe } from '../contexts/GraphAPIContext';
 
 // ─── Exported Types ──────────────────────────────────────────────────────────
 
@@ -23,6 +25,11 @@ interface DetailsPanelProps {
   item: DetailsItem;
   onClose: () => void;
   structs?: StructDef[];
+  onUpdateEvent?: (oldName: string, newName: string) => void;
+  /** Optional: selected graph node ID for the Property Inspector */
+  selectedNodeId?: string;
+  /** Optional: selected graph node's raw T3D properties */
+  selectedNodeProperties?: Record<string, string>;
 }
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
@@ -184,9 +191,18 @@ const FieldArrayBadge: FC<{ label: string; count: number }> = ({ label, count })
 
 // ─── Detail Section: Events ──────────────────────────────────────────────────
 
-function EventDetails({ item, search, edits, set, structs }: { item: Extract<DetailsItem, { kind: 'event' }>; search: string; edits: Record<string, unknown>; set: (k: string, v: unknown) => void; structs?: StructDef[] }) {
+function EventDetails({ item, search, edits, set, structs, onUpdateEvent }: { item: Extract<DetailsItem, { kind: 'event' }>; search: string; edits: Record<string, unknown>; set: (k: string, v: unknown) => void; structs?: StructDef[]; onUpdateEvent?: (oldName: string, newName: string) => void }) {
   const replicateOptions = ['NotReplicated', 'Multicast', 'RunOnServer', 'RunOnClient'];
   const accessOptions = ['Public', 'Protected', 'Private'];
+
+  const [localName, setLocalName] = useState(item.name);
+  useEffect(() => { setLocalName(item.name); }, [item.name]);
+
+  const handleNameBlur = () => {
+    if (localName !== item.name && localName.trim() && onUpdateEvent) {
+      onUpdateEvent(item.name, localName.trim());
+    }
+  };
 
   const graphFields = [
     { label: 'Replicates', show: true },
@@ -199,6 +215,20 @@ function EventDetails({ item, search, edits, set, structs }: { item: Extract<Det
 
   return (
     <>
+      {onUpdateEvent && shouldShow(search, 'Name') && (
+        <CollapsibleSection title="Identity">
+          <div className="ueflow-field-row">
+            <span className="ueflow-field-label">Name</span>
+            <input
+              className="ueflow-field-text"
+              type="text"
+              value={localName}
+              onChange={(e) => setLocalName(e.target.value)}
+              onBlur={handleNameBlur}
+            />
+          </div>
+        </CollapsibleSection>
+      )}
       {graphVisible && (
         <CollapsibleSection title="Graph">
           {shouldShow(search, 'Graph', 'Replicates') && (
@@ -550,9 +580,10 @@ function DataTableDetails({ item, search }: { item: Extract<DetailsItem, { kind:
 
 // ─── Main Panel ──────────────────────────────────────────────────────────────
 
-export const DetailsPanel: FC<DetailsPanelProps> = ({ item, onClose, structs }) => {
+export const DetailsPanel: FC<DetailsPanelProps> = ({ item, onClose, structs, onUpdateEvent, selectedNodeId, selectedNodeProperties }) => {
   const [search, setSearch] = useState('');
   const [edits, setEdits] = useState<Record<string, unknown>>({});
+  const graphAPI = useGraphAPIMaybe();
 
   // Reset edits and search when item changes
   useEffect(() => { setEdits({}); }, [item]);
@@ -560,6 +591,28 @@ export const DetailsPanel: FC<DetailsPanelProps> = ({ item, onClose, structs }) 
   const set = useCallback((key: string, value: unknown) => {
     setEdits(prev => ({ ...prev, [key]: value }));
   }, []);
+
+  // Property Inspector callbacks
+  const handleUpdateProperty = useCallback((key: string, value: string) => {
+    if (selectedNodeId && graphAPI) {
+      graphAPI.setNodeProperty(selectedNodeId, key, value);
+    }
+  }, [selectedNodeId, graphAPI]);
+
+  const handleAddProperty = useCallback((key: string, value: string) => {
+    if (selectedNodeId && graphAPI) {
+      graphAPI.setNodeProperty(selectedNodeId, key, value);
+    }
+  }, [selectedNodeId, graphAPI]);
+
+  const handleRemoveProperty = useCallback((key: string) => {
+    if (selectedNodeId && graphAPI) {
+      graphAPI.setNodeProperty(selectedNodeId, key, undefined);
+    }
+  }, [selectedNodeId, graphAPI]);
+
+  // Show property inspector for non-comment items when node data is available
+  const showPropertyInspector = !!selectedNodeId && !!selectedNodeProperties && item.kind !== 'component';
 
   return (
     <div className="ueflow-details-panel">
@@ -583,7 +636,7 @@ export const DetailsPanel: FC<DetailsPanelProps> = ({ item, onClose, structs }) 
       <div className="ueflow-details-badge">{item.kind}</div>
       <div className="ueflow-details-readonly">Read-only preview</div>
       <div className="ueflow-details-content">
-        {item.kind === 'event' && <EventDetails item={item} search={search} edits={edits} set={set} structs={structs} />}
+        {item.kind === 'event' && <EventDetails item={item} search={search} edits={edits} set={set} structs={structs} onUpdateEvent={onUpdateEvent} />}
         {item.kind === 'function' && <FunctionDetails item={item} search={search} edits={edits} set={set} structs={structs} />}
         {item.kind === 'variable' && <VariableDetails item={item} search={search} edits={edits} set={set} />}
         {item.kind === 'struct' && <StructDetails item={item} search={search} structs={structs} />}
@@ -591,6 +644,15 @@ export const DetailsPanel: FC<DetailsPanelProps> = ({ item, onClose, structs }) 
         {item.kind === 'datatable' && <DataTableDetails item={item} search={search} />}
         {item.kind === 'component' && <ComponentDetails item={item} search={search} edits={edits} set={set} />}
         {item.kind === 'macro' && <MacroDetails item={item} search={search} edits={edits} set={set} structs={structs} />}
+        {showPropertyInspector && (
+          <PropertyInspector
+            nodeId={selectedNodeId!}
+            properties={selectedNodeProperties!}
+            onUpdateProperty={handleUpdateProperty}
+            onAddProperty={handleAddProperty}
+            onRemoveProperty={handleRemoveProperty}
+          />
+        )}
       </div>
     </div>
   );

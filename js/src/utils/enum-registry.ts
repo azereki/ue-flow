@@ -24,7 +24,7 @@ const ENUM_REGISTRY: Map<string, EnumDef> = new Map([
   }],
   ['EBlendMode', {
     path: '/Script/Engine.EBlendMode',
-    values: ['BLEND_Opaque', 'BLEND_Masked', 'BLEND_Translucent', 'BLEND_Additive', 'BLEND_Modulate'],
+    values: ['BLEND_Opaque', 'BLEND_Masked', 'BLEND_Translucent', 'BLEND_Additive', 'BLEND_Modulate', 'BLEND_AlphaComposite', 'BLEND_AlphaHoldout'],
   }],
   ['ETraceTypeQuery', {
     path: '/Script/Engine.ETraceTypeQuery',
@@ -36,11 +36,80 @@ const ENUM_REGISTRY: Map<string, EnumDef> = new Map([
   }],
   ['ENetRole', {
     path: '/Script/Engine.ENetRole',
-    values: ['ROLE_None', 'ROLE_SimulatedProxy', 'ROLE_AutonomousProxy', 'ROLE_Authority'],
+    values: ['ROLE_None', 'ROLE_SimulatedProxy', 'ROLE_AutonomousProxy', 'ROLE_Authority', 'ROLE_MAX'],
   }],
   ['ETextCommit', {
     path: '/Script/SlateCore.ETextCommit',
     values: ['Default', 'OnEnter', 'OnUserMovedFocus', 'OnCleared'],
+  }],
+  // Collision & Physics
+  ['EAttachmentRule', {
+    path: '/Script/Engine.EAttachmentRule',
+    values: ['KeepRelative', 'KeepWorld', 'SnapToTarget'],
+  }],
+  ['ESpawnActorCollisionHandlingMethod', {
+    path: '/Script/Engine.ESpawnActorCollisionHandlingMethod',
+    values: ['Undefined', 'AlwaysSpawn', 'AdjustIfPossibleButAlwaysSpawn', 'AdjustIfPossibleButDontSpawnIfColliding', 'DontSpawnIfColliding'],
+  }],
+  ['ECollisionEnabled', {
+    path: '/Script/Engine.ECollisionEnabled',
+    values: ['NoCollision', 'QueryOnly', 'PhysicsOnly', 'QueryAndPhysics', 'ProbeOnly', 'QueryAndProbe'],
+  }],
+  ['ECollisionResponse', {
+    path: '/Script/Engine.ECollisionResponse',
+    values: ['Block', 'Overlap', 'Ignore'],
+  }],
+  // UI & Rendering
+  ['ESlateVisibility', {
+    path: '/Script/SlateCore.ESlateVisibility',
+    values: ['Visible', 'Collapsed', 'Hidden', 'HitTestInvisible', 'SelfHitTestInvisible'],
+  }],
+  ['EComponentMobility', {
+    path: '/Script/Engine.EComponentMobility',
+    values: ['Static', 'Stationary', 'Movable'],
+  }],
+  ['EHorizontalAlignment', {
+    path: '/Script/SlateCore.EHorizontalAlignment',
+    values: ['Fill', 'Left', 'Center', 'Right'],
+  }],
+  ['EVerticalAlignment', {
+    path: '/Script/SlateCore.EVerticalAlignment',
+    values: ['Fill', 'Top', 'Center', 'Bottom'],
+  }],
+  // Gameplay
+  ['EEndPlayReason', {
+    path: '/Script/Engine.EEndPlayReason',
+    values: ['Destroyed', 'LevelTransition', 'EndPlayInEditor', 'RemovedFromWorld', 'Quit'],
+  }],
+  ['EAnimationMode', {
+    path: '/Script/Engine.EAnimationMode',
+    values: ['AnimationBlueprint', 'AnimationSingleNode', 'AnimationCustomMode'],
+  }],
+  ['ENetMode', {
+    path: '/Script/Engine.ENetMode',
+    values: ['Standalone', 'DedicatedServer', 'ListenServer', 'Client', 'MAX'],
+  }],
+  // Math & Navigation
+  ['EAxis', {
+    path: '/Script/Engine.EAxis',
+    values: ['None', 'X', 'Y', 'Z'],
+  }],
+  ['ERelativeTransformSpace', {
+    path: '/Script/Engine.ERelativeTransformSpace',
+    values: ['World', 'LocalSpace', 'ParentBoneSpace'],
+  }],
+  ['EPathFollowingResult', {
+    path: '/Script/AIModule.EPathFollowingResult',
+    values: ['Success', 'Blocked', 'OffPath', 'Aborted', 'Skipped', 'Invalid'],
+  }],
+  // Audio
+  ['EAudioFaderCurve', {
+    path: '/Script/Engine.EAudioFaderCurve',
+    values: ['Linear', 'Logarithmic', 'SCurve', 'Sin'],
+  }],
+  ['ESoundDistanceModel', {
+    path: '/Script/Engine.ESoundDistanceModel',
+    values: ['Linear', 'Logarithmic', 'Inverse', 'LogReverse', 'NaturalSound', 'Custom'],
   }],
 ]);
 

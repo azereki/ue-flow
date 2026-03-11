@@ -50,6 +50,24 @@ export const DYNAMIC_PIN_CLASSES: Map<string, DynamicPinConfig> = new Map([
     category: 'exec' as PinCategory,
     minPins: 2,
   }],
+  ['K2Node_SwitchEnum', {
+    direction: 'output' as const,
+    namePattern: 'Case {n}',
+    category: 'exec' as PinCategory,
+    minPins: 1,
+  }],
+  ['K2Node_SwitchString', {
+    direction: 'output' as const,
+    namePattern: 'Case {n}',
+    category: 'exec' as PinCategory,
+    minPins: 1,
+  }],
+  ['K2Node_SwitchName', {
+    direction: 'output' as const,
+    namePattern: 'Case {n}',
+    category: 'exec' as PinCategory,
+    minPins: 1,
+  }],
 ]);
 
 /** Generate a 32-char uppercase hex GUID. */

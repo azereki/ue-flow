@@ -4,7 +4,7 @@
  * This is the client-side port of Python t3d_parser.py + t3d_json.py,
  * enabling paste-to-render without any server or CLI dependency.
  */
-import type { UEGraphJSON, UENode, UEPin, UEEdge } from '../types/ue-graph';
+import type { UEGraphJSON, UENode, UEPin, UEEdge, UEMultiGraphJSON } from '../types/ue-graph';
 import type { PinCategory } from '../types/pin-types';
 
 // ---------------------------------------------------------------------------
@@ -719,4 +719,294 @@ export function parseT3DToGraphJSON(text: string, title?: string): UEGraphJSON {
 export function isT3DText(text: string): boolean {
   if (!text || !text.trim()) return false;
   return /Begin Object\s+Class=/i.test(text);
+}
+
+// ---------------------------------------------------------------------------
+// Multi-graph T3D parsing
+// ---------------------------------------------------------------------------
+
+/**
+ * Detect graph section boundaries in T3D text.
+ *
+ * UE T3D paste doesn't have explicit "graph name" headers — all nodes come
+ * as a flat list of Begin Object blocks.  We split into graphs by detecting:
+ *  1. Comment-style headers like `// --- EventGraph ---` or `// EventGraph`
+ *  2. If no headers found, we group by node type heuristics:
+ *     - K2Node_FunctionEntry/Result nodes form their own function graphs
+ *     - Everything else goes into "EventGraph"
+ */
+function splitIntoGraphSections(
+  text: string,
+  parsedNodes: ParsedNode[],
+): Map<string, ParsedNode[]> {
+  // Strategy 1: look for comment-style graph separators
+  // Match lines like "// --- GraphName ---" or "// GraphName" before Begin Object blocks
+  const headerPattern = /^\/\/\s*(?:---\s*)?(.+?)(?:\s*---)?$/gm;
+  const headers: Array<{ name: string; offset: number }> = [];
+  let hMatch;
+  while ((hMatch = headerPattern.exec(text)) !== null) {
+    const name = hMatch[1].trim();
+    // Skip lines that are clearly not graph names (too long, contain special chars)
+    if (name.length > 60 || /[{}();=]/.test(name)) continue;
+    headers.push({ name, offset: hMatch.index });
+  }
+
+  if (headers.length > 1) {
+    // Assign nodes to sections based on their position in the original text
+    const objectPositions = new Map<string, number>();
+    const objPosRe = /Begin Object\s+(?:.*?Name="([^"]+)"|.*?Name=(\S+))/g;
+    let oMatch;
+    while ((oMatch = objPosRe.exec(text)) !== null) {
+      const name = oMatch[1] ?? oMatch[2];
+      objectPositions.set(name, oMatch.index);
+    }
+
+    const sections = new Map<string, ParsedNode[]>();
+    for (const node of parsedNodes) {
+      const nodePos = objectPositions.get(node.nodeName) ?? 0;
+      let assignedSection = headers[0].name;
+      for (let i = headers.length - 1; i >= 0; i--) {
+        if (nodePos >= headers[i].offset) {
+          assignedSection = headers[i].name;
+          break;
+        }
+      }
+      if (!sections.has(assignedSection)) sections.set(assignedSection, []);
+      sections.get(assignedSection)!.push(node);
+    }
+    return sections;
+  }
+
+  // Strategy 2: group by node type heuristics
+  const sections = new Map<string, ParsedNode[]>();
+  const functionNodes = new Map<string, ParsedNode[]>();
+
+  for (const node of parsedNodes) {
+    const shortClass = node.nodeClass.includes('.')
+      ? node.nodeClass.split('.').pop()!
+      : node.nodeClass;
+
+    if (shortClass === 'K2Node_FunctionEntry') {
+      const funcName = node.properties['SignatureName'] ?? 'UnknownFunction';
+      if (!functionNodes.has(funcName)) functionNodes.set(funcName, []);
+      functionNodes.get(funcName)!.push(node);
+    } else if (shortClass === 'K2Node_FunctionResult') {
+      // Try to associate with a function via linked exec pins
+      const funcName = findLinkedFunctionName(node, parsedNodes) ?? 'UnknownFunction';
+      if (!functionNodes.has(funcName)) functionNodes.set(funcName, []);
+      functionNodes.get(funcName)!.push(node);
+    } else {
+      if (!sections.has('EventGraph')) sections.set('EventGraph', []);
+      sections.get('EventGraph')!.push(node);
+    }
+  }
+
+  // Merge function groups into sections
+  for (const [funcName, nodes] of functionNodes) {
+    sections.set(funcName, nodes);
+  }
+
+  return sections;
+}
+
+/**
+ * Try to find which function a FunctionResult node belongs to by tracing
+ * exec connections back to a FunctionEntry.
+ */
+function findLinkedFunctionName(
+  resultNode: ParsedNode,
+  allNodes: ParsedNode[],
+): string | null {
+  // Look at incoming exec connections
+  for (const { pin, linkedTo } of resultNode.pins) {
+    if (pin.direction === 'input' && pin.category === 'exec') {
+      for (const link of linkedTo) {
+        const sourceNode = allNodes.find(n => n.nodeName === link.nodeName);
+        if (sourceNode) {
+          const srcShort = sourceNode.nodeClass.includes('.')
+            ? sourceNode.nodeClass.split('.').pop()!
+            : sourceNode.nodeClass;
+          if (srcShort === 'K2Node_FunctionEntry') {
+            return sourceNode.properties['SignatureName'] ?? null;
+          }
+        }
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Map a pin category string to a human-readable variable type.
+ */
+function pinCategoryToVarType(category: PinCategory, subCategoryObject: string): string {
+  switch (category) {
+    case 'bool': return 'Boolean';
+    case 'int': return 'Integer';
+    case 'real':
+    case 'float': return 'Float';
+    case 'string': return 'String';
+    case 'name': return 'Name';
+    case 'text': return 'Text';
+    case 'byte': return 'Byte';
+    case 'struct': return subCategoryObject || 'Struct';
+    case 'object': return subCategoryObject || 'Object';
+    case 'class': return subCategoryObject ? `Class<${subCategoryObject}>` : 'Class';
+    case 'enum': return subCategoryObject || 'Enum';
+    default: return category || 'Object';
+  }
+}
+
+/**
+ * Parse raw T3D paste text and produce a UEMultiGraphJSON object with
+ * multiple graphs, auto-extracted events, functions, and variables.
+ *
+ * @param t3dText - Raw T3D clipboard text (one or more Begin Object blocks)
+ */
+export function parseT3DToMultiGraphJSON(t3dText: string): UEMultiGraphJSON {
+  // First, parse all nodes using the existing machinery
+  const allParsedNodes: ParsedNode[] = [];
+  OBJECT_BLOCK_RE.lastIndex = 0;
+  let match;
+  while ((match = OBJECT_BLOCK_RE.exec(t3dText)) !== null) {
+    const headerLine = match[1];
+    const body = match[2];
+    const headerAttrs = parseHeader(headerLine);
+    allParsedNodes.push(parseNodeBody(headerAttrs, body));
+  }
+
+  // Split into graph sections
+  const sections = splitIntoGraphSections(t3dText, allParsedNodes);
+
+  // Build graphs record
+  const graphs: Record<string, UEGraphJSON> = {};
+  for (const [graphName, sectionNodes] of sections) {
+    const nodes: UENode[] = sectionNodes.map((pn) => ({
+      id: pn.nodeName,
+      type: inferType(pn.nodeClass),
+      nodeClass: pn.nodeClass,
+      nodeGuid: pn.nodeGuid,
+      position: { x: pn.posX, y: pn.posY },
+      title: inferTitle(pn),
+      properties: pn.properties as Record<string, unknown>,
+      pins: pn.pins.map(pp => pp.pin),
+    }));
+    const edges = extractEdges(sectionNodes);
+    graphs[graphName] = {
+      metadata: { title: graphName, assetPath: '' },
+      nodes,
+      edges,
+    };
+  }
+
+  // If no sections were created, wrap as a single EventGraph
+  if (Object.keys(graphs).length === 0) {
+    graphs['EventGraph'] = {
+      metadata: { title: 'EventGraph', assetPath: '' },
+      nodes: [],
+      edges: [],
+    };
+  }
+
+  // Extract events from K2Node_Event and K2Node_CustomEvent nodes
+  const events: UEMultiGraphJSON['events'] = [];
+  const seenEvents = new Set<string>();
+  for (const graph of Object.values(graphs)) {
+    for (const node of graph.nodes) {
+      const shortClass = node.nodeClass.includes('.')
+        ? node.nodeClass.split('.').pop()!
+        : node.nodeClass;
+      if (shortClass === 'K2Node_Event' || shortClass === 'K2Node_CustomEvent') {
+        let eventName = node.title;
+        // Strip "Event " prefix for the sidebar entry
+        if (eventName.startsWith('Event ')) {
+          eventName = eventName.slice(6);
+        }
+        if (!seenEvents.has(eventName)) {
+          seenEvents.add(eventName);
+          // Extract params from non-exec output pins
+          const params = node.pins
+            .filter(p => p.direction === 'output' && p.category !== 'exec' && !p.hidden)
+            .map(p => ({ name: p.friendlyName || p.name, type: pinCategoryToVarType(p.category, p.subCategoryObject) }));
+          events.push({
+            name: eventName,
+            ...(params.length > 0 ? { params } : {}),
+          });
+        }
+      }
+    }
+  }
+
+  // Extract functions from K2Node_FunctionEntry nodes
+  const functions: UEMultiGraphJSON['functions'] = [];
+  const seenFunctions = new Set<string>();
+  for (const graph of Object.values(graphs)) {
+    for (const node of graph.nodes) {
+      const shortClass = node.nodeClass.includes('.')
+        ? node.nodeClass.split('.').pop()!
+        : node.nodeClass;
+      if (shortClass === 'K2Node_FunctionEntry') {
+        const funcName = (node.properties['SignatureName'] as string) ?? node.title;
+        if (!seenFunctions.has(funcName)) {
+          seenFunctions.add(funcName);
+          // Extract input params from non-exec output pins on the entry node
+          const inputs = node.pins
+            .filter(p => p.direction === 'output' && p.category !== 'exec' && !p.hidden)
+            .map(p => ({ name: p.friendlyName || p.name, type: pinCategoryToVarType(p.category, p.subCategoryObject) }));
+          functions.push({
+            name: funcName,
+            ...(inputs.length > 0 ? { inputs } : {}),
+          });
+        }
+      }
+    }
+  }
+
+  // Extract variables from K2Node_VariableGet/Set nodes
+  const variables: UEMultiGraphJSON['variables'] = [];
+  const seenVariables = new Set<string>();
+  for (const graph of Object.values(graphs)) {
+    for (const node of graph.nodes) {
+      const shortClass = node.nodeClass.includes('.')
+        ? node.nodeClass.split('.').pop()!
+        : node.nodeClass;
+      if (shortClass === 'K2Node_VariableGet' || shortClass === 'K2Node_VariableSet') {
+        const varRef = (node.properties['VariableReference'] as string) ?? '';
+        const nameMatch = varRef.match(/MemberName="([^"]+)"/);
+        if (nameMatch) {
+          const varName = nameMatch[1];
+          if (!seenVariables.has(varName)) {
+            seenVariables.add(varName);
+            // Infer type from the data pin (first non-exec, non-hidden pin)
+            const dataPin = node.pins.find(
+              p => p.category !== 'exec' && !p.hidden,
+            );
+            const varType = dataPin
+              ? pinCategoryToVarType(dataPin.category, dataPin.subCategoryObject)
+              : 'Object';
+            variables.push({
+              name: varName,
+              type: varType,
+            });
+          }
+        }
+      }
+    }
+  }
+
+  return {
+    metadata: {
+      title: 'Imported Blueprint',
+      blueprintName: 'Imported Blueprint',
+    },
+    graphs,
+    events,
+    functions,
+    variables,
+    components: [],
+    structs: [],
+    delegates: [],
+    dataTables: {},
+    comparison: {},
+  };
 }

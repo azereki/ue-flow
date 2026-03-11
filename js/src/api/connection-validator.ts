@@ -22,6 +22,20 @@ const COMPATIBLE_CATEGORIES: Record<string, Set<string>> = {
   double: new Set(['double', 'real', 'float']),
 };
 
+/**
+ * Get the effective category for a pin, using resolvedCategory if the pin is
+ * a wildcard that has been locked by a prior connection.
+ */
+export function effectiveCategory(pin: UEPin): { category: PinCategory; subCategoryObject: string } {
+  if (pin.category === 'wildcard' && pin.resolvedCategory) {
+    return {
+      category: pin.resolvedCategory as PinCategory,
+      subCategoryObject: pin.resolvedSubCategoryObject ?? pin.subCategoryObject,
+    };
+  }
+  return { category: pin.category, subCategoryObject: pin.subCategoryObject };
+}
+
 /** Check if two pin categories are compatible for connection. */
 function categoriesCompatible(a: PinCategory, b: PinCategory, aSub?: string, bSub?: string): boolean {
   // Wildcard matches anything
@@ -71,9 +85,13 @@ export function canConnect(
   const outPin = sourcePin.direction === 'output' ? sourcePin : targetPin;
   const inPin = sourcePin.direction === 'input' ? sourcePin : targetPin;
 
-  // Category compatibility
-  if (!categoriesCompatible(outPin.category, inPin.category, outPin.subCategoryObject, inPin.subCategoryObject)) {
-    return { valid: false, reason: `Incompatible types: ${outPin.category} → ${inPin.category}` };
+  // Resolve effective categories for wildcard pins that have been locked
+  const outEff = effectiveCategory(outPin);
+  const inEff = effectiveCategory(inPin);
+
+  // Category compatibility (use resolved types for locked wildcards)
+  if (!categoriesCompatible(outEff.category, inEff.category, outEff.subCategoryObject, inEff.subCategoryObject)) {
+    return { valid: false, reason: `Incompatible types: ${outEff.category} → ${inEff.category}` };
   }
 
   // Enum pins: must share the same enum type

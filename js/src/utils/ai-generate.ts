@@ -287,8 +287,14 @@ export function normalizeGeneratedPin(pin: Partial<UEPin>): UEPin {
   };
 }
 
+export interface GenerationResult {
+  graph: UEGraphJSON;
+  droppedEdges: number;
+  corrections: string[];
+}
+
 /** Extract and parse a UEGraphJSON from an AI response containing a ```json block. */
-export function parseGeneratedGraph(aiResponse: string): UEGraphJSON | null {
+export function parseGeneratedGraph(aiResponse: string): GenerationResult | null {
   const jsonMatch = aiResponse.match(/```json\s*\n?([\s\S]*?)\n?\s*```/);
   if (!jsonMatch) return null;
 
@@ -364,6 +370,7 @@ export function parseGeneratedGraph(aiResponse: string): UEGraphJSON | null {
   if (!Array.isArray(edges)) return null;
 
   const validatedEdges: UEEdge[] = [];
+  let droppedEdges = 0;
   for (const raw of edges) {
     const e = raw as Record<string, unknown>;
     if (!e.id || !e.source || !e.sourcePin || !e.target || !e.targetPin) continue;
@@ -371,6 +378,7 @@ export function parseGeneratedGraph(aiResponse: string): UEGraphJSON | null {
     // Cross-validate: source/target pins must exist on their nodes
     if (!pinIndex.has(`${e.source}:${e.sourcePin}`) || !pinIndex.has(`${e.target}:${e.targetPin}`)) {
       console.warn(`[ue-flow] Dropping edge ${e.id}: pin not found on node`);
+      droppedEdges++;
       continue;
     }
 
@@ -402,7 +410,7 @@ export function parseGeneratedGraph(aiResponse: string): UEGraphJSON | null {
     console.warn('[ue-flow] Signature DB warnings:', warnings);
   }
 
-  return corrected;
+  return { graph: corrected, droppedEdges, corrections };
 }
 
 /** Shift all node positions by an offset. */

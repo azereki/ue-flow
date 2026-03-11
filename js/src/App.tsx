@@ -46,6 +46,7 @@ import { GraphAPIProvider } from './contexts/GraphAPIContext';
 import { canConnect } from './api/connection-validator';
 import { ContextMenu, type ContextMenuAction } from './components/ContextMenu';
 import { NodePalette } from './components/NodePalette';
+import { ShortcutPanel } from './components/ShortcutPanel';
 import { AlignToolbar } from './components/AlignToolbar';
 import { SearchPanel } from './components/SearchPanel';
 import { BookmarkPanel } from './components/BookmarkPanel';
@@ -54,6 +55,7 @@ import { alignNodes, distributeNodes, straightenConnection, type AlignAxis, type
 import { serializeSelection, deserializeClipboard } from './utils/clipboard';
 import { useSearch } from './hooks/useSearch';
 import { useBookmarks } from './hooks/useBookmarks';
+import { findReachableNodes } from './utils/exec-graph';
 
 const nodeTypes = {
   blueprintNode: BlueprintNode,
@@ -131,7 +133,7 @@ export interface DisplayOptions {
   showZoomIndicator?: boolean;
 }
 
-export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange, embedded, displayOptions, onReady, graphAPI: externalGraphAPI, onNodeCreated }: { graphJSON: UEGraphJSON; focusNodeTitle?: string | null; onSelectedNodeChange?: (title: string | null) => void; embedded?: boolean; displayOptions?: DisplayOptions; onReady?: () => void; graphAPI?: GraphAPI; onNodeCreated?: (entry: { label: string; nodeClass: string }) => void }) {
+export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChange, embedded, displayOptions, onReady, graphAPI: externalGraphAPI, onNodeCreated, onGraphAPIMount }: { graphJSON: UEGraphJSON; focusNodeTitle?: string | null; onSelectedNodeChange?: (title: string | null) => void; embedded?: boolean; displayOptions?: DisplayOptions; onReady?: () => void; graphAPI?: GraphAPI; onNodeCreated?: (entry: { label: string; nodeClass: string }) => void; onGraphAPIMount?: (api: GraphAPI) => void }) {
   const initial = useMemo(() => graphJsonToFlow(graphJSON), [graphJSON]);
   const [nodes, setNodes, onNodesChange] = useNodesState<AnyFlowNode>(initial.nodes);
   // useEdgesState is kept untyped because its OnEdgesChange generic is contravariant —
@@ -160,6 +162,12 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
 
   // Eagerly load signature DB for node palette
   useEffect(() => { loadSignatureDB(); }, []);
+
+  // Notify parent when graphAPI instance is ready
+  useEffect(() => {
+    onGraphAPIMount?.(graphAPI);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Pin value editing via GraphAPI
   const setPinValueRef = useRef((nodeId: string, pinId: string, value: string) => {
@@ -263,15 +271,76 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
   // ─── Context Menu & Node Palette ────────────────────────────────────────────
 
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
+  const [highlightedExecPath, setHighlightedExecPath] = useState<Set<string> | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [bookmarksOpen, setBookmarksOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const { query: searchQuery, setQuery: setSearchQuery, results: searchResults, clearSearch } = useSearch(undefined, graphJSON);
   const { bookmarks, addBookmark, removeBookmark } = useBookmarks();
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId?: string; edgeId?: string } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId?: string; edgeId?: string; connectedEdgeIds?: string[] } | null>(null);
   const [nodePalette, setNodePalette] = useState<{ x: number; y: number; graphX: number; graphY: number } | null>(null);
   // screenToFlowPosition needs to be called from inside ReactFlow's context.
   // We store a ref that gets set by a child component.
   const screenToFlowRef = useRef<((pos: { x: number; y: number }) => { x: number; y: number }) | null>(null);
+
+  // ─── Exec flow highlighting ─────────────────────────────────────────────────
+  // Apply opacity to nodes/edges based on highlighted exec path.
+  useEffect(() => {
+    if (!highlightedExecPath) {
+      setNodes((prev) => prev.map((n) => {
+        if (!n.style || n.style.opacity === undefined) return n;
+        const { opacity: _op, ...rest } = n.style as Record<string, unknown>;
+        return { ...n, style: rest as React.CSSProperties };
+      }));
+      setEdgesRaw((prev) => prev.map((e) => {
+        if (!e.style || (e.style as Record<string, unknown>).opacity === undefined) return e;
+        const { opacity: _op, ...rest } = e.style as Record<string, unknown>;
+        return { ...e, style: rest as React.CSSProperties };
+      }));
+      return;
+    }
+    setNodes((prev) =>
+      prev.map((n) => ({
+        ...n,
+        style: { ...(n.style ?? {}), opacity: highlightedExecPath.has(n.id) ? 1 : 0.15 },
+      })),
+    );
+    setEdgesRaw((prev) =>
+      prev.map((e) => ({
+        ...e,
+        style: {
+          ...(e.style ?? {}),
+          opacity:
+            highlightedExecPath.has(e.source) && highlightedExecPath.has(e.target) ? 1 : 0.08,
+        },
+      })),
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightedExecPath]);
+
+  // Double-click on event/custom-event node → toggle exec flow highlighting
+  const handleNodeDoubleClick = useCallback((_: React.MouseEvent, node: AnyFlowNode) => {
+    if (embedded || node.type !== 'blueprintNode') return;
+    const data = (node as BlueprintFlowNode).data;
+    const isEventNode =
+      data.nodeClass?.startsWith('K2Node_Event') ||
+      data.nodeClass?.startsWith('K2Node_CustomEvent') ||
+      data.ueType === 'event' ||
+      data.ueType === 'function_entry' ||
+      data.ueType === 'input' ||
+      data.ueType === 'component_event';
+
+    if (!isEventNode) return;
+
+    // Toggle: double-clicking same node again clears the highlight
+    if (highlightedExecPath !== null) {
+      setHighlightedExecPath(null);
+      return;
+    }
+
+    const reachable = findReachableNodes([node.id], nodesRef.current, edgesRef.current);
+    setHighlightedExecPath(reachable);
+  }, [embedded, highlightedExecPath]);
 
   // ─── Right-click context menu (stationary clicks only) ──────────────────────
   // Track right-mousedown position + max movement. The contextmenu event fires
@@ -323,9 +392,22 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
     rclickDown.current = null;
     if (wasDrag) return;
 
-    // Don't open context menu when right-clicking on pin handles (interferes with connections)
     const target = e.target as HTMLElement;
-    if (target.closest('.ueflow-handle') || target.closest('.react-flow__handle')) return;
+
+    // Right-click on a pin handle — show "Delete Connection(s)" for connected edges
+    const handleEl = target.closest('.ueflow-handle, .react-flow__handle') as HTMLElement | null;
+    if (handleEl) {
+      const handleId = handleEl.getAttribute('data-handleid');
+      if (handleId) {
+        const connected = edgesRef.current.filter(
+          (ed) => ed.sourceHandle === handleId || ed.targetHandle === handleId,
+        );
+        if (connected.length > 0) {
+          setContextMenu({ x: e.clientX, y: e.clientY, connectedEdgeIds: connected.map((ed) => ed.id) });
+        }
+      }
+      return;
+    }
 
     // Check if right-clicked on a node
     const nodeEl = target.closest('.react-flow__node');
@@ -335,15 +417,15 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
       const nodeId = nodeEl.getAttribute('data-id');
       if (nodeId) {
         setContextMenu({ x: e.clientX, y: e.clientY, nodeId });
-        return;
       }
+      return; // Always bail — never fall through to palette from a node click
     }
     if (edgeEl) {
       const edgeId = edgeEl.getAttribute('data-testid')?.replace('rf__edge-', '') ?? undefined;
       if (edgeId) {
         setContextMenu({ x: e.clientX, y: e.clientY, edgeId });
-        return;
       }
+      return; // Always bail — never fall through to palette from an edge click
     }
 
     // Right-click on empty canvas → show node palette
@@ -355,6 +437,10 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
 
   const contextMenuActions = useMemo((): ContextMenuAction[] => {
     if (!contextMenu) return [];
+    if (contextMenu.connectedEdgeIds) {
+      const count = contextMenu.connectedEdgeIds.length;
+      return [{ label: `Delete Connection${count > 1 ? 's' : ''} (${count})`, danger: true, onClick: () => graphAPI.deleteEdges(contextMenu.connectedEdgeIds!) }];
+    }
     if (contextMenu.nodeId) {
       const nodeId = contextMenu.nodeId!;
       const node = nodesRef.current.find((n) => n.id === nodeId);
@@ -464,21 +550,43 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
   // ─── Drag & drop variables from sidebar ─────────────────────────────────────
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
-    if (e.dataTransfer.types.includes('application/ue-flow-variable')) {
+    const types = e.dataTransfer.types;
+    if (types.includes('application/ue-flow-variable') || types.includes('application/ue-flow-event')) {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'copy';
     }
   }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
-    const raw = e.dataTransfer.getData('application/ue-flow-variable');
-    if (!raw || !screenToFlowRef.current) return;
-    e.preventDefault();
-    const { name, type } = JSON.parse(raw) as { name: string; type: string };
-    const pos = screenToFlowRef.current({ x: e.clientX, y: e.clientY });
-    // Ctrl/Shift held → Set, otherwise Get
-    const mode = e.ctrlKey || e.shiftKey ? 'set' : 'get';
-    graphAPI.addVariableNode(name, type, mode, pos);
+    if (!screenToFlowRef.current) return;
+
+    // Variable drop
+    const varRaw = e.dataTransfer.getData('application/ue-flow-variable');
+    if (varRaw) {
+      e.preventDefault();
+      const { name, type } = JSON.parse(varRaw) as { name: string; type: string };
+      const pos = screenToFlowRef.current({ x: e.clientX, y: e.clientY });
+      // Ctrl/Shift held → Set, otherwise Get
+      const mode = e.ctrlKey || e.shiftKey ? 'set' : 'get';
+      graphAPI.addVariableNode(name, type, mode, pos);
+      return;
+    }
+
+    // Event drop — enforce uniqueness: only 1 custom event node per graph
+    const evtRaw = e.dataTransfer.getData('application/ue-flow-event');
+    if (evtRaw) {
+      e.preventDefault();
+      const { name } = JSON.parse(evtRaw) as { name: string };
+      const nameLower = name.toLowerCase();
+      const alreadyExists = nodesRef.current.some(
+        (n) => n.type === 'blueprintNode' &&
+          (n as BlueprintFlowNode).data.nodeClass === 'K2Node_CustomEvent' &&
+          ((n as BlueprintFlowNode).data.title ?? '').toLowerCase() === nameLower,
+      );
+      if (alreadyExists) return;
+      const pos = screenToFlowRef.current({ x: e.clientX, y: e.clientY });
+      graphAPI.addNode({ nodeClass: 'K2Node_CustomEvent', title: name, position: pos });
+    }
   }, [graphAPI]);
 
   const handleIsValidConnection = useCallback((connection: Connection) => {
@@ -513,6 +621,12 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
       if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
         e.preventDefault();
         setBookmarksOpen((prev) => !prev);
+        return;
+      }
+
+      // ? — show keyboard shortcuts
+      if (e.key === '?' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        setShortcutsOpen(true);
         return;
       }
 
@@ -670,6 +784,11 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
     setNodePalette(null);
   }, []);
 
+  // Clear exec highlighting on pane click
+  const handlePaneClick = useCallback(() => {
+    if (highlightedExecPath !== null) setHighlightedExecPath(null);
+  }, [highlightedExecPath]);
+
   const handleSelectionChange = useCallback(({ nodes: selectedNodes }: { nodes: AnyFlowNode[] }) => {
     setSelectedNodeIds(selectedNodes.map((n) => n.id));
     if (!onSelectedNodeChange) return;
@@ -696,6 +815,8 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
           onConnect={embedded ? undefined : handleConnect}
           isValidConnection={embedded ? undefined : handleIsValidConnection}
           onEdgeDoubleClick={embedded ? undefined : handleEdgeDoubleClick as unknown as (event: React.MouseEvent, edge: { id: string }) => void}
+          onNodeDoubleClick={embedded ? undefined : handleNodeDoubleClick as unknown as (event: React.MouseEvent, node: { id: string }) => void}
+          onPaneClick={handlePaneClick}
           onContextMenu={embedded ? undefined : handleContextMenu}
           onMoveStart={handleMoveStart}
           onDragOver={embedded ? undefined : handleDragOver}
@@ -737,6 +858,11 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
         </ReactFlow>
         <div className="ueflow-watermark">BLUEPRINT</div>
         {displayOptions?.showExportToolbar !== false && <ExportToolbar nodes={nodesWithCallback} edges={edges} />}
+        {highlightedExecPath !== null && (
+          <div className="ueflow-exec-highlight-banner">
+            Exec path from event &mdash; double-click event or click canvas to clear
+          </div>
+        )}
 
         {/* Bookmark Panel */}
         {bookmarksOpen && (
@@ -793,6 +919,9 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
             existingTitles={new Set(nodes.filter((n) => n.type === 'blueprintNode').map((n) => ((n.data as FlowNodeData).title ?? '').toLowerCase()))}
           />
         )}
+
+        {/* Keyboard Shortcuts Panel */}
+        {shortcutsOpen && <ShortcutPanel onClose={() => setShortcutsOpen(false)} />}
       </div>
     </GraphAPIProvider>
   );
@@ -915,6 +1044,17 @@ function MultiGraphView({ multiGraph: initialMultiGraph }: { multiGraph: UEMulti
       ...prev,
       events: prev.events.map((e) => e.name === oldName ? { ...e, name: newName } : e),
     }));
+    // Sync live node titles in all mounted graph views
+    for (const api of graphAPIRegistry.current.values()) {
+      const matches = api.findNodesByTitle(oldName);
+      for (const n of matches) {
+        if (n.type !== 'blueprintNode') continue;
+        const bp = n as BlueprintFlowNode;
+        if (bp.data.nodeClass === 'K2Node_CustomEvent' || bp.data.nodeClass === 'K2Node_Event') {
+          api.setNodeTitle(n.id, newName);
+        }
+      }
+    }
   }, []);
 
   const handleDeleteEvent = useCallback((name: string) => {
@@ -929,6 +1069,17 @@ function MultiGraphView({ multiGraph: initialMultiGraph }: { multiGraph: UEMulti
       ...prev,
       variables: prev.variables.map((v) => v.name === oldName ? { ...v, name: newName } : v),
     }));
+    // Sync live node titles in all mounted graph views
+    for (const api of graphAPIRegistry.current.values()) {
+      const matches = api.findNodesByTitle(oldName);
+      for (const n of matches) {
+        if (n.type !== 'blueprintNode') continue;
+        const bp = n as BlueprintFlowNode;
+        if (bp.data.nodeClass === 'K2Node_VariableGet' || bp.data.nodeClass === 'K2Node_VariableSet') {
+          api.setNodeTitle(n.id, newName);
+        }
+      }
+    }
   }, []);
 
   const handleDeleteVariable = useCallback((name: string) => {
@@ -941,6 +1092,18 @@ function MultiGraphView({ multiGraph: initialMultiGraph }: { multiGraph: UEMulti
   // Drag variable from sidebar → drop on graph to create Get/Set node
   const handleDragVariable = useCallback((_name: string, _type: string, _mode: 'get' | 'set') => {
     // Drag data is set via dataTransfer in Sidebar; drop is handled by SingleGraphView
+  }, []);
+
+  // Drag event from sidebar → drop on graph
+  const handleDragEvent = useCallback((_name: string) => {
+    // Drag data is set via dataTransfer in Sidebar; drop is handled by SingleGraphView
+  }, []);
+
+  // GraphAPI registry for bidirectional rename sync
+  const graphAPIRegistry = useRef<Map<string, GraphAPI>>(new Map());
+
+  const handleGraphAPIMount = useCallback((graphName: string, api: GraphAPI) => {
+    graphAPIRegistry.current.set(graphName, api);
   }, []);
 
   // Separate abort controllers per resize handle — prevents one drag from cancelling the other
@@ -1037,14 +1200,14 @@ function MultiGraphView({ multiGraph: initialMultiGraph }: { multiGraph: UEMulti
             <>
               <div className="ueflow-drawer-backdrop" onClick={() => setDrawerOpen(false)} />
               <div className="ueflow-drawer">
-                <Sidebar multiGraph={multiGraph} onNavigateToGraph={(g, n) => { navigateToGraph(g, n); setDrawerOpen(false); }} onShowDetails={handleShowDetails} onOpenSpecialTab={(t) => { openSpecialTab(t); setDrawerOpen(false); }} onCreateVariable={handleCreateVariable} onCreateEvent={handleCreateEvent} onCreateFunction={handleCreateFunction} onRenameEvent={handleRenameEvent} onDeleteEvent={handleDeleteEvent} onRenameVariable={handleRenameVariable} onDeleteVariable={handleDeleteVariable} onDragVariable={handleDragVariable} />
+                <Sidebar multiGraph={multiGraph} onNavigateToGraph={(g, n) => { navigateToGraph(g, n); setDrawerOpen(false); }} onShowDetails={handleShowDetails} onOpenSpecialTab={(t) => { openSpecialTab(t); setDrawerOpen(false); }} onCreateVariable={handleCreateVariable} onCreateEvent={handleCreateEvent} onCreateFunction={handleCreateFunction} onRenameEvent={handleRenameEvent} onDeleteEvent={handleDeleteEvent} onRenameVariable={handleRenameVariable} onDeleteVariable={handleDeleteVariable} onDragVariable={handleDragVariable} onDragEvent={handleDragEvent} />
               </div>
             </>
           )
         ) : (
           <>
             <div ref={sidebarRef} style={{ width: sidebarWidth ?? 'max-content', minWidth: 160, maxWidth: 400, flexShrink: 0 }}>
-              <Sidebar multiGraph={multiGraph} onNavigateToGraph={navigateToGraph} onShowDetails={handleShowDetails} onOpenSpecialTab={openSpecialTab} onCreateVariable={handleCreateVariable} onCreateEvent={handleCreateEvent} onCreateFunction={handleCreateFunction} onRenameEvent={handleRenameEvent} onDeleteEvent={handleDeleteEvent} onRenameVariable={handleRenameVariable} onDeleteVariable={handleDeleteVariable} onDragVariable={handleDragVariable} />
+              <Sidebar multiGraph={multiGraph} onNavigateToGraph={navigateToGraph} onShowDetails={handleShowDetails} onOpenSpecialTab={openSpecialTab} onCreateVariable={handleCreateVariable} onCreateEvent={handleCreateEvent} onCreateFunction={handleCreateFunction} onRenameEvent={handleRenameEvent} onDeleteEvent={handleDeleteEvent} onRenameVariable={handleRenameVariable} onDeleteVariable={handleDeleteVariable} onDragVariable={handleDragVariable} onDragEvent={handleDragEvent} />
             </div>
             <div className="ueflow-sidebar-resize" onMouseDown={handleSidebarResize} />
           </>
@@ -1072,7 +1235,7 @@ function MultiGraphView({ multiGraph: initialMultiGraph }: { multiGraph: UEMulti
               })()
             ) : currentGraphJSON ? (
               <ErrorBoundary key={activeGraph}>
-                <SingleGraphView key={activeGraph} graphJSON={currentGraphJSON} focusNodeTitle={focusNodeTitle} onSelectedNodeChange={setSelectedNode} onNodeCreated={handleNodeCreated} />
+                <SingleGraphView key={activeGraph} graphJSON={currentGraphJSON} focusNodeTitle={focusNodeTitle} onSelectedNodeChange={setSelectedNode} onNodeCreated={handleNodeCreated} onGraphAPIMount={(api) => handleGraphAPIMount(activeGraph, api)} />
               </ErrorBoundary>
             ) : (
               <div className="ueflow-empty-graph">
@@ -1092,14 +1255,14 @@ function MultiGraphView({ multiGraph: initialMultiGraph }: { multiGraph: UEMulti
             <>
               <div className="ueflow-bottomsheet-backdrop" onClick={() => setDetailsItem(null)} />
               <div className="ueflow-bottomsheet">
-                <DetailsPanel item={detailsItem} onClose={() => setDetailsItem(null)} structs={multiGraph.structs} />
+                <DetailsPanel item={detailsItem} onClose={() => setDetailsItem(null)} structs={multiGraph.structs} onUpdateEvent={handleRenameEvent} />
               </div>
             </>
           ) : (
             <>
               <div className="ueflow-details-resize" onMouseDown={handleDetailsResize} />
               <div ref={detailsRef} style={{ width: detailsWidth, minWidth: 260, maxWidth: 600, flexShrink: 0 }}>
-                <DetailsPanel item={detailsItem} onClose={() => setDetailsItem(null)} structs={multiGraph.structs} />
+                <DetailsPanel item={detailsItem} onClose={() => setDetailsItem(null)} structs={multiGraph.structs} onUpdateEvent={handleRenameEvent} />
               </div>
             </>
           )

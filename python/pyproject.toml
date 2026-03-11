@@ -35,6 +35,7 @@ ue-flow = "ue_flow.cli:main"
 
 [project.optional-dependencies]
 png = ["playwright"]
+dev = ["pytest"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["ue_flow"]

@@ -43,6 +43,18 @@ These categories are treated as identical:
 
 The `wildcard` category matches any other category. Used by nodes like `K2Node_MakeArray` and `K2Node_Select` whose pin types adapt to their connections.
 
+#### Wildcard Type Locking
+
+When a concrete type connects to a wildcard pin, all sibling wildcard pins on the same node are **locked** to the resolved type via `resolvedCategory` and `resolvedSubCategoryObject` fields on the pin data. The `effectiveCategory()` function returns the resolved type for locked wildcards, or `wildcard` for unlocked ones.
+
+| Scenario | Behavior |
+|----------|----------|
+| Connect `float` to wildcard element pin on MakeArray | All element pins lock to `float`; connecting `string` is rejected |
+| Disconnect the last concrete wire | All sibling wildcards clear back to `wildcard` |
+| Two unresolved wildcards connected | Both remain `wildcard` until a concrete type resolves one |
+
+Affected node types: `K2Node_MakeArray`, `K2Node_Select`, `K2Node_ForEachLoop`, reroute nodes.
+
 ## Implicit Type Conversions
 
 Beyond exact matches, the system supports implicit promotions matching UE's type coercion rules:
@@ -149,6 +161,14 @@ The enum registry (`enum-registry.ts`) pre-populates values for common UE enums,
 | `EObjectTypeQuery` | ObjectTypeQuery1-6 |
 | `ENetRole` | ROLE_None, ROLE_SimulatedProxy, ROLE_AutonomousProxy, ROLE_Authority |
 | `ETextCommit` | Default, OnEnter, OnUserMovedFocus, OnCleared |
+| `EAttachmentRule` | KeepRelative, KeepWorld, SnapToTarget |
+| `ESpawnActorCollisionHandlingMethod` | Undefined, AlwaysSpawn, AdjustIfPossibleButAlwaysSpawn, AdjustIfPossibleButDontSpawnIfColliding, DontSpawnIfColliding |
+| `ECollisionEnabled` | NoCollision, QueryOnly, PhysicsOnly, QueryAndPhysics |
+| `ESlateVisibility` | Visible, Collapsed, Hidden, HitTestInvisible, SelfHitTestInvisible |
+| `EComponentMobility` | Static, Stationary, Movable |
+| `EEndPlayReason` | Destroyed, LevelTransition, EndPlayInEditor, RemovedFromWorld, Quit |
+| `EAnimationMode` | AnimationBlueprint, AnimationSingleNode, AnimationCustomMode |
+| And 8+ more | See `enum-registry.ts` for full list |
 
 ## Struct Type Validation
 

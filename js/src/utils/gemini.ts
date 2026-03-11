@@ -1,5 +1,7 @@
 /** Google Gemini API client for browser-side AI calls (free tier). */
 
+import { fetchWithTimeout, withRetry, classifyHttpError } from './ai-retry';
+
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
@@ -85,45 +87,43 @@ export async function geminiChat(
     body.system_instruction = systemInstruction;
   }
 
-  const response = await fetch(`${GEMINI_API_URL}/${model}:generateContent`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-goog-api-key': config.apiKey,
-    },
-    body: JSON.stringify(body),
-  });
+  return withRetry(async () => {
+    const response = await fetchWithTimeout(`${GEMINI_API_URL}/${model}:generateContent`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': config.apiKey,
+      },
+      body: JSON.stringify(body),
+    });
 
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => '');
-    if (response.status === 400) {
-      // Check for invalid key format
-      if (errorText.includes('API_KEY_INVALID') || errorText.includes('API key not valid')) {
-        throw new Error('Invalid Gemini API key. Check your key at aistudio.google.com.');
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      if (response.status === 400) {
+        if (errorText.includes('API_KEY_INVALID') || errorText.includes('API key not valid')) {
+          throw new Error('Invalid API key. Check your Gemini settings.');
+        }
+        throw new Error(`Gemini error: ${errorText.slice(0, 200)}`);
       }
-      throw new Error(`Gemini error: ${errorText.slice(0, 200)}`);
+      if (response.status === 429) {
+        throw new Error('Rate limit exceeded. Please wait a moment.');
+      }
+      throw new Error(classifyHttpError(response.status, 'Gemini', errorText));
     }
-    if (response.status === 429) {
-      throw new Error('Rate limited — Gemini free tier limit reached. Wait a moment or try a different model.');
+
+    const data = (await response.json()) as GeminiResponse;
+
+    if (data.error?.message) {
+      throw new Error(`Gemini: ${data.error.message}`);
     }
-    if (response.status === 403) {
-      throw new Error('Gemini API key not authorized. Enable the Generative Language API in your Google Cloud console.');
+
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    if (!text) {
+      throw new Error('Empty response from Gemini.');
     }
-    throw new Error(`Gemini error (${response.status}): ${errorText.slice(0, 200)}`);
-  }
 
-  const data = (await response.json()) as GeminiResponse;
-
-  if (data.error?.message) {
-    throw new Error(`Gemini: ${data.error.message}`);
-  }
-
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-  if (!text) {
-    throw new Error('Empty response from Gemini.');
-  }
-
-  return text;
+    return text;
+  });
 }
 
 // Storage keys

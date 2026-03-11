@@ -45,6 +45,32 @@ CORE_CLASS_PATHS = [
 # Pins to filter out (UE auto-injects these, not visible in Blueprint editor)
 HIDDEN_PIN_NAMES = {"self", "cls", "world_context_object", "__world_context"}
 
+# Async/blocking functions whose isLatent flag is often wrong in the upstream DB
+KNOWN_LATENT_FUNCTIONS = {
+    "Delay", "RetriggerableDelay", "MoveComponentTo", "InterpTo",
+    "MoveToLocation", "MoveToActor", "AIMoveTo",
+    "PlayMontageAndWait", "PlayMontage",
+    "LoadStreamLevel", "UnloadStreamLevel",
+    "AsyncLoadAsset", "AsyncLoadPrimaryAsset",
+}
+
+
+def _fix_pure_latent(functions_map: dict) -> None:
+    """
+    Post-process exported entries to fix isPure/isLatent values that are
+    frequently wrong in the upstream SQLite DB:
+    - A function with zero exec-category pins is pure by definition.
+    - Functions in KNOWN_LATENT_FUNCTIONS are always latent.
+    Mutates functions_map in place.
+    """
+    for entries in functions_map.values():
+        for entry in entries:
+            has_exec = any(p.get("category") == "exec" for p in entry.get("pins", []))
+            if not has_exec:
+                entry["isPure"] = True
+            if entry.get("memberName") in KNOWN_LATENT_FUNCTIONS:
+                entry["isLatent"] = True
+
 
 def export_signatures(db_path: str) -> dict:
     conn = sqlite3.connect(db_path)
@@ -139,6 +165,8 @@ def export_signatures(db_path: str) -> dict:
             total_functions += 1
 
     conn.close()
+
+    _fix_pure_latent(functions_map)
 
     return {
         "version": "1.0.0",

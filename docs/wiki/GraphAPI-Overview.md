@@ -102,7 +102,7 @@ The API is organized into five layers:
 | **Property Editing** | `setPinValue`, `setNodeProperty`, `setNodeTitle`, `setNodeAnnotation` | [Pin & Property Operations](./GraphAPI-Pin-Property-Operations.md) |
 | **Dynamic Pins** | `addDynamicPin`, `removeDynamicPin` | [Node Operations](./GraphAPI-Node-Operations.md) |
 | **Clipboard** | `pasteNodes` | [Node Operations](./GraphAPI-Node-Operations.md) |
-| **Query (read-only)** | `findNodesByTitle`, `getNode`, `getEdge`, `getConnectedPins`, `getSelectedNodeIds`, `getSelectedEdgeIds` | [Query Operations](./GraphAPI-Query-Operations.md) |
+| **Query (read-only)** | `findNodesByTitle`, `getNode`, `getEdge`, `findEdgeByPins`, `getConnectedPins`, `getSelectedNodeIds`, `getSelectedEdgeIds` | [Query Operations](./GraphAPI-Query-Operations.md) |
 
 Plus cross-cutting concerns:
 

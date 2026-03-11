@@ -114,4 +114,57 @@ describe('canConnect', () => {
     expect(result.valid).toBe(true);
     expect(result.replaces).toBeUndefined();
   });
+
+  // ─── Additional edge case tests ──────────────────────────────────────────
+
+  it('allows int → float implicit conversion', () => {
+    const src = pin({ id: 'src', direction: 'output', category: 'int' });
+    const tgt = pin({ id: 'tgt', direction: 'input', category: 'float' });
+    expect(canConnect(src, tgt, 'n1', 'n2').valid).toBe(true);
+  });
+
+  it('allows int → double implicit conversion', () => {
+    const src = pin({ id: 'src', direction: 'output', category: 'int' });
+    const tgt = pin({ id: 'tgt', direction: 'input', category: 'double' });
+    expect(canConnect(src, tgt, 'n1', 'n2').valid).toBe(true);
+  });
+
+  it('allows float → double implicit conversion', () => {
+    const src = pin({ id: 'src', direction: 'output', category: 'float' });
+    const tgt = pin({ id: 'tgt', direction: 'input', category: 'double' });
+    expect(canConnect(src, tgt, 'n1', 'n2').valid).toBe(true);
+  });
+
+  it('allows int64 → double implicit conversion', () => {
+    const src = pin({ id: 'src', direction: 'output', category: 'int64' });
+    const tgt = pin({ id: 'tgt', direction: 'input', category: 'double' });
+    expect(canConnect(src, tgt, 'n1', 'n2').valid).toBe(true);
+  });
+
+  it('allows wildcard input to connect to any data type', () => {
+    const src = pin({ id: 'src', direction: 'output', category: 'int' });
+    const tgt = pin({ id: 'tgt', direction: 'input', category: 'wildcard' });
+    expect(canConnect(src, tgt, 'n1', 'n2').valid).toBe(true);
+  });
+
+  it('rejects mismatched struct subCategoryObject', () => {
+    const src = pin({ id: 'src', direction: 'output', category: 'struct', subCategoryObject: '/Script/CoreUObject.Vector' });
+    const tgt = pin({ id: 'tgt', direction: 'input', category: 'struct', subCategoryObject: '/Script/CoreUObject.Rotator' });
+    expect(canConnect(src, tgt, 'n1', 'n2').valid).toBe(false);
+  });
+
+  it('allows matching struct subCategoryObject', () => {
+    const src = pin({ id: 'src', direction: 'output', category: 'struct', subCategoryObject: '/Script/CoreUObject.Vector' });
+    const tgt = pin({ id: 'tgt', direction: 'input', category: 'struct', subCategoryObject: '/Script/CoreUObject.Vector' });
+    expect(canConnect(src, tgt, 'n1', 'n2').valid).toBe(true);
+  });
+
+  it('replaces existing data input connection (auto-replace)', () => {
+    const src = pin({ id: 'dataOut', direction: 'output', category: 'real' });
+    const tgt = pin({ id: 'dataIn', direction: 'input', category: 'real' });
+    const existing = [{ source: 'n0', sourceHandle: 'otherOut', target: 'n2', targetHandle: 'dataIn' }];
+    const result = canConnect(src, tgt, 'n1', 'n2', existing);
+    expect(result.valid).toBe(true);
+    expect(result.replaces).toEqual({ source: 'n0', sourceHandle: 'otherOut', target: 'n2', targetHandle: 'dataIn' });
+  });
 });

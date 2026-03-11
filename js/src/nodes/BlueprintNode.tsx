@@ -72,15 +72,16 @@ export const BlueprintNode = memo(({ data, id }: NodeProps<BlueprintFlowNode>) =
   const [showAdvanced, setShowAdvanced] = useState(false);
   const connectedPinIds = useConnectedPins(pins);
 
-  // Check if latent function via signature DB
+  // Check if latent function: prefer pre-computed flag on data, fall back to signature DB lookup.
   const isLatent = useMemo(() => {
+    if (data.isLatent) return true;
     if (ueType !== 'call_function') return false;
     const ref = String(data.properties?.FunctionReference ?? '');
     const m = ref.match(/MemberName="([^"]+)"/);
     if (!m) return false;
     const sig = lookupFunction(m[1]);
     return sig?.isLatent ?? false;
-  }, [ueType, data.properties]);
+  }, [ueType, data.isLatent, data.properties]);
 
   // Node diagnostics
   const edges = useStore(useCallback(

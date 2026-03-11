@@ -11,7 +11,7 @@ import { getExtendedPinColor, isExecPin, classifyPinType } from '../types/pin-ty
 import { lookupFunction } from '../utils/signature-db';
 import { synthesizeNodePropertiesWithDB } from '../utils/ue-references';
 import { normalizeGeneratedPin } from '../utils/ai-generate';
-import { canConnect } from './connection-validator';
+import { canConnect, effectiveCategory } from './connection-validator';
 import { DYNAMIC_PIN_CLASSES, generateNextPin, canRemovePin } from '../utils/dynamic-pins';
 import { getStructFields, getStructPath } from '../utils/struct-registry';
 
@@ -307,6 +307,63 @@ function generateSpecialNodePins(shortCls: string, title: string): UEPin[] | nul
         pin('ElapsedSeconds', 'Elapsed Seconds', 'output', 'real' as PinCategory),
         pin('TriggeredSeconds', 'Triggered Seconds', 'output', 'real' as PinCategory),
       ];
+    case 'K2Node_InputKeyEvent':
+      return [
+        pin('Pressed', 'Pressed', 'output', 'exec' as PinCategory),
+        pin('Released', 'Released', 'output', 'exec' as PinCategory),
+        pin('Key', 'Key', 'output', 'struct' as PinCategory),
+      ];
+    case 'K2Node_InputActionEvent':
+      return [
+        pin('Pressed', 'Pressed', 'output', 'exec' as PinCategory),
+        pin('Released', 'Released', 'output', 'exec' as PinCategory),
+        pin('Key', 'Key', 'output', 'struct' as PinCategory),
+      ];
+    case 'K2Node_InputTouchEvent':
+      return [
+        pin('Pressed', 'Pressed', 'output', 'exec' as PinCategory),
+        pin('Released', 'Released', 'output', 'exec' as PinCategory),
+        pin('FingerIndex', 'Finger Index', 'output', 'enum' as PinCategory),
+        pin('Location', 'Location', 'output', 'struct' as PinCategory),
+      ];
+    case 'K2Node_InputAxisEvent':
+      return [
+        pin('execute', '', 'output', 'exec' as PinCategory),
+        pin('AxisValue', 'Axis Value', 'output', 'real' as PinCategory),
+      ];
+    case 'K2Node_SwitchEnum':
+      return [
+        pin('execute', '', 'input', 'exec' as PinCategory),
+        pin('Selection', 'Selection', 'input', 'enum' as PinCategory),
+        pin('Default', 'Default', 'output', 'exec' as PinCategory),
+      ];
+    case 'K2Node_SwitchString':
+      return [
+        pin('execute', '', 'input', 'exec' as PinCategory),
+        pin('Selection', 'Selection', 'input', 'string' as PinCategory),
+        pin('Default', 'Default', 'output', 'exec' as PinCategory),
+      ];
+    case 'K2Node_SwitchName':
+      return [
+        pin('execute', '', 'input', 'exec' as PinCategory),
+        pin('Selection', 'Selection', 'input', 'name' as PinCategory),
+        pin('Default', 'Default', 'output', 'exec' as PinCategory),
+      ];
+    case 'K2Node_AsyncAction':
+      return [
+        pin('execute', '', 'input', 'exec' as PinCategory),
+        pin('then', '', 'output', 'exec' as PinCategory),
+        pin('OnCompleted', 'On Completed', 'output', 'exec' as PinCategory),
+        pin('OnFailed', 'On Failed', 'output', 'exec' as PinCategory),
+      ];
+    case 'K2Node_CreateWidget':
+      return [
+        pin('execute', '', 'input', 'exec' as PinCategory),
+        pin('Class', 'Class', 'input', 'class' as PinCategory),
+        pin('OwningPlayer', 'Owning Player', 'input', 'object' as PinCategory),
+        pin('then', '', 'output', 'exec' as PinCategory),
+        pin('ReturnValue', 'Return Value', 'output', 'object' as PinCategory),
+      ];
     default:
       return null;
   }
@@ -350,6 +407,8 @@ function inferUEType(nodeClass: string): string {
   if (nodeClass.includes('ComponentBoundEvent')) return 'event';
   if (nodeClass.includes('EnhancedInput')) return 'event';
   if (nodeClass.includes('K2Node_Self')) return 'call_function';
+  if (nodeClass.includes('Switch')) return 'flow_control';
+  if (nodeClass.includes('AsyncAction')) return 'flow_control';
   return 'call_function';
 }
 
@@ -437,7 +496,16 @@ export class GraphAPI {
     if (edgeIds.length === 0) return { success: true };
     this.captureState('delete edges');
     const idSet = new Set(edgeIds);
+
+    // Collect wildcard pin info before removing edges, for resolution clearing
+    const edges = this.getEdges();
+    const removedEdges = edges.filter((e) => idSet.has(e.id));
+
     this.setEdges((prev) => prev.filter((e) => !idSet.has(e.id)));
+
+    // Clear wildcard resolutions if no concrete connections remain
+    this.clearWildcardResolutions(removedEdges);
+
     return { success: true };
   }
 
@@ -562,7 +630,119 @@ export class GraphAPI {
       data: { category },
     };
     this.setEdges((prev) => [...prev, newEdge]);
+
+    // Wildcard type locking: resolve wildcard pins to the concrete type
+    this.propagateWildcardResolution(srcPin, tgtPin, source, target);
+
     return { success: true, createdIds: [newEdge.id] };
+  }
+
+  // ─── Wildcard Type Locking ──────────────────────────────────────────────────
+
+  /**
+   * After connecting two pins, if one is wildcard and the other is concrete,
+   * resolve the wildcard side and all sibling wildcards on that node to the
+   * concrete type.
+   */
+  private propagateWildcardResolution(
+    srcPin: UEPin, tgtPin: UEPin, sourceNodeId: string, targetNodeId: string,
+  ): void {
+    const srcEff = effectiveCategory(srcPin);
+    const tgtEff = effectiveCategory(tgtPin);
+
+    // Determine which side is wildcard and which provides the concrete type
+    const pairs: Array<{ wildcardPin: UEPin; concreteCategory: string; concreteSub: string; nodeId: string }> = [];
+
+    if (srcPin.category === 'wildcard' && tgtPin.category !== 'wildcard') {
+      pairs.push({ wildcardPin: srcPin, concreteCategory: tgtEff.category, concreteSub: tgtEff.subCategoryObject, nodeId: sourceNodeId });
+    }
+    if (tgtPin.category === 'wildcard' && srcPin.category !== 'wildcard') {
+      pairs.push({ wildcardPin: tgtPin, concreteCategory: srcEff.category, concreteSub: srcEff.subCategoryObject, nodeId: targetNodeId });
+    }
+
+    if (pairs.length === 0) return;
+
+    this.setNodes((prev) => prev.map((node) => {
+      const match = pairs.find((p) => p.nodeId === node.id);
+      if (!match || node.type !== 'blueprintNode') return node;
+
+      const bp = node as BlueprintFlowNode;
+      const updatedPins = bp.data.pins.map((p) => {
+        if (p.category !== 'wildcard') return p;
+        return {
+          ...p,
+          resolvedCategory: match.concreteCategory,
+          resolvedSubCategoryObject: match.concreteSub || undefined,
+        };
+      });
+      return { ...bp, data: { ...bp.data, pins: updatedPins } } as AnyFlowNode;
+    }));
+  }
+
+  /**
+   * After removing edges, check if any wildcard pins on affected nodes have
+   * lost all concrete connections. If so, clear their resolved types.
+   */
+  private clearWildcardResolutions(
+    removedEdges: BlueprintFlowEdge[],
+  ): void {
+    if (removedEdges.length === 0) return;
+
+    // Collect affected node IDs from removed edges
+    const affectedNodeIds = new Set<string>();
+    for (const e of removedEdges) {
+      affectedNodeIds.add(e.source);
+      affectedNodeIds.add(e.target);
+    }
+
+    const nodes = this.getNodes();
+    const remainingEdges = this.getEdges();
+
+    // For each affected node, check if any wildcard pins still have concrete connections
+    const nodesToClear = new Set<string>();
+    for (const nodeId of affectedNodeIds) {
+      const node = nodes.find((n) => n.id === nodeId);
+      if (!node || node.type !== 'blueprintNode') continue;
+
+      const bp = node as BlueprintFlowNode;
+      const hasWildcardPins = bp.data.pins.some((p) => p.category === 'wildcard');
+      if (!hasWildcardPins) continue;
+
+      // Check if any wildcard pin on this node still connects to a concrete (non-wildcard) pin
+      const hasConcreteConnection = remainingEdges.some((e) => {
+        if (e.source !== nodeId && e.target !== nodeId) return false;
+        // Find the pin on this node and the remote pin
+        const isSource = e.source === nodeId;
+        const localPinId = isSource ? e.sourceHandle : e.targetHandle;
+        const remotePinId = isSource ? e.targetHandle : e.sourceHandle;
+        const remoteNodeId = isSource ? e.target : e.source;
+
+        const localPin = bp.data.pins.find((p) => p.id === localPinId);
+        if (!localPin || localPin.category !== 'wildcard') return false;
+
+        const remoteNode = nodes.find((n) => n.id === remoteNodeId);
+        if (!remoteNode || remoteNode.type !== 'blueprintNode') return false;
+        const remotePin = (remoteNode as BlueprintFlowNode).data.pins.find((p) => p.id === remotePinId);
+        return remotePin != null && remotePin.category !== 'wildcard';
+      });
+
+      if (!hasConcreteConnection) {
+        nodesToClear.add(nodeId);
+      }
+    }
+
+    if (nodesToClear.size === 0) return;
+
+    this.setNodes((prev) => prev.map((node) => {
+      if (!nodesToClear.has(node.id) || node.type !== 'blueprintNode') return node;
+      const bp = node as BlueprintFlowNode;
+      const updatedPins = bp.data.pins.map((p) => {
+        if (p.category !== 'wildcard') return p;
+        const { resolvedCategory: _rc, resolvedSubCategoryObject: _rsc, ...rest } = p;
+        return rest;
+      });
+      return { ...bp, data: { ...bp.data, pins: updatedPins } } as AnyFlowNode;
+    }));
   }
 
   // ─── Layer 3: Node Creation ─────────────────────────────────────────────────
@@ -1022,6 +1202,30 @@ export class GraphAPI {
 
   getEdge(edgeId: string): BlueprintFlowEdge | undefined {
     return this.getEdges().find((e) => e.id === edgeId);
+  }
+
+  /** Find an edge by source/target node IDs and pin names. */
+  findEdgeByPins(sourceId: string, sourcePin: string, targetId: string, targetPin: string): BlueprintFlowEdge | undefined {
+    const edges = this.getEdges();
+    const nodes = this.getNodes();
+
+    const srcNode = nodes.find((n) => n.id === sourceId);
+    const tgtNode = nodes.find((n) => n.id === targetId);
+    if (!srcNode || !tgtNode || srcNode.type !== 'blueprintNode' || tgtNode.type !== 'blueprintNode') return undefined;
+
+    const srcBp = srcNode as BlueprintFlowNode;
+    const tgtBp = tgtNode as BlueprintFlowNode;
+    const srcPinObj = srcBp.data.pins.find((p) => p.name.toLowerCase() === sourcePin.toLowerCase());
+    const tgtPinObj = tgtBp.data.pins.find((p) => p.name.toLowerCase() === targetPin.toLowerCase());
+    if (!srcPinObj || !tgtPinObj) return undefined;
+
+    return edges.find(
+      (e) =>
+        e.source === sourceId &&
+        e.sourceHandle === srcPinObj.id &&
+        e.target === targetId &&
+        e.targetHandle === tgtPinObj.id,
+    );
   }
 
   getConnectedPins(nodeId: string, pinName: string): ConnectionInfo[] {

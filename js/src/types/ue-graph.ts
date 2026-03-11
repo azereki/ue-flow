@@ -21,6 +21,10 @@ export interface UEPin {
   pinSubCategoryMemberReference?: string;
   /** For Map container pins: the value type of the map. */
   valueType?: { category: PinCategory; subCategory?: string; subCategoryObject?: string };
+  /** Resolved type when a wildcard pin is locked by a connection. */
+  resolvedCategory?: string;
+  /** Resolved sub-type (struct/enum name) when a wildcard pin is locked. */
+  resolvedSubCategoryObject?: string;
 }
 
 export interface UENode {

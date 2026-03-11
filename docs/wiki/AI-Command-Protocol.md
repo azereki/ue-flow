@@ -62,7 +62,7 @@ The AI returns a JSON code block containing an array of commands and an optional
 - Must have a `"commands"` array -- otherwise not commands
 - Must NOT have a `"nodes"` array -- that indicates a `UEGraphJSON` generation response
 
-## The 8 actions
+## The 11 actions
 
 ### deleteNode
 
@@ -96,7 +96,7 @@ Deletes a specific connection between two pins.
 | `targetTitle` | string | Target node's display title |
 | `targetPin` | string | Target pin name |
 
-> Note: `deleteEdge` by title is currently stubbed out -- it returns an error. The workaround is to use `deleteNode` to remove the entire node, or to delete edges by ID through the UI.
+Resolves node titles to IDs, then uses `findEdgeByPins()` to locate the edge and `deleteEdges()` to remove it.
 
 ### addEdge
 
@@ -196,6 +196,34 @@ Adds, updates, or removes a text annotation displayed above a node.
 |-------|------|-------------|
 | `nodeTitle` | string | Display title of the node to annotate |
 | `text` | string | Annotation text (empty string removes annotation) |
+
+### moveNode
+
+Moves a node to a new position on the canvas.
+
+```json
+{"action": "moveNode", "params": {"nodeTitle": "Delay", "position": {"x": 500, "y": 300}}}
+```
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `nodeTitle` | string | Display title of the node to move |
+| `position` | `{x, y}` | New canvas position |
+
+### addComment
+
+Adds a comment node to the graph.
+
+```json
+{"action": "addComment", "params": {"text": "Main game loop", "position": {"x": 0, "y": -100}, "width": 400, "height": 200}}
+```
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `text` | string | Comment text |
+| `position` | `{x, y}` | Canvas position |
+| `width` | number | Optional width (default 300) |
+| `height` | number | Optional height (default 150) |
 
 ## Title-to-ID resolution
 

@@ -44,6 +44,8 @@ const COMMAND_SIGNALS = [
   'set pin', 'change pin',
   'add a node', 'add node', 'insert a node', 'insert node',
   'duplicate the', 'copy the', 'clone the',
+  'annotate', 'add a note', 'add note', 'add a comment', 'add comment',
+  'move the node', 'move node', 'move it',
 ];
 
 /** Heuristic: does the user message look like a command request? */
@@ -97,6 +99,18 @@ Rename a node.
 ### duplicateNode
 Duplicate a node.
 \`{"action": "duplicateNode", "params": {"nodeTitle": "Print String"}}\`
+
+### annotateNode
+Add a note/annotation to a node.
+\`{"action": "annotateNode", "params": {"nodeTitle": "Print String", "text": "Debug only"}}\`
+
+### moveNode
+Move a node to a new position.
+\`{"action": "moveNode", "params": {"nodeTitle": "Print String", "x": 500, "y": 300}}\`
+
+### addComment
+Add a comment block to the graph.
+\`{"action": "addComment", "params": {"text": "Main logic", "position": {"x": 0, "y": -100}, "width": 400, "height": 200}}\`
 
 ## Rules
 1. Use \`nodeTitle\` to identify nodes — these match the titles shown in the graph.
@@ -204,18 +218,10 @@ function executeSingleCommand(api: GraphAPI, cmd: AICommand): CommandExecResult 
       if (!srcNode || !tgtNode) {
         return { command: cmd, result: { success: false, error: `Node not found: ${!srcNode ? srcTitle : tgtTitle}` }, resolvedDescription: `Delete edge ${srcTitle} → ${tgtTitle}` };
       }
-      // Find matching edge
       const desc = `Delete edge ${srcTitle}.${srcPin} → ${tgtTitle}.${tgtPin}`;
-      // We need to find edges by node IDs and pin names
-      // This requires looking at the edges — use a workaround via getConnectedPins
-      const srcBp = srcNode.type === 'blueprintNode' ? srcNode as BlueprintFlowNode : null;
-      if (!srcBp) return { command: cmd, result: { success: false, error: 'Source is not a blueprint node' }, resolvedDescription: desc };
-      const pin = srcBp.data.pins.find((pp) => pp.name.toLowerCase() === srcPin.toLowerCase());
-      if (!pin) return { command: cmd, result: { success: false, error: `Pin "${srcPin}" not found on "${srcTitle}"` }, resolvedDescription: desc };
-      // We don't have direct access to edges here, so we'll use a simple approach:
-      // GraphAPI doesn't expose raw edge access by pin — we need to find the edge ID.
-      // Let's add a helper: find edges by source+target+pins
-      return { command: cmd, result: { success: false, error: 'deleteEdge by title not yet implemented — use deleteNode instead' }, resolvedDescription: desc };
+      const edge = api.findEdgeByPins(srcNode.id, srcPin, tgtNode.id, tgtPin);
+      if (!edge) return { command: cmd, result: { success: false, error: `No connection found: ${srcTitle}.${srcPin} → ${tgtTitle}.${tgtPin}` }, resolvedDescription: desc };
+      return { command: cmd, result: api.deleteEdges([edge.id]), resolvedDescription: `Deleted edge ${srcTitle}.${srcPin} → ${tgtTitle}.${tgtPin}` };
     }
 
     case 'addEdge': {
@@ -266,6 +272,42 @@ function executeSingleCommand(api: GraphAPI, cmd: AICommand): CommandExecResult 
       if (!node) return { command: cmd, result: { success: false, error: `Node "${title}" not found` }, resolvedDescription: `Duplicate "${title}"` };
       const result = api.duplicateNodes([node.id]);
       return { command: cmd, result, resolvedDescription: `Duplicated "${title}"` };
+    }
+
+    case 'annotateNode': {
+      const title = String(p.nodeTitle ?? '');
+      const text = String(p.text ?? '');
+      const node = resolveNodeByTitle(api, title);
+      if (!node) return { command: cmd, result: { success: false, error: `Node "${title}" not found` }, resolvedDescription: `Annotate "${title}"` };
+      const result = api.setNodeAnnotation(node.id, text);
+      return { command: cmd, result, resolvedDescription: `Annotated "${title}": "${text}"` };
+    }
+
+    case 'moveNode': {
+      const title = String(p.nodeTitle ?? '');
+      const x = Number(p.x ?? 0);
+      const y = Number(p.y ?? 0);
+      const node = resolveNodeByTitle(api, title);
+      if (!node) return { command: cmd, result: { success: false, error: `Node "${title}" not found` }, resolvedDescription: `Move "${title}"` };
+      const result = api.moveNodes([{ nodeId: node.id, position: { x, y } }]);
+      return { command: cmd, result, resolvedDescription: `Moved "${title}" to (${x}, ${y})` };
+    }
+
+    case 'addComment': {
+      const text = String(p.text ?? 'Comment');
+      const pos = p.position as { x?: number; y?: number } | undefined;
+      const position = { x: Number(pos?.x ?? 0), y: Number(pos?.y ?? 0) };
+      const width = Number(p.width ?? 400);
+      const height = Number(p.height ?? 200);
+      const result = api.addNode({
+        nodeClass: 'EdGraphNode_Comment',
+        title: text,
+        position,
+        type: 'comment',
+        width,
+        height,
+      });
+      return { command: cmd, result, resolvedDescription: `Added comment: "${text}"` };
     }
 
     default:

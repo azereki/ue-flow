@@ -27,17 +27,29 @@ An open-source Unreal Engine 5 Blueprint rendering suite. Parses UE5 T3D clipboa
 - **Search across graphs** — Ctrl+F full-text search over node titles, pin names, comments, and pin values
 - **Bookmarks** — Ctrl+B to save and restore named viewport locations across graphs
 - **Implicit type conversions** — int→real, byte→int, name→string, and UE object class hierarchy awareness
-- **Enum registry** with 8 common UE enums for dropdown pin editors and connection validation
+- **Enum registry** with 23+ common UE enums for dropdown pin editors and connection validation
 - **Node diagnostics** — error/warning badges for missing references, unreachable nodes, and latent function clock icons
+- **Wildcard pin type locking** — connecting to a wildcard pin locks sibling wildcards to the resolved type
 - **Advanced pin editors** — enum dropdowns, rotator struct fields, vector/color pickers, bool checkboxes
 - **Per-node annotations** — add notes above any node via right-click context menu
 - **Copy-paste between graphs** — Ctrl+C/V/X with automatic ID remapping
 - **Dynamic pin nodes** — "+" button on Sequence, MakeArray, Select, Switch, and operator nodes
-- **Struct registry** with Break/Make palette entries for Vector, Rotator, Transform, HitResult, and 8 more UE structs
+- **Struct registry** with Break/Make palette entries for 23+ UE structs (Vector, Rotator, Transform, HitResult, Quat, DateTime, and more)
 - **Context menu** — right-click nodes (Duplicate, Delete, Add Note) and edges (Delete Connection)
 - **Node palette** — Tab key or right-click canvas to search 2,700+ UE functions, events, flow control, variables, casts, and structs
 - **Connection drawing** with real-time validation — drag between pins to create edges
-- **~223 tests** across Python (pytest) and JavaScript (Vitest + Playwright)
+- **Export Selected** — export only selected nodes as T3D, or full graph
+- **T3D Property Inspector** — raw key-value editing of UE node properties
+- **Graph Statistics Panel** — node/edge counts, complexity score, unreachable node warnings
+- **Execution flow visualization** — double-click event nodes to highlight exec chains
+- **Guided tour** — 6-step interactive walkthrough for new users
+- **Blueprint templates** — 8 quick-start scenarios (Health Regen, AI Patrol, Sprint+Stamina, etc.)
+- **Offline node descriptions** for 52 common nodes (no AI required)
+- **AI resilience** — request timeout, retry with backoff, offline detection, provider fallback
+- **Multi-graph T3D import** — parse T3D into multi-graph view with auto-detected events/functions/variables
+- **Graph diff view** — compare two graphs with added/removed/modified node visualization
+- **Keyboard shortcut panel** — press `?` to see all shortcuts
+- **~540 tests** across Python (215 pytest) and JavaScript (304 Vitest + 28 Playwright)
 
 ## Quick Start
 
@@ -109,13 +121,15 @@ js/                         React/Vite frontend (TypeScript, @xyflow/react)
     components/             UI chrome (Sidebar, DetailsPanel, TabBar, TopBar, StatusBar, ContextMenu, NodePalette, SearchPanel, BookmarkPanel, AlignToolbar, etc.)
     nodes/                  BlueprintNode, CommentNode, NodeHeader, PinHandle, PinValueEditor, NodeBadge, NodeAnnotation, DynamicPinButton
     edges/                  BlueprintEdge (bezier with type-colored glow)
-    hooks/                  useTabNavigation, useAIChat, useAIAction, useIsMobile, useSearch, useBookmarks
+    hooks/                  useTabNavigation, useAIChat, useAIAction, useIsMobile, useSearch, useBookmarks, useFocusTrap, usePaletteHistory, useTour
+    contexts/               GraphAPIContext, AIProviderContext, ToastContext, ConfirmContext, PinBodyContext
     api/                    graph-api.ts (GraphAPI), connection-validator.ts, ai-commands.ts
-    transform/              json-to-flow.ts (UE JSON -> React Flow), flow-to-t3d.ts (reverse)
+    ai/                     gemini.ts, openrouter.ts, ai-retry.ts (shared timeout/backoff)
+    transform/              json-to-flow.ts (UE JSON -> React Flow), flow-to-t3d.ts (reverse), t3d-to-json.ts (T3D -> JSON)
     types/                  ue-graph.ts, pin-types.ts, flow-types.ts
-    utils/                  graph-context.ts, ai-generate.ts, alignment.ts, type-conversions.ts, enum-registry.ts, struct-registry.ts, exec-graph.ts, dynamic-pins.ts, clipboard.ts, node-diagnostics.ts
+    utils/                  graph-context.ts, ai-generate.ts, alignment.ts, type-conversions.ts, enum-registry.ts, struct-registry.ts, exec-graph.ts, dynamic-pins.ts, clipboard.ts, node-diagnostics.ts, node-descriptions.ts, graph-diff.ts, signature-db.ts, markdown.tsx
     theme/                  ue-flow.css (~4500 lines), self-hosted fonts (Geist, JetBrainsMono)
-  e2e/                      Playwright smoke tests
+  e2e/                      Playwright tests (smoke, paste-flow, node-interaction, context-menu, copy-paste, export, mobile)
 python/
   ue_flow/
     t3d_parser.py           T3D paste text parser (regex + state machine tokenizer)
@@ -130,7 +144,7 @@ python/
     cli.py                  CLI entry point (ue-flow render)
     exceptions.py           UEFlowError hierarchy
     assets/                 Built IIFE JS bundle (auto-copied from js/dist/)
-  tests/                    92 pytest tests
+  tests/                    215 pytest tests
 schema/
   ue-graph.schema.json      JSON Schema (Draft 2020-12) for graph data
 examples/
@@ -176,6 +190,7 @@ Extended sub-type colors for: Vector (gold), Rotator (light blue), Transform (or
 | `Ctrl+B` | Toggle bookmarks panel |
 | `Tab` | Open node palette |
 | `Q` | Straighten selected node connections |
+| `?` | Show keyboard shortcut reference |
 
 ## Environment Variables
 
@@ -186,14 +201,17 @@ Extended sub-type colors for: Vector (gold), Rotator (light blue), Transform (or
 ## Testing
 
 ```bash
-# JavaScript unit tests (223 tests)
+# JavaScript unit tests (304 tests)
 cd js && npm test
 
-# JavaScript e2e tests (5 Playwright smoke tests)
+# JavaScript e2e tests (28 Playwright specs)
 cd js && npx playwright test
 
-# Python tests (92 tests)
+# Python tests (215 tests)
 cd python && pytest tests/ -v
+
+# Lint
+cd js && npm run lint
 ```
 
 ## Building

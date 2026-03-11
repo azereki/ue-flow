@@ -80,3 +80,136 @@ describe('COMMAND_SCHEMA_ADDENDUM', () => {
     }
   });
 });
+
+// ─── Additional isCommandRequest tests ───────────────────────────────────────
+
+describe('isCommandRequest — extended', () => {
+  it('detects duplicate/clone requests', () => {
+    expect(isCommandRequest('duplicate the Delay node')).toBe(true);
+    expect(isCommandRequest('clone the branch')).toBe(true);
+    expect(isCommandRequest('copy the Print String node')).toBe(true);
+  });
+
+  it('detects annotation requests', () => {
+    expect(isCommandRequest('annotate the Delay node with a note')).toBe(true);
+    expect(isCommandRequest('add a note to Print String')).toBe(true);
+    expect(isCommandRequest('add comment about this section')).toBe(true);
+  });
+
+  it('detects move/reposition requests', () => {
+    expect(isCommandRequest('move the node to the right')).toBe(true);
+    expect(isCommandRequest('reposition the Branch node')).toBe(true);
+    expect(isCommandRequest('move it down')).toBe(true);
+  });
+
+  it('returns false for generation requests', () => {
+    expect(isCommandRequest('generate a health regen system')).toBe(false);
+    expect(isCommandRequest('create a blueprint for inventory')).toBe(false);
+  });
+
+  it('returns false for plain questions', () => {
+    expect(isCommandRequest('what is the purpose of this node?')).toBe(false);
+    expect(isCommandRequest('how does the execution flow work?')).toBe(false);
+    expect(isCommandRequest('is this graph efficient?')).toBe(false);
+  });
+});
+
+// ─── Extended parseAICommands tests ──────────────────────────────────────────
+
+describe('parseAICommands — extended', () => {
+  it('parses deleteNode command', () => {
+    const text = '```json\n{"commands": [{"action": "deleteNode", "params": {"nodeTitle": "Delay"}}]}\n```';
+    const result = parseAICommands(text);
+    expect(result).not.toBeNull();
+    expect(result!.commands[0].action).toBe('deleteNode');
+    expect(result!.commands[0].params.nodeTitle).toBe('Delay');
+  });
+
+  it('parses deleteEdge command', () => {
+    const text = '```json\n{"commands": [{"action": "deleteEdge", "params": {"sourceTitle": "Event BeginPlay", "sourcePin": "then", "targetTitle": "Delay", "targetPin": "execute"}}]}\n```';
+    const result = parseAICommands(text);
+    expect(result!.commands[0].action).toBe('deleteEdge');
+    expect(result!.commands[0].params.sourceTitle).toBe('Event BeginPlay');
+  });
+
+  it('parses addEdge command', () => {
+    const text = '```json\n{"commands": [{"action": "addEdge", "params": {"sourceTitle": "A", "sourcePin": "then", "targetTitle": "B", "targetPin": "execute"}}]}\n```';
+    const result = parseAICommands(text);
+    expect(result!.commands[0].action).toBe('addEdge');
+  });
+
+  it('parses addNode command with position', () => {
+    const text = '```json\n{"commands": [{"action": "addNode", "params": {"memberName": "PrintString", "position": {"x": 400, "y": 200}}}]}\n```';
+    const result = parseAICommands(text);
+    expect(result!.commands[0].action).toBe('addNode');
+    expect(result!.commands[0].params.memberName).toBe('PrintString');
+    const pos = result!.commands[0].params.position as { x: number; y: number };
+    expect(pos.x).toBe(400);
+  });
+
+  it('parses setPinValue command', () => {
+    const text = '```json\n{"commands": [{"action": "setPinValue", "params": {"nodeTitle": "Delay", "pinName": "Duration", "value": "2.0"}}]}\n```';
+    const result = parseAICommands(text);
+    expect(result!.commands[0].action).toBe('setPinValue');
+    expect(result!.commands[0].params.value).toBe('2.0');
+  });
+
+  it('parses setNodeTitle command', () => {
+    const text = '```json\n{"commands": [{"action": "setNodeTitle", "params": {"nodeTitle": "Old Name", "newTitle": "New Name"}}]}\n```';
+    const result = parseAICommands(text);
+    expect(result!.commands[0].action).toBe('setNodeTitle');
+    expect(result!.commands[0].params.newTitle).toBe('New Name');
+  });
+
+  it('parses duplicateNode command', () => {
+    const text = '```json\n{"commands": [{"action": "duplicateNode", "params": {"nodeTitle": "Print String"}}]}\n```';
+    const result = parseAICommands(text);
+    expect(result!.commands[0].action).toBe('duplicateNode');
+  });
+
+  it('parses annotateNode command', () => {
+    const text = '```json\n{"commands": [{"action": "annotateNode", "params": {"nodeTitle": "Delay", "text": "Wait 2 seconds"}}]}\n```';
+    const result = parseAICommands(text);
+    expect(result!.commands[0].action).toBe('annotateNode');
+    expect(result!.commands[0].params.text).toBe('Wait 2 seconds');
+  });
+
+  it('parses moveNode command', () => {
+    const text = '```json\n{"commands": [{"action": "moveNode", "params": {"nodeTitle": "Branch", "x": 500, "y": 300}}]}\n```';
+    const result = parseAICommands(text);
+    expect(result!.commands[0].action).toBe('moveNode');
+    expect(result!.commands[0].params.x).toBe(500);
+  });
+
+  it('parses addComment command', () => {
+    const text = '```json\n{"commands": [{"action": "addComment", "params": {"text": "Main Logic", "position": {"x": 0, "y": -100}, "width": 400, "height": 200}}]}\n```';
+    const result = parseAICommands(text);
+    expect(result!.commands[0].action).toBe('addComment');
+    expect(result!.commands[0].params.text).toBe('Main Logic');
+  });
+
+  it('handles malformed JSON gracefully', () => {
+    const text = '```json\n{broken json\n```';
+    expect(parseAICommands(text)).toBeNull();
+  });
+
+  it('skips commands with missing action field', () => {
+    const text = '```json\n{"commands": [{"params": {"nodeTitle": "X"}}, {"action": "deleteNode", "params": {"nodeTitle": "Y"}}]}\n```';
+    const result = parseAICommands(text);
+    expect(result).not.toBeNull();
+    expect(result!.commands).toHaveLength(1);
+    expect(result!.commands[0].action).toBe('deleteNode');
+  });
+
+  it('handles commands with missing params gracefully', () => {
+    const text = '```json\n{"commands": [{"action": "deleteNode"}]}\n```';
+    const result = parseAICommands(text);
+    expect(result).not.toBeNull();
+    expect(result!.commands[0].params).toEqual({});
+  });
+
+  it('returns null when JSON has no json code block', () => {
+    const text = 'Here is my response with no code block.';
+    expect(parseAICommands(text)).toBeNull();
+  });
+});

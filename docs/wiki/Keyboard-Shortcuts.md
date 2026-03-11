@@ -22,6 +22,7 @@ All keyboard shortcuts available in ue-flow's interactive graph editor. Shortcut
 | `Ctrl+F` | Toggle search panel | Full-text search across nodes, pins, comments; click result to navigate |
 | `Ctrl+B` | Toggle bookmarks panel | Save/restore named viewport locations per graph |
 | `Tab` | Open node palette | Searchable palette with 2,700+ UE functions, events, structs (E) |
+| `?` | Shortcut reference panel | Shows all shortcuts by category in a modal |
 
 ## Canvas Interaction
 
@@ -31,6 +32,7 @@ All keyboard shortcuts available in ue-flow's interactive graph editor. Shortcut
 | Click + drag (canvas) | Pan viewport | Right-click panning also works through nodes |
 | Click + drag (node) | Move node | Comment nodes also move enclosed nodes |
 | Double-click (edge) | Insert reroute node | Creates a K2Node_Knot routing dot at the click position |
+| Double-click (event node) | Execution flow visualization | Highlights exec chain, dims unreachable nodes |
 | Right-click (node) | Context menu | Duplicate, Delete, Add Note / Edit Note |
 | Right-click (edge) | Context menu | Delete Connection |
 | Right-click (canvas) | Node palette | Same as Tab key |

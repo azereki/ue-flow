@@ -1,5 +1,7 @@
 /** OpenRouter API client for browser-side AI calls. */
 
+import { fetchWithTimeout, withRetry, classifyHttpError } from './ai-retry';
+
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const DEFAULT_MODEL = 'anthropic/claude-sonnet-4.6';
 
@@ -52,45 +54,42 @@ export async function openRouterChat(
   messages: ChatMessage[],
   config: OpenRouterConfig,
 ): Promise<string> {
-  const response = await fetch(OPENROUTER_API_URL, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${config.apiKey}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': window.location.origin,
-      'X-Title': 'ue-flow Blueprint Viewer',
-    },
-    body: JSON.stringify({
-      model: config.model || DEFAULT_MODEL,
-      messages,
-    }),
+  return withRetry(async () => {
+    const response = await fetchWithTimeout(OPENROUTER_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${config.apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': window.location.origin,
+        'X-Title': 'ue-flow Blueprint Viewer',
+      },
+      body: JSON.stringify({
+        model: config.model || DEFAULT_MODEL,
+        messages,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      if (response.status === 429) {
+        throw new Error('Rate limit exceeded. Please wait a moment.');
+      }
+      throw new Error(classifyHttpError(response.status, 'OpenRouter', errorText));
+    }
+
+    const data = (await response.json()) as OpenRouterResponse;
+
+    if (data.error?.message) {
+      throw new Error(`OpenRouter: ${data.error.message}`);
+    }
+
+    const text = data.choices?.[0]?.message?.content ?? '';
+    if (!text) {
+      throw new Error('Empty response from OpenRouter.');
+    }
+
+    return text;
   });
-
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => '');
-    if (response.status === 401 || response.status === 403) {
-      throw new Error('Invalid API key. Check your OpenRouter key and try again.');
-    }
-    if (response.status === 429) {
-      // Try to extract the model name from the error for a helpful message
-      const modelName = (config.model || DEFAULT_MODEL).split('/').pop()?.replace(/:free$/, '') ?? 'this model';
-      throw new Error(`Rate limited — ${modelName} is temporarily overloaded. Try a different model or wait a moment.`);
-    }
-    throw new Error(`OpenRouter error (${response.status}): ${errorText.slice(0, 200)}`);
-  }
-
-  const data = (await response.json()) as OpenRouterResponse;
-
-  if (data.error?.message) {
-    throw new Error(`OpenRouter: ${data.error.message}`);
-  }
-
-  const text = data.choices?.[0]?.message?.content ?? '';
-  if (!text) {
-    throw new Error('Empty response from OpenRouter.');
-  }
-
-  return text;
 }
 
 // Storage keys

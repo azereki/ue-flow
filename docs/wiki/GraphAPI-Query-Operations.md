@@ -114,6 +114,33 @@ const isWired = execIn.length > 0;
 
 Returns an empty array if the node is not found, is not a blueprint node, or the pin does not exist.
 
+## findEdgeByPins
+
+Finds an edge connecting two specific pins, resolving pin names case-insensitively.
+
+### Signature
+
+```ts
+findEdgeByPins(
+  sourceId: string,
+  sourcePin: string,
+  targetId: string,
+  targetPin: string,
+): BlueprintFlowEdge | undefined
+```
+
+### Example
+
+```ts
+// Find the edge between BeginPlay's "then" and PrintString's "execute"
+const edge = api.findEdgeByPins(beginPlayId, 'then', printStringId, 'execute');
+if (edge) {
+  api.deleteEdges([edge.id]);
+}
+```
+
+Used internally by the [AI Command Protocol](./AI-Command-Protocol.md) `deleteEdge` command to resolve title-based edge references.
+
 ## getSelectedNodeIds
 
 Returns IDs of all currently selected nodes.

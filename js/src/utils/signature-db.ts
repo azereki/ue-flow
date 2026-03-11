@@ -11,6 +11,53 @@ import type { UEGraphJSON } from '../types/ue-graph';
 let cached: SignatureData | null = null;
 let loading: Promise<SignatureData | null> | null = null;
 
+// ---------------------------------------------------------------------------
+// Post-processing heuristics
+// ---------------------------------------------------------------------------
+
+/**
+ * Known latent (async/blocking) UE functions whose `isLatent` flag is often
+ * wrong in the upstream SQLite DB. Listed by memberName (underscore-free form
+ * and T3D form are both included where they differ).
+ */
+const KNOWN_LATENT: ReadonlySet<string> = new Set([
+  'Delay',
+  'RetriggerableDelay',
+  'MoveComponentTo',
+  'InterpTo',
+  'MoveToLocation',
+  'MoveToActor',
+  'AIMoveTo',
+  'PlayMontageAndWait',
+  'PlayMontage',
+  'LoadStreamLevel',
+  'UnloadStreamLevel',
+  'AsyncLoadAsset',
+  'AsyncLoadPrimaryAsset',
+]);
+
+/**
+ * Fix `isPure` and `isLatent` values that are frequently wrong in the
+ * upstream SQLite DB:
+ * - A function with zero exec-category pins is pure by definition.
+ * - Functions whose names appear in KNOWN_LATENT are latent.
+ *
+ * Mutates the functions map in place.
+ */
+function fixPureLatent(functionsMap: SignatureData['functions']): void {
+  for (const entries of Object.values(functionsMap)) {
+    for (const entry of entries) {
+      const hasExecPin = entry.pins.some((p) => p.category === 'exec');
+      if (!hasExecPin) {
+        entry.isPure = true;
+      }
+      if (KNOWN_LATENT.has(entry.memberName)) {
+        entry.isLatent = true;
+      }
+    }
+  }
+}
+
 const LEARNED_KEY = 'uf-learned-signatures';
 const MAX_LEARNED = 500;
 
@@ -26,7 +73,9 @@ export async function loadSignatureDB(url = '/data/ue-signatures.json'): Promise
     try {
       const res = await fetch(url);
       if (!res.ok) return null;
-      cached = (await res.json()) as SignatureData;
+      const data = (await res.json()) as SignatureData;
+      fixPureLatent(data.functions);
+      cached = data;
       return cached;
     } catch {
       return null;

@@ -402,3 +402,19 @@ export function flowToT3D(nodes: AnyFlowNode[], edges: BlueprintFlowEdge[], asse
 
   return blocks.join('\n\n');
 }
+
+/**
+ * Export only selected nodes and the edges between them as T3D paste text.
+ * Thin wrapper around flowToT3D — filters inputs, delegates all serialization.
+ */
+export function flowToT3DSelected(
+  allNodes: AnyFlowNode[],
+  allEdges: BlueprintFlowEdge[],
+  selectedNodeIds: Set<string>,
+): string {
+  const filteredNodes = allNodes.filter(n => selectedNodeIds.has(n.id));
+  const filteredEdges = allEdges.filter(
+    e => selectedNodeIds.has(e.source) && selectedNodeIds.has(e.target),
+  );
+  return flowToT3D(filteredNodes, filteredEdges);
+}

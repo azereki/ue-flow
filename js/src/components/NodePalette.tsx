@@ -15,13 +15,17 @@ export interface PaletteResult {
 }
 
 /** Special entries that don't come from the signature DB. */
-const SPECIAL_ENTRIES: Array<{ label: string; group: string; nodeClass: string; memberName?: string }> = [
+const SPECIAL_ENTRIES: Array<{ label: string; group: string; nodeClass: string; memberName?: string; searchTerms?: string[] }> = [
   { label: 'Event BeginPlay', group: 'Events', nodeClass: 'K2Node_Event', memberName: 'ReceiveBeginPlay' },
   { label: 'Event Tick', group: 'Events', nodeClass: 'K2Node_Event', memberName: 'ReceiveTick' },
   { label: 'Custom Event', group: 'Events', nodeClass: 'K2Node_CustomEvent' },
   { label: 'Component Begin Overlap', group: 'Events', nodeClass: 'K2Node_ComponentBoundEvent', memberName: 'OnComponentBeginOverlap' },
   { label: 'Component End Overlap', group: 'Events', nodeClass: 'K2Node_ComponentBoundEvent', memberName: 'OnComponentEndOverlap' },
   { label: 'Enhanced Input Action', group: 'Events', nodeClass: 'K2Node_EnhancedInputAction' },
+  { label: 'Input Key Event', group: 'Input Events', nodeClass: 'K2Node_InputKeyEvent', searchTerms: ['keyboard', 'key press', 'key release'] },
+  { label: 'Input Action Event', group: 'Input Events', nodeClass: 'K2Node_InputActionEvent', searchTerms: ['action mapping', 'input action'] },
+  { label: 'Input Touch Event', group: 'Input Events', nodeClass: 'K2Node_InputTouchEvent', searchTerms: ['touch', 'mobile', 'finger'] },
+  { label: 'Input Axis Event', group: 'Input Events', nodeClass: 'K2Node_InputAxisEvent', searchTerms: ['axis', 'gamepad', 'analog'] },
   { label: 'Branch', group: 'Flow Control', nodeClass: 'K2Node_IfThenElse' },
   { label: 'Sequence', group: 'Flow Control', nodeClass: 'K2Node_ExecutionSequence' },
   { label: 'For Each Loop', group: 'Flow Control', nodeClass: 'K2Node_ForEachLoop' },
@@ -34,11 +38,16 @@ const SPECIAL_ENTRIES: Array<{ label: string; group: string; nodeClass: string; 
   { label: 'While Loop', group: 'Flow Control', nodeClass: 'K2Node_MacroInstance', memberName: 'WhileLoop' },
   { label: 'MultiGate', group: 'Flow Control', nodeClass: 'K2Node_MultiGate' },
   { label: 'Timeline', group: 'Flow Control', nodeClass: 'K2Node_Timeline' },
+  { label: 'Switch on Enum', group: 'Flow Control', nodeClass: 'K2Node_SwitchEnum', searchTerms: ['switch', 'enum', 'case'] },
+  { label: 'Switch on String', group: 'Flow Control', nodeClass: 'K2Node_SwitchString', searchTerms: ['switch', 'string', 'case', 'text'] },
+  { label: 'Switch on Name', group: 'Flow Control', nodeClass: 'K2Node_SwitchName', searchTerms: ['switch', 'name', 'case'] },
+  { label: 'Async Action', group: 'Flow Control', nodeClass: 'K2Node_AsyncAction', searchTerms: ['async', 'latent', 'task'] },
   { label: 'Comment', group: 'Utility', nodeClass: 'EdGraphNode_Comment' },
   { label: 'Reroute', group: 'Utility', nodeClass: 'K2Node_Knot' },
   { label: 'Self Reference', group: 'Utility', nodeClass: 'K2Node_Self' },
   { label: 'Print String', group: 'Utility', nodeClass: 'K2Node_CallFunction', memberName: 'PrintString' },
   { label: 'IsValid', group: 'Utility', nodeClass: 'K2Node_CallFunction', memberName: 'IsValid' },
+  { label: 'Create Widget', group: 'Utility', nodeClass: 'K2Node_CreateWidget', searchTerms: ['widget', 'ui', 'umg', 'hud', 'create'] },
   { label: 'Variable Get', group: 'Variables', nodeClass: 'K2Node_VariableGet' },
   { label: 'Variable Set', group: 'Variables', nodeClass: 'K2Node_VariableSet' },
   // Spawning
@@ -56,6 +65,7 @@ const SPECIAL_ENTRIES: Array<{ label: string; group: string; nodeClass: string; 
   { label: 'Cast To PlayerState', group: 'Casting', nodeClass: 'K2Node_DynamicCast' },
   { label: 'Cast To ActorComponent', group: 'Casting', nodeClass: 'K2Node_DynamicCast' },
   { label: 'Cast To Widget', group: 'Casting', nodeClass: 'K2Node_DynamicCast' },
+  { label: 'Class Dynamic Cast', group: 'Casting', nodeClass: 'K2Node_ClassDynamicCast', searchTerms: ['cast', 'class', 'type', 'safe'] },
   // Struct Break/Make — generated from struct registry
   ...getRegisteredStructs().flatMap((name) => {
     const short = name.startsWith('F') ? name.slice(1) : name;
@@ -134,7 +144,7 @@ export const NodePalette: FC<NodePaletteProps> = ({ x, y, onSelect, onClose, exi
 
     // Filter special entries
     const specialMatches = SPECIAL_ENTRIES
-      .filter((e) => e.label.toLowerCase().includes(q) && !isDuplicate(e))
+      .filter((e) => (e.label.toLowerCase().includes(q) || e.searchTerms?.some((t) => t.toLowerCase().includes(q))) && !isDuplicate(e))
       .map((e) => ({
         label: e.label,
         group: e.group,

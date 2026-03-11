@@ -37,9 +37,10 @@ describe('parseGeneratedGraph', () => {
   it('parses valid JSON from AI response', () => {
     const result = parseGeneratedGraph(VALID_RESPONSE);
     expect(result).not.toBeNull();
-    expect(result!.nodes).toHaveLength(2);
-    expect(result!.edges).toHaveLength(1);
-    expect(result!.metadata.title).toBe('EventGraph');
+    expect(result!.graph.nodes).toHaveLength(2);
+    expect(result!.graph.edges).toHaveLength(1);
+    expect(result!.graph.metadata.title).toBe('EventGraph');
+    expect(result!.droppedEdges).toBe(0);
   });
 
   it('returns null for response without JSON block', () => {
@@ -68,7 +69,7 @@ describe('parseGeneratedGraph', () => {
   it('generates valid 32-char hex nodeGuids', () => {
     const result = parseGeneratedGraph(VALID_RESPONSE);
     expect(result).not.toBeNull();
-    for (const node of result!.nodes) {
+    for (const node of result!.graph.nodes) {
       expect(node.nodeGuid).toMatch(/^[0-9A-F]{32}$/);
     }
   });
@@ -76,7 +77,7 @@ describe('parseGeneratedGraph', () => {
   it('deduplicates nodeGuids across nodes', () => {
     const result = parseGeneratedGraph(VALID_RESPONSE);
     expect(result).not.toBeNull();
-    const guids = result!.nodes.map((n) => n.nodeGuid);
+    const guids = result!.graph.nodes.map((n) => n.nodeGuid);
     expect(new Set(guids).size).toBe(guids.length);
   });
 
@@ -96,22 +97,23 @@ describe('parseGeneratedGraph', () => {
 \`\`\``;
     const result = parseGeneratedGraph(response);
     expect(result).not.toBeNull();
-    expect(result!.edges).toHaveLength(1);
-    expect(result!.edges[0].id).toBe('e0');
+    expect(result!.graph.edges).toHaveLength(1);
+    expect(result!.graph.edges[0].id).toBe('e0');
+    expect(result!.droppedEdges).toBe(1);
   });
 
   it('normalizes invalid node types to call_function', () => {
     const response = '```json\n{"metadata":{"title":"T","assetPath":"/Game/T"},"nodes":[{"id":"n","type":"bogus","nodeClass":"K2Node","nodeGuid":"1234","position":{"x":0,"y":0},"title":"N","properties":{},"pins":[{"id":"p","name":"P","direction":"input","category":"exec"}]}],"edges":[]}\n```';
     const result = parseGeneratedGraph(response);
     expect(result).not.toBeNull();
-    expect(result!.nodes[0].type).toBe('call_function');
+    expect(result!.graph.nodes[0].type).toBe('call_function');
   });
 
   it('skips edges with missing fields', () => {
     const response = '```json\n{"metadata":{"title":"T","assetPath":"/Game/T"},"nodes":[{"id":"n","type":"event","nodeClass":"K2Node_Event","nodeGuid":"1234","position":{"x":0,"y":0},"title":"N","properties":{},"pins":[{"id":"p","name":"then","direction":"output","category":"exec"}]}],"edges":[{"id":"e0"},{"id":"e1","source":"n","sourcePin":"then","target":"n","targetPin":"then","category":"exec"}]}\n```';
     const result = parseGeneratedGraph(response);
     expect(result).not.toBeNull();
-    expect(result!.edges).toHaveLength(1);
+    expect(result!.graph.edges).toHaveLength(1);
   });
 });
 
@@ -152,11 +154,11 @@ describe('normalizeGeneratedPin', () => {
 describe('offsetGraphPositions', () => {
   it('shifts all node positions', () => {
     const result = parseGeneratedGraph(VALID_RESPONSE)!;
-    const offset = offsetGraphPositions(result, 500, 200);
+    const offset = offsetGraphPositions(result.graph, 500, 200);
     expect(offset.nodes[0].position).toEqual({ x: 500, y: 200 });
     expect(offset.nodes[1].position).toEqual({ x: 800, y: 200 });
     // Original unchanged
-    expect(result.nodes[0].position).toEqual({ x: 0, y: 0 });
+    expect(result.graph.nodes[0].position).toEqual({ x: 0, y: 0 });
   });
 });
 
@@ -197,8 +199,8 @@ describe('isGenerationRequest', () => {
 
 describe('round-trip: parse → graphJsonToFlow', () => {
   it('produces valid React Flow nodes and edges', () => {
-    const graph = parseGeneratedGraph(VALID_RESPONSE)!;
-    const flow = graphJsonToFlow(graph);
+    const result = parseGeneratedGraph(VALID_RESPONSE)!;
+    const flow = graphJsonToFlow(result.graph);
     expect(flow.nodes.length).toBeGreaterThan(0);
     expect(flow.edges.length).toBeGreaterThan(0);
     expect(flow.nodes[0].type).toBe('blueprintNode');

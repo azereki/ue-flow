@@ -75,7 +75,7 @@ describe('serializeMultiGraphContext', () => {
 
   it('provides active graph detail', () => {
     const result = serializeMultiGraphContext(DEMO_MULTIGRAPH, 'EventGraph');
-    expect(result).toContain('--- Active Graph Detail ---');
+    expect(result).toContain('--- Active Graph: "EventGraph" (currently viewed) ---');
     expect(result).toContain('Graph: EventGraph');
   });
 

@@ -1,6 +1,7 @@
 import type { UEGraphJSON } from '../types/ue-graph';
 import type { BlueprintFlowNode, CommentFlowNode, AnyFlowNode, BlueprintFlowEdge, FlowNodeData, CommentNodeData } from '../types/flow-types';
 import { getExtendedPinColor, isExecPin } from '../types/pin-types';
+import { lookupFunction } from '../utils/signature-db';
 
 // Re-export FlowNodeData so existing importers don't need to change their import paths.
 export type { FlowNodeData } from '../types/flow-types';
@@ -79,6 +80,17 @@ export function graphJsonToFlow(graph: UEGraphJSON): { nodes: AnyFlowNode[]; edg
       }
     }
 
+    // Detect latent (async) functions via signature DB lookup on FunctionReference.
+    let isLatent: boolean | undefined;
+    if (ueNode.type === 'call_function') {
+      const ref = String(ueNode.properties?.FunctionReference ?? '');
+      const m = ref.match(/MemberName="([^"]+)"/);
+      if (m) {
+        const sig = lookupFunction(m[1]);
+        if (sig?.isLatent) isLatent = true;
+      }
+    }
+
     const nodeData: FlowNodeData = {
       ueType: ueNode.type,
       nodeClass: ueNode.nodeClass,
@@ -89,6 +101,7 @@ export function graphJsonToFlow(graph: UEGraphJSON): { nodes: AnyFlowNode[]; edg
       properties: ueNode.properties,
       pins: ueNode.pins,
       headerAccent,
+      isLatent,
       // __setPinValue is injected by SingleGraphView after construction
     };
     const bpNode: BlueprintFlowNode = {

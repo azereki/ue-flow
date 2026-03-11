@@ -3,6 +3,7 @@ import { useAIChat } from '../hooks/useAIChat';
 import { useAIProvider } from '../contexts/AIProviderContext';
 import { GeneratePreview } from './GeneratePreview';
 import type { UEGraphJSON } from '../types/ue-graph';
+import { renderMarkdown } from '../utils/markdown';
 
 interface ChatPanelProps {
   graphContext: string;
@@ -137,7 +138,7 @@ export const ChatPanel: FC<ChatPanelProps> = ({ graphContext, onClose, floating,
             {messages.map((msg, i) => (
               <div key={i} className={`ueflow-chat-bubble ueflow-chat-bubble--${msg.role}`}>
                 <div className="ueflow-chat-bubble-content">
-                  {msg.content}
+                  {msg.role === 'assistant' ? renderMarkdown(msg.content) : msg.content}
                 </div>
               </div>
             ))}

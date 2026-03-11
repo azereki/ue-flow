@@ -2,6 +2,8 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AIProviderProvider } from './contexts/AIProviderContext';
+import { ConfirmProvider } from './contexts/ConfirmContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { renderGraph, renderT3D, autoDiscover } from './embed';
 import type { UEGraphJSON, UEMultiGraphJSON } from './types/ue-graph';
 
@@ -40,9 +42,13 @@ if (rootContainer) {
   const singleGraph = loadGraphJSON();
   createRoot(rootContainer).render(
     <ErrorBoundary>
-      <AIProviderProvider>
-        <App graphJSON={singleGraph} multiGraphJSON={multiGraph} />
-      </AIProviderProvider>
+      <ConfirmProvider>
+        <ToastProvider>
+          <AIProviderProvider>
+            <App graphJSON={singleGraph} multiGraphJSON={multiGraph} />
+          </AIProviderProvider>
+        </ToastProvider>
+      </ConfirmProvider>
     </ErrorBoundary>
   );
 }

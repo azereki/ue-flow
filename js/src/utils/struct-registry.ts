@@ -112,6 +112,87 @@ const STRUCT_REGISTRY: Map<string, StructDef> = new Map([
       { name: 'CallbackTarget', category: 'object' },
     ],
   }],
+  ['FVector4', {
+    path: '/Script/CoreUObject.Vector4',
+    fields: [
+      { name: 'X', category: 'real' },
+      { name: 'Y', category: 'real' },
+      { name: 'Z', category: 'real' },
+      { name: 'W', category: 'real' },
+    ],
+  }],
+  ['FQuat', {
+    path: '/Script/CoreUObject.Quat',
+    fields: [
+      { name: 'X', category: 'real' },
+      { name: 'Y', category: 'real' },
+      { name: 'Z', category: 'real' },
+      { name: 'W', category: 'real' },
+    ],
+  }],
+  ['FIntPoint', {
+    path: '/Script/CoreUObject.IntPoint',
+    fields: [
+      { name: 'X', category: 'int' },
+      { name: 'Y', category: 'int' },
+    ],
+  }],
+  ['FIntVector', {
+    path: '/Script/CoreUObject.IntVector',
+    fields: [
+      { name: 'X', category: 'int' },
+      { name: 'Y', category: 'int' },
+      { name: 'Z', category: 'int' },
+    ],
+  }],
+  ['FDateTime', {
+    path: '/Script/CoreUObject.DateTime',
+    fields: [
+      { name: 'date', category: 'int64' },
+    ],
+  }],
+  ['FTimespan', {
+    path: '/Script/CoreUObject.Timespan',
+    fields: [
+      { name: 'ticks', category: 'int64' },
+    ],
+  }],
+  ['FGuid', {
+    path: '/Script/CoreUObject.Guid',
+    fields: [
+      { name: 'A', category: 'int' },
+      { name: 'B', category: 'int' },
+      { name: 'C', category: 'int' },
+      { name: 'D', category: 'int' },
+    ],
+  }],
+  ['FSoftObjectPath', {
+    path: '/Script/CoreUObject.SoftObjectPath',
+    fields: [
+      { name: 'AssetPathName', category: 'string' },
+      { name: 'SubPathString', category: 'string' },
+    ],
+  }],
+  ['FSoftClassPath', {
+    path: '/Script/CoreUObject.SoftClassPath',
+    fields: [
+      { name: 'AssetPathName', category: 'string' },
+      { name: 'SubPathString', category: 'string' },
+    ],
+  }],
+  ['FPrimaryAssetId', {
+    path: '/Script/Engine.PrimaryAssetId',
+    fields: [
+      { name: 'PrimaryAssetType', category: 'name' },
+      { name: 'PrimaryAssetName', category: 'name' },
+    ],
+  }],
+  ['FInputActionValue', {
+    path: '/Script/EnhancedInput.InputActionValue',
+    fields: [
+      { name: 'Value', category: 'struct' },
+    ],
+  }],
 ]);
 
 /** Get the fields for a registered struct. */

@@ -79,7 +79,7 @@ function formatCommandResults(batchResult: AICommandBatchResult): string {
 }
 
 export function useAIChat(graphContext: string, selectedNodeTitle?: string | null) {
-  const { chatCompletion } = useAIProvider();
+  const { chatCompletion, activeProvider, consecutiveErrors } = useAIProvider();
   const graphAPI = useGraphAPIMaybe();
 
   // Eagerly load signature DB so it's ready when AI generates a graph
@@ -97,6 +97,12 @@ export function useAIChat(graphContext: string, selectedNodeTitle?: string | nul
 
   const sendMessage = useCallback(async (userMessage: string) => {
     if (!userMessage.trim() || streamingRef.current) return;
+
+    // Offline detection — don't waste time on a request that will fail
+    if (!navigator.onLine) {
+      setError('You appear to be offline. Check your internet connection.');
+      return;
+    }
 
     setError(null);
     setLastCommandResult(null);
@@ -151,16 +157,39 @@ export function useAIChat(graphContext: string, selectedNodeTitle?: string | nul
         // Try to parse as generated graph
         const parsed = parseGeneratedGraph(text);
         if (parsed) {
-          setGeneratedGraph(parsed);
+          setGeneratedGraph(parsed.graph);
         }
 
-        const updated = [...messagesRef.current, { role: 'assistant' as const, content: text }];
+        let displayText = text;
+        if (parsed && parsed.droppedEdges > 0) {
+          displayText += `\n\n\u26a0 ${parsed.droppedEdges} connection(s) were auto-corrected due to invalid pin references.`;
+        }
+        if (parsed && parsed.corrections.length > 0) {
+          displayText += `\n\nAuto-corrections applied: ${parsed.corrections.length}`;
+        }
+
+        const updated = [...messagesRef.current, { role: 'assistant' as const, content: displayText }];
         messagesRef.current = updated;
         setMessages(updated);
       }
     } catch (err: unknown) {
       console.error('[ue-flow AI] Error:', err);
-      const message = err instanceof Error ? err.message : String(err);
+      let message: string;
+      if (err instanceof Error) {
+        message = err.message;
+      } else {
+        message = String(err);
+      }
+
+      // Suggest switching providers after 3+ consecutive failures
+      if (consecutiveErrors >= 2) { // Will be 3 after this error is tracked
+        if (activeProvider === 'gemini') {
+          message += '\n\nHaving trouble with Gemini? Try configuring OpenRouter in AI Settings.';
+        } else if (activeProvider === 'openrouter') {
+          message += '\n\nHaving trouble with OpenRouter? Try switching to Gemini (free) in AI Settings.';
+        }
+      }
+
       setError(message);
       const cleaned = messagesRef.current.filter(
         (m, i) => !(i === messagesRef.current.length - 1 && m.role === 'assistant' && m.content === ''),
@@ -171,7 +200,7 @@ export function useAIChat(graphContext: string, selectedNodeTitle?: string | nul
       setIsStreaming(false);
       streamingRef.current = false;
     }
-  }, [graphContext, chatCompletion, selectedNodeTitle, graphAPI]);
+  }, [graphContext, chatCompletion, selectedNodeTitle, graphAPI, activeProvider, consecutiveErrors]);
 
   const clearChat = useCallback(() => {
     messagesRef.current = [];

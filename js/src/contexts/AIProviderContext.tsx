@@ -28,6 +28,8 @@ export interface AIProviderState {
   activeProvider: AIProviderType | null;
   /** Warning message from last failed API call (null = healthy). */
   warning: string | null;
+  /** Number of consecutive errors from the active provider (resets on success). */
+  consecutiveErrors: number;
   /** OpenRouter config if set. */
   openRouterConfig: OpenRouterConfig | null;
   /** Gemini config if set. */
@@ -73,6 +75,7 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
     return null;
   });
   const [warning, setWarning] = useState<string | null>(null);
+  const [consecutiveErrors, setConsecutiveErrors] = useState(0);
 
   const ready = activeProvider === 'gemini' ? !!geminiConfig : activeProvider === 'openrouter' ? !!orConfig : false;
 
@@ -83,10 +86,12 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
       try {
         const result = await geminiChat(messages, geminiConfig);
         setWarning(null);
+        setConsecutiveErrors(0);
         return result;
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         setWarning(msg);
+        setConsecutiveErrors((prev) => prev + 1);
         throw err;
       }
     }
@@ -94,10 +99,12 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
       try {
         const result = await openRouterChat(messages, orConfig);
         setWarning(null);
+        setConsecutiveErrors(0);
         return result;
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         setWarning(msg);
+        setConsecutiveErrors((prev) => prev + 1);
         throw err;
       }
     }
@@ -110,6 +117,7 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
     setActiveProvider('openrouter');
     saveActiveProvider('openrouter');
     setWarning(null);
+    setConsecutiveErrors(0);
   }, []);
 
   const clearOpenRouterKeyFn = useCallback(() => {
@@ -130,6 +138,7 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
     setActiveProvider('gemini');
     saveActiveProvider('gemini');
     setWarning(null);
+    setConsecutiveErrors(0);
   }, []);
 
   const clearGeminiKeyFn = useCallback(() => {
@@ -159,6 +168,7 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
       ready,
       activeProvider,
       warning,
+      consecutiveErrors,
       openRouterConfig: orConfig,
       geminiConfig,
       chatCompletion,

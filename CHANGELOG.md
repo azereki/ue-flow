@@ -1,5 +1,67 @@
 # Changelog
 
+## [0.5.0] - 2026-03-10
+
+### Added
+
+#### Data Accuracy (Sprint 1)
+- Fix isPure/isLatent in signature DB — heuristic post-processing detects pure functions (zero exec pins) and known latent functions (Delay, MoveComponentTo, etc.) at both export time and runtime
+- Fix bidirectional links in Python serializer — `ensure_bidirectional_links()` now called from `serialize_graph()`
+- Implement `deleteEdge` AI command via new `findEdgeByPins()` GraphAPI query method
+- Surface dropped edges in AI generation — `parseGeneratedGraph()` returns `GenerationResult` with `droppedEdges` count and `corrections` list shown in chat
+
+#### UX Infrastructure (Sprint 2)
+- Add toast notification system (`ToastContext`) with auto-dismiss, severity levels (success/warning/error/info)
+- Add confirmation dialog system (`ConfirmContext`) with promise-based API and destructive action styling
+- Add focus trap hook (`useFocusTrap`) for modal accessibility — Tab cycling, focus save/restore, Escape to close
+- Add lightweight markdown renderer for AI chat responses (bold, italic, code, code blocks, lists)
+- Add error boundary component for graceful crash recovery
+
+#### UE Parity & Novice Onboarding (Sprint 3)
+- Expand enum registry to 23+ enums (EAttachmentRule, ESpawnActorCollisionHandlingMethod, ECollisionEnabled, ESlateVisibility, EComponentMobility, EEndPlayReason, EAnimationMode, EMovementMode, and more)
+- Expand struct registry to 23+ structs (FVector4, FQuat, FIntPoint, FIntVector, FDateTime, FTimespan, FGuid, FSoftObjectPath, and more)
+- Expand object hierarchy to 34+ classes (CameraActor, SplineComponent, NiagaraComponent, WidgetComponent, GameState, AIController, and more)
+- Add 10+ new node types to palette (input events, switch nodes, async actions, widget creation, class casts)
+- Add interactive guided tour (6 steps: paste → node → pin → palette → AI → export)
+- Add quick-start Blueprint templates (8 pre-built scenarios: Health Regen, Damage Handler, AI Patrol, Sprint+Stamina, Pickup, Timer, Event Dispatcher, Enhanced Input)
+- Add offline node descriptions for 52 common nodes (no AI required)
+- Add better AI error messages with HTTP status parsing (429/401/403/500)
+- Add pin tooltip enhancements showing category, direction, and default values
+
+#### Expert Features (Sprint 4)
+- Add keyboard shortcut reference panel (`?` key) showing all shortcuts by category
+- Add node palette favorites and recents (localStorage/sessionStorage persistence)
+- Add execution flow visualization — double-click event nodes to highlight exec chain, dim unreachable nodes
+- Add latent node visual indicators (clock icon + distinct header color)
+- Add new AI commands: `moveNode`, `annotateNode`, `addComment`
+- Add event drag-to-graph from sidebar with uniqueness constraint
+- Add GraphAPI registry for bidirectional rename sync between sidebar and graph nodes
+
+#### Advanced Features (Sprint 6)
+- Add wildcard pin type locking — connecting to a wildcard pin locks all sibling wildcards to the resolved type, with automatic clearing on disconnect
+- Add "Export Selected" button — copies only selected nodes + internal edges as T3D
+- Add T3D Property Inspector in DetailsPanel — raw key-value editing of node properties with add/remove support
+- Add Graph Statistics Panel — node/edge counts, complexity score, unreachable node warnings
+- Add AI provider resilience — 30s request timeout, 429 retry with exponential backoff (3 attempts), offline detection, provider fallback suggestions
+- Add multi-graph AI awareness — active graph labeled in AI context, other graphs summarized
+- Add T3D multi-graph import — `parseT3DToMultiGraphJSON()` with auto-populated events, functions, variables
+- Add graph comparison/diff view — `computeGraphDiff()` with side-by-side added/removed/modified visualization
+
+#### Testing & Quality (Sprint 5)
+- Add 81 new unit tests across 5 new test files + 3 extended files (dynamic-pins, clipboard, node-diagnostics, round-trip, wildcard-pins, connection-validator edge cases, ai-commands expansion) — total now 304 Vitest tests across 19 test files
+- Add 23 new Playwright E2E specs across 6 files (paste-flow, node-interaction, context-menu, copy-paste, export, mobile)
+- Add 27 new Python tests (T3D parser edge cases, bidirectional link round-trip) — total now 215 pytest tests
+- Add ESLint 9 + typescript-eslint + react-hooks plugin + Prettier config
+- Expand CI pipeline with Python test job, lint job, E2E job (Playwright + Chromium), and bundle size check (2.5MB threshold)
+
+### Changed
+
+- `parseGeneratedGraph()` returns `GenerationResult` type (with `graph`, `droppedEdges`, `corrections`) instead of raw `UEGraphJSON`
+- `canConnect()` now uses `effectiveCategory()` to check resolved wildcard types
+- `addEdge()` propagates wildcard type resolution to sibling pins; `deleteEdges()` clears resolution when last concrete connection is removed
+- AI graph context now labels active graph and summarizes inactive graphs with event/function names
+- `AIProviderContext` tracks `consecutiveErrors` for provider fallback suggestions
+
 ## [0.4.0] - 2026-03-08
 
 ### Added
@@ -174,6 +236,7 @@ _First release._
 - Move Components section to top of sidebar for default layout ([`0082ea8`][0082ea8])
 - Reduce segment button padding and field label min-width for compact details panel ([`0082ea8`][0082ea8])
 
+[0.5.0]: https://github.com/azereki/ue-flow/releases/tag/v0.5.0
 [0.4.0]: https://github.com/azereki/ue-flow/releases/tag/v0.4.0
 [0.3.0]: https://github.com/azereki/ue-flow/releases/tag/v0.3.0
 [0.2.0]: https://github.com/azereki/ue-flow/releases/tag/v0.2.0

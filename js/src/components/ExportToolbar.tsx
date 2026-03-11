@@ -1,7 +1,16 @@
 import { useState, useCallback, type FC } from 'react';
+import { useStore } from '@xyflow/react';
 import { flowToT3D } from '../transform/flow-to-t3d';
+import { flowToT3DSelected } from '../transform/flow-to-t3d';
 import type { AnyFlowNode, BlueprintFlowEdge, BlueprintFlowNode } from '../types/flow-types';
 import { isExecPin } from '../types/pin-types';
+import { useToast } from '../contexts/ToastContext';
+
+const selectedNodeCountSelector = (state: { nodes: Array<{ selected?: boolean }> }) =>
+  state.nodes.filter(n => n.selected).length;
+
+const selectedNodeIdsSelector = (state: { nodes: Array<{ id: string; selected?: boolean }> }) =>
+  state.nodes.filter(n => n.selected).map(n => n.id);
 
 interface ExportToolbarProps {
   nodes: AnyFlowNode[];
@@ -143,15 +152,15 @@ function generateMarkdown(nodes: AnyFlowNode[], edges: BlueprintFlowEdge[]): str
 }
 
 export const ExportToolbar: FC<ExportToolbarProps> = ({ nodes, edges }) => {
-  const flashCopied = useCallback((key: string) => {
-    setCopiedBtn(key);
-    setTimeout(() => setCopiedBtn((prev) => prev === key ? null : prev), 1500);
-  }, []);
+  const { showToast } = useToast();
+  const [pushStatus, setPushStatus] = useState<'idle' | 'sent' | 'failed'>('idle');
+  const selectedCount = useStore(selectedNodeCountSelector);
+  const selectedIds = useStore(selectedNodeIdsSelector);
 
   const handleCopyT3D = useCallback(async () => {
     await copyToClipboard(flowToT3D(nodes, edges));
-    flashCopied('t3d');
-  }, [nodes, edges, flashCopied]);
+    showToast('Copied to clipboard', 'success');
+  }, [nodes, edges, showToast]);
 
   const handleDownloadT3D = useCallback(() => {
     const t3d = flowToT3D(nodes, edges);
@@ -163,9 +172,6 @@ export const ExportToolbar: FC<ExportToolbarProps> = ({ nodes, edges }) => {
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }, [nodes, edges]);
-
-  const [copiedBtn, setCopiedBtn] = useState<string | null>(null);
-  const [pushStatus, setPushStatus] = useState<'idle' | 'sent' | 'failed'>('idle');
 
   const handlePushToEditor = useCallback(async () => {
     const t3d = flowToT3D(nodes, edges);
@@ -183,30 +189,43 @@ export const ExportToolbar: FC<ExportToolbarProps> = ({ nodes, edges }) => {
     setTimeout(() => setPushStatus('idle'), 2000);
   }, [nodes, edges]);
 
+  const handleCopySelected = useCallback(async () => {
+    const idSet = new Set(selectedIds);
+    const t3d = flowToT3DSelected(nodes, edges, idSet);
+    await copyToClipboard(t3d);
+    showToast(`Copied ${selectedCount} selected node${selectedCount === 1 ? '' : 's'} to clipboard`, 'success');
+  }, [nodes, edges, selectedIds, selectedCount, showToast]);
+
   const handleCopyJSON = useCallback(async () => {
     const dataEl = document.getElementById('ue-flow-data');
     if (dataEl?.textContent) {
       await copyToClipboard(dataEl.textContent);
-      flashCopied('json');
+      showToast('Copied to clipboard', 'success');
     }
-  }, [flashCopied]);
+  }, [showToast]);
 
   const handleCopyContext = useCallback(async () => {
     await copyToClipboard(generateContext(nodes, edges));
-    flashCopied('context');
-  }, [nodes, edges, flashCopied]);
+    showToast('Copied to clipboard', 'success');
+  }, [nodes, edges, showToast]);
 
   const handleCopyMarkdown = useCallback(async () => {
     await copyToClipboard(generateMarkdown(nodes, edges));
-    flashCopied('markdown');
-  }, [nodes, edges, flashCopied]);
+    showToast('Copied to clipboard', 'success');
+  }, [nodes, edges, showToast]);
 
   return (
     <div className="ueflow-export-toolbar">
       <button className="ueflow-toolbar-btn" onClick={handleCopyT3D} title="Copy T3D to clipboard">
         <span className="ueflow-toolbar-icon">&#9113;</span>
-        <span className="ueflow-toolbar-label">{copiedBtn === 't3d' ? 'Copied!' : 'Copy T3D'}</span>
+        <span className="ueflow-toolbar-label">Copy T3D</span>
       </button>
+      {selectedCount > 0 && (
+        <button className="ueflow-toolbar-btn" onClick={handleCopySelected} title="Copy selected nodes as T3D">
+          <span className="ueflow-toolbar-icon">&#9745;</span>
+          <span className="ueflow-toolbar-label">Export Selected ({selectedCount})</span>
+        </button>
+      )}
       <button className="ueflow-toolbar-btn" onClick={handleDownloadT3D} title="Download as .txt file">
         <span className="ueflow-toolbar-icon">&#8615;</span>
         <span className="ueflow-toolbar-label">Download</span>
@@ -217,15 +236,15 @@ export const ExportToolbar: FC<ExportToolbarProps> = ({ nodes, edges }) => {
       </button>
       <button className="ueflow-toolbar-btn" onClick={handleCopyContext} title="Copy LLM context summary">
         <span className="ueflow-toolbar-icon">&#9998;</span>
-        <span className="ueflow-toolbar-label">{copiedBtn === 'context' ? 'Copied!' : 'Context'}</span>
+        <span className="ueflow-toolbar-label">Context</span>
       </button>
       <button className="ueflow-toolbar-btn" onClick={handleCopyMarkdown} title="Copy markdown documentation">
         <span className="ueflow-toolbar-icon">&#9776;</span>
-        <span className="ueflow-toolbar-label">{copiedBtn === 'markdown' ? 'Copied!' : 'Markdown'}</span>
+        <span className="ueflow-toolbar-label">Markdown</span>
       </button>
       <button className="ueflow-toolbar-btn ueflow-toolbar-btn--secondary" onClick={handleCopyJSON} title="Copy graph JSON">
         <span className="ueflow-toolbar-icon">{'{}'}</span>
-        <span className="ueflow-toolbar-label">{copiedBtn === 'json' ? 'Copied!' : 'JSON'}</span>
+        <span className="ueflow-toolbar-label">JSON</span>
       </button>
     </div>
   );

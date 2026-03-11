@@ -119,6 +119,7 @@ def serialize_graph(graph: BlueprintGraph) -> str:
     """Serialize a full graph to UE clipboard paste text."""
     if not graph.nodes:
         return ""
+    ensure_bidirectional_links(graph)
     return "\n\n".join(
         serialize_node(node, graph.asset_path, graph.graph_name)
         for node in graph.nodes

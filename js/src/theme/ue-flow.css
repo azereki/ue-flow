@@ -853,7 +853,7 @@
 }
 
 .ueflow-empty-state {
-  width: 100vw;
+  width: 100%;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -4403,6 +4403,34 @@
   margin-right: 4px;
   opacity: 0.8;
 }
+
+/* ═══ Exec Flow Highlighting ═══ */
+/* Smooth opacity transition for dimmed nodes/edges during exec flow highlight mode */
+.react-flow__node {
+  transition: opacity 0.18s ease;
+}
+.react-flow__edge {
+  transition: opacity 0.18s ease;
+}
+/* Banner shown when exec highlighting is active */
+.ueflow-exec-highlight-banner {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 80, 180, 0.82);
+  color: #c8daff;
+  font-size: 11px;
+  font-family: var(--uf-font-mono, monospace);
+  padding: 4px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(120, 160, 255, 0.35);
+  pointer-events: none;
+  z-index: 1000;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  backdrop-filter: blur(4px);
+}
 /* ═══ Pin Editors ═══ */
 .ueflow-editor-enum {
   background: rgba(255, 255, 255, 0.06);
@@ -4502,4 +4530,847 @@
 .ueflow-dynamic-pin-btn--output {
   margin-left: auto;
   margin-right: 4px;
+}
+
+/* ─── Confirmation Dialog ─────────────────────────────────────────────────── */
+.ueflow-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+  animation: ueflow-fade-in 0.15s ease-out;
+}
+
+.ueflow-confirm-dialog {
+  background: var(--uf-chrome-bg);
+  border: 1px solid var(--uf-subtle-border);
+  border-radius: 8px;
+  padding: 20px 24px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.ueflow-confirm-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--uf-text);
+  margin-bottom: 8px;
+}
+
+.ueflow-confirm-message {
+  font-size: 13px;
+  color: var(--uf-text-secondary);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.ueflow-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.ueflow-confirm-btn {
+  padding: 6px 16px;
+  border-radius: 4px;
+  border: none;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: var(--uf-font-body);
+}
+
+.ueflow-confirm-btn--cancel {
+  background: transparent;
+  color: var(--uf-text-secondary);
+  border: 1px solid var(--uf-subtle-border);
+}
+
+.ueflow-confirm-btn--cancel:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.ueflow-confirm-btn--confirm {
+  background: #6366f1;
+  color: #fff;
+}
+
+.ueflow-confirm-btn--confirm:hover {
+  background: #5558e6;
+}
+
+.ueflow-confirm-btn--destructive {
+  background: #ef4444;
+  color: #fff;
+}
+
+.ueflow-confirm-btn--destructive:hover {
+  background: #dc2626;
+}
+
+@keyframes ueflow-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ─── Toast Notifications ─────────────────────────────────────────────────── */
+.ueflow-toast-container {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 10000;
+  pointer-events: none;
+}
+
+.ueflow-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: var(--uf-font-body);
+  color: var(--uf-text);
+  background: var(--uf-chrome-bg);
+  border: 1px solid var(--uf-subtle-border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  animation: ueflow-toast-in 0.2s ease-out;
+  max-width: 360px;
+}
+
+.ueflow-toast--success { border-left: 3px solid #22c55e; }
+.ueflow-toast--warning { border-left: 3px solid #f59e0b; }
+.ueflow-toast--error   { border-left: 3px solid #ef4444; }
+.ueflow-toast--info    { border-left: 3px solid #6366f1; }
+
+.ueflow-toast-message { flex: 1; }
+
+.ueflow-toast-close {
+  background: none;
+  border: none;
+  color: var(--uf-text-muted);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+@keyframes ueflow-toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Markdown in Chat ─────────────────────────────────────────────────────── */
+.ueflow-md-paragraph { margin: 0 0 4px; }
+.ueflow-md-paragraph:last-child { margin-bottom: 0; }
+
+.ueflow-md-code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-family: var(--uf-font-mono);
+}
+
+.ueflow-md-code-block {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  padding: 8px 10px;
+  margin: 4px 0;
+  overflow-x: auto;
+  font-size: 12px;
+  font-family: var(--uf-font-mono);
+  line-height: 1.4;
+}
+
+.ueflow-md-code-block code {
+  background: none;
+  padding: 0;
+}
+
+.ueflow-md-list {
+  margin: 4px 0;
+  padding-left: 20px;
+}
+
+.ueflow-md-list li {
+  margin: 2px 0;
+}
+
+/* ─── Shortcut Panel ───────────────────────────────────────────────────────── */
+.ueflow-shortcut-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10002;
+}
+
+.ueflow-shortcut-panel {
+  background: var(--uf-chrome-bg);
+  border: 1px solid var(--uf-subtle-border);
+  border-radius: 8px;
+  width: 480px;
+  max-width: 90%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.ueflow-shortcut-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--uf-subtle-border);
+  flex-shrink: 0;
+}
+
+.ueflow-shortcut-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--uf-text);
+}
+
+.ueflow-shortcut-close {
+  background: none;
+  border: none;
+  color: var(--uf-text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  transition: color var(--uf-transition-fast);
+}
+
+.ueflow-shortcut-close:hover {
+  color: var(--uf-text);
+}
+
+.ueflow-shortcut-body {
+  padding: 12px 16px;
+  overflow-y: auto;
+}
+
+.ueflow-shortcut-group {
+  margin-bottom: 16px;
+}
+
+.ueflow-shortcut-group:last-child {
+  margin-bottom: 0;
+}
+
+.ueflow-shortcut-group-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--uf-text-muted);
+  margin-bottom: 6px;
+  letter-spacing: 0.05em;
+}
+
+.ueflow-shortcut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+  gap: 12px;
+}
+
+.ueflow-shortcut-keys {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.ueflow-shortcut-alt {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ueflow-shortcut-combo-part {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.ueflow-shortcut-separator {
+  color: var(--uf-text-muted);
+  font-size: 11px;
+  margin: 0 2px;
+}
+
+.ueflow-shortcut-kbd {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-family: var(--uf-font-mono);
+  color: var(--uf-text);
+  min-width: 20px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.ueflow-shortcut-plus {
+  color: var(--uf-text-muted);
+  font-size: 10px;
+  margin: 0 1px;
+}
+
+.ueflow-shortcut-desc {
+  font-size: 13px;
+  color: var(--uf-text-secondary);
+  text-align: right;
+}
+
+/* ===== Graph Statistics Panel ===== */
+
+.ueflow-stats-panel {
+  background: var(--uf-chrome-bg);
+  border: 1px solid var(--uf-subtle-border);
+  border-radius: 8px;
+  font-family: var(--uf-font);
+  font-size: 13px;
+  color: var(--uf-text);
+  overflow: hidden;
+  min-width: 220px;
+}
+
+.ueflow-stats-panel__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  color: var(--uf-text);
+  font-family: var(--uf-font);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--uf-transition);
+}
+
+.ueflow-stats-panel__toggle:hover {
+  background: var(--uf-surface);
+}
+
+.ueflow-stats-panel__toggle-icon {
+  font-size: 10px;
+  color: var(--uf-text-muted);
+}
+
+.ueflow-stats-panel__body {
+  padding: 0 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ueflow-stats-panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ueflow-stats-panel__section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--uf-text-muted);
+  margin-bottom: 2px;
+}
+
+.ueflow-stats-panel__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.ueflow-stats-panel__row--sub {
+  padding-left: 12px;
+  color: var(--uf-text-secondary);
+}
+
+.ueflow-stats-panel__value {
+  font-family: var(--uf-font-mono);
+  font-weight: 600;
+}
+
+.ueflow-stats-panel__value--warning {
+  color: #ff9800;
+}
+
+.ueflow-stats-panel__section--warning {
+  border-top: 1px solid var(--uf-subtle-border);
+  padding-top: 8px;
+}
+
+/* ─── Property Inspector ──────────────────────────────────────────────────── */
+
+.ueflow-property-inspector {
+  margin-top: 4px;
+  border-top: 1px solid var(--uf-subtle-border);
+}
+
+.ueflow-property-inspector-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  color: var(--uf-text);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--uf-font-body);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transition: background var(--uf-transition);
+}
+
+.ueflow-property-inspector-header:hover {
+  background: var(--uf-surface-hover);
+}
+
+.ueflow-property-inspector-count {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--uf-text-muted);
+}
+
+.ueflow-property-inspector-body {
+  padding: 0 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ueflow-property-inspector-empty {
+  font-size: 12px;
+  color: var(--uf-text-muted);
+  padding: 4px 0;
+}
+
+.ueflow-property-inspector-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+}
+
+.ueflow-property-inspector-row--new {
+  margin-top: 4px;
+}
+
+.ueflow-property-inspector-key {
+  flex: 0 0 40%;
+  font-size: 11px;
+  color: var(--uf-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ueflow-property-inspector-value {
+  flex: 1;
+  font-size: 11px;
+  font-family: var(--uf-font-mono);
+  color: var(--uf-text);
+  padding: 3px 6px;
+  border-radius: 3px;
+  cursor: text;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-height: 20px;
+  border: 1px solid transparent;
+  transition: border-color var(--uf-transition), background var(--uf-transition);
+}
+
+.ueflow-property-inspector-value:hover {
+  border-color: var(--uf-subtle-border);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.ueflow-property-inspector-input {
+  flex: 1;
+  font-size: 11px;
+  font-family: var(--uf-font-mono);
+  color: var(--uf-text);
+  background: var(--uf-chrome-bg);
+  border: 1px solid var(--uf-subtle-border);
+  border-radius: 3px;
+  padding: 3px 6px;
+  outline: none;
+  min-width: 0;
+  transition: border-color var(--uf-transition);
+}
+
+.ueflow-property-inspector-input:focus {
+  border-color: var(--uf-accent);
+}
+
+.ueflow-property-inspector-key-input {
+  flex: 0 0 38%;
+}
+
+.ueflow-property-inspector-value-input {
+  flex: 1;
+}
+
+.ueflow-property-inspector-btn {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0;
+  transition: color var(--uf-transition), background var(--uf-transition);
+}
+
+.ueflow-property-inspector-btn--delete {
+  color: var(--uf-text-muted);
+  opacity: 0;
+  transition: opacity var(--uf-transition), color var(--uf-transition), background var(--uf-transition);
+}
+
+.ueflow-property-inspector-row:hover .ueflow-property-inspector-btn--delete {
+  opacity: 1;
+}
+
+.ueflow-property-inspector-btn--delete:hover {
+  color: #e06c75;
+  background: rgba(224, 108, 117, 0.1);
+}
+
+.ueflow-property-inspector-btn--confirm {
+  color: #98c379;
+}
+
+.ueflow-property-inspector-btn--confirm:hover {
+  background: rgba(152, 195, 121, 0.1);
+}
+
+.ueflow-property-inspector-btn--cancel {
+  color: var(--uf-text-muted);
+}
+
+.ueflow-property-inspector-btn--cancel:hover {
+  color: var(--uf-text);
+  background: var(--uf-surface-hover);
+}
+
+.ueflow-property-inspector-add {
+  margin-top: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-family: var(--uf-font-body);
+  color: var(--uf-text-muted);
+  background: none;
+  border: 1px dashed var(--uf-subtle-border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color var(--uf-transition), border-color var(--uf-transition);
+}
+
+.ueflow-property-inspector-add:hover:not(:disabled) {
+  color: var(--uf-text);
+  border-color: var(--uf-text-muted);
+}
+
+.ueflow-property-inspector-add:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* =========================================================================
+   Graph Diff View
+   ========================================================================= */
+
+.ueflow-diff-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.ueflow-diff-panel {
+  background: var(--uf-chrome-bg);
+  border: 1px solid var(--uf-subtle-border);
+  border-radius: 10px;
+  width: 640px;
+  max-width: 100%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+.ueflow-diff-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--uf-subtle-border);
+}
+
+.ueflow-diff-toolbar-title {
+  font-family: var(--uf-font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--uf-text);
+}
+
+.ueflow-diff-close {
+  background: none;
+  border: none;
+  color: var(--uf-text-muted);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  transition: color var(--uf-transition);
+}
+
+.ueflow-diff-close:hover {
+  color: var(--uf-text);
+}
+
+.ueflow-diff-summary {
+  display: flex;
+  gap: 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--uf-subtle-border);
+  font-family: var(--uf-font-mono);
+  font-size: 12px;
+}
+
+.ueflow-diff-summary-added {
+  color: #4ade80;
+}
+
+.ueflow-diff-summary-removed {
+  color: #f87171;
+}
+
+.ueflow-diff-summary-modified {
+  color: #facc15;
+}
+
+.ueflow-diff-content {
+  overflow-y: auto;
+  padding: 8px 16px 16px;
+  flex: 1;
+}
+
+.ueflow-diff-empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--uf-text-muted);
+  font-size: 14px;
+}
+
+/* Section */
+
+.ueflow-diff-section {
+  margin-bottom: 8px;
+}
+
+.ueflow-diff-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 4px;
+  background: none;
+  border: none;
+  color: var(--uf-text);
+  font-family: var(--uf-font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: color var(--uf-transition);
+}
+
+.ueflow-diff-section-header:hover {
+  color: var(--uf-accent);
+}
+
+.ueflow-diff-chevron {
+  font-size: 10px;
+  width: 12px;
+  flex-shrink: 0;
+}
+
+.ueflow-diff-badge {
+  font-family: var(--uf-font-mono);
+  font-size: 11px;
+  background: var(--uf-surface);
+  color: var(--uf-text-secondary);
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-left: auto;
+}
+
+.ueflow-diff-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 20px;
+}
+
+/* Card */
+
+.ueflow-diff-card {
+  border: 1px solid var(--uf-subtle-border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-family: var(--uf-font-body);
+}
+
+.ueflow-diff-card--added {
+  border-left: 3px solid #4ade80;
+  background: rgba(74, 222, 128, 0.06);
+}
+
+.ueflow-diff-card--removed {
+  border-left: 3px solid #f87171;
+  background: rgba(248, 113, 113, 0.06);
+}
+
+.ueflow-diff-card--modified {
+  border-left: 3px solid #facc15;
+  background: rgba(250, 204, 21, 0.06);
+}
+
+.ueflow-diff-card-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ueflow-diff-card-header--clickable {
+  width: 100%;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+
+.ueflow-diff-card-icon {
+  font-family: var(--uf-font-mono);
+  font-weight: 700;
+  font-size: 14px;
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.ueflow-diff-card--added .ueflow-diff-card-icon {
+  color: #4ade80;
+}
+
+.ueflow-diff-card--removed .ueflow-diff-card-icon {
+  color: #f87171;
+}
+
+.ueflow-diff-card--modified .ueflow-diff-card-icon {
+  color: #facc15;
+}
+
+.ueflow-diff-card-title {
+  color: var(--uf-text);
+  font-weight: 500;
+}
+
+.ueflow-diff-card-type {
+  color: var(--uf-text-muted);
+  font-size: 11px;
+  font-family: var(--uf-font-mono);
+  margin-left: auto;
+}
+
+.ueflow-diff-card-meta {
+  color: var(--uf-text-muted);
+  font-size: 11px;
+  margin-top: 2px;
+  padding-left: 22px;
+}
+
+/* Change rows inside modified cards */
+
+.ueflow-diff-changes {
+  margin-top: 6px;
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ueflow-diff-change-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 11px;
+  font-family: var(--uf-font-mono);
+}
+
+.ueflow-diff-change-field {
+  color: var(--uf-text-secondary);
+  min-width: 100px;
+  flex-shrink: 0;
+}
+
+.ueflow-diff-change-old {
+  color: #f87171;
+  word-break: break-all;
+}
+
+.ueflow-diff-change-arrow {
+  color: var(--uf-text-muted);
+  flex-shrink: 0;
+}
+
+.ueflow-diff-change-new {
+  color: #4ade80;
+  word-break: break-all;
 }
