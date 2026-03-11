@@ -1,9 +1,8 @@
 /**
- * Right-click context menu for nodes, edges, and pin handles.
+ * Right-click context menu for nodes and edges.
  * Positioned at the click coordinates via CSS absolute positioning.
  */
 import { useEffect, useRef, type FC } from 'react';
-import { useGraphAPI } from '../contexts/GraphAPIContext';
 
 export interface ContextMenuAction {
   label: string;
@@ -18,13 +17,10 @@ interface ContextMenuProps {
   y: number;
   actions: ContextMenuAction[];
   onClose: () => void;
-  /** When provided, renders a handle context menu showing "Delete Connection(s)" instead of node actions. */
-  connectedEdgeIds?: string[];
 }
 
-export const ContextMenu: FC<ContextMenuProps> = ({ x, y, actions, onClose, connectedEdgeIds }) => {
+export const ContextMenu: FC<ContextMenuProps> = ({ x, y, actions, onClose }) => {
   const ref = useRef<HTMLDivElement>(null);
-  const graphAPI = useGraphAPI();
 
   // Close on click outside or Escape
   useEffect(() => {
@@ -58,21 +54,13 @@ export const ContextMenu: FC<ContextMenuProps> = ({ x, y, actions, onClose, conn
     }
   }, [x, y]);
 
-  const handleActions: ContextMenuAction[] = connectedEdgeIds
-    ? [{
-        label: connectedEdgeIds.length > 1 ? `Delete ${connectedEdgeIds.length} Connections` : 'Delete Connection',
-        danger: true,
-        onClick: () => { graphAPI.deleteEdges(connectedEdgeIds); },
-      }]
-    : actions;
-
   return (
     <div
       ref={ref}
       className="ueflow-context-menu"
       style={{ position: 'fixed', left: x, top: y }}
     >
-      {handleActions.map((action, i) => (
+      {actions.map((action, i) => (
         <button
           key={i}
           className={`ueflow-context-menu-item${action.danger ? ' ueflow-context-menu-item--danger' : ''}${action.disabled ? ' ueflow-context-menu-item--disabled' : ''}`}
