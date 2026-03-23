@@ -26,7 +26,7 @@
     "@playwright/test": "^1.58.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@vitejs/plugin-react": "^4",
+    "@vitejs/plugin-react": "^6",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^5.2.0",
     "geist": "^1.7.0",
