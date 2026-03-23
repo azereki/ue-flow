@@ -592,6 +592,13 @@ export function SingleGraphView({ graphJSON, focusNodeTitle, onSelectedNodeChang
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
+      // Ctrl+A — select all nodes
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        e.preventDefault();
+        setNodes((prev) => prev.map((n) => ({ ...n, selected: true })));
+        return;
+      }
+
       // Ctrl+F — open search
       if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
         e.preventDefault();

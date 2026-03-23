@@ -28,6 +28,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
   {
     title: 'Editing',
     shortcuts: [
+      { keys: 'Ctrl + A', description: 'Select all nodes' },
       { keys: 'Delete / Backspace', description: 'Delete selected' },
       { keys: 'Ctrl + D', description: 'Duplicate selected nodes' },
       { keys: 'Ctrl + C', description: 'Copy selected nodes' },

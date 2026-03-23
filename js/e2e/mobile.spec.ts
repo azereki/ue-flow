@@ -27,13 +27,13 @@ test.describe('mobile layout', () => {
 
   test('landing page renders at mobile viewport', async ({ page }) => {
     await page.goto('/examples/paste-tool.html');
-    await page.waitForSelector('.ueflow-paste-landing', { timeout: 10_000 });
+    await page.waitForSelector('.ueflow-landing', { timeout: 10_000 });
 
-    // The paste card should be visible and fit within mobile viewport
-    const card = page.locator('.ueflow-paste-card');
-    await expect(card).toBeVisible();
+    // The paste section should be visible and fit within mobile viewport
+    const paste = page.locator('.ueflow-landing-paste');
+    await expect(paste).toBeVisible();
 
-    const box = await card.boundingBox();
+    const box = await paste.boundingBox();
     expect(box).not.toBeNull();
     expect(box!.width).toBeLessThanOrEqual(375);
   });
