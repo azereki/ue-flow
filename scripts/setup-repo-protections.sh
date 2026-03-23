@@ -2,19 +2,28 @@
 #
 # setup-repo-protections.sh
 #
-# Configures GitHub repository protections for azereki/ue-flow.
-# Run this after making the repo public.
+# Configures GitHub repository protections for azereki/ue-flow
+# and optionally makes the repo public.
 #
 # Prerequisites:
 #   - gh CLI installed and authenticated: gh auth login
 #   - You must be a repo admin
 #
 # Usage:
-#   ./scripts/setup-repo-protections.sh
+#   ./scripts/setup-repo-protections.sh           # apply protections only
+#   ./scripts/setup-repo-protections.sh --public   # apply protections + make repo public
 #
 set -euo pipefail
 
 REPO="azereki/ue-flow"
+GO_PUBLIC=false
+
+for arg in "$@"; do
+  case "$arg" in
+    --public) GO_PUBLIC=true ;;
+    *) echo "Unknown option: $arg"; exit 1 ;;
+  esac
+done
 
 echo "=== Setting up repository protections for $REPO ==="
 echo ""
@@ -108,6 +117,13 @@ gh api --method PUT "repos/$REPO/automated-security-fixes" 2>/dev/null \
   && echo "  ✓ Automated security fixes enabled" \
   || echo "  ⚠ Could not enable automated security fixes"
 
+# ─── 7. Make repo public (if requested) ───────────────────────────────────────
+if [ "$GO_PUBLIC" = true ]; then
+  echo "▸ Making repository public..."
+  gh repo edit "$REPO" --visibility public --accept-visibility-change-consequences
+  echo "  ✓ Repository is now public"
+fi
+
 echo ""
 echo "=== Repository protections configured! ==="
 echo ""
@@ -117,7 +133,8 @@ echo "  • dev:  PRs required, 1 review, build + python-tests must pass, no for
 echo "  • Tags: v* pattern protected (admin-only creation)"
 echo "  • Repo: squash/rebase merge only, auto-delete branches, wiki disabled"
 echo "  • Security: secret scanning, push protection, Dependabot alerts + auto-fixes"
+if [ "$GO_PUBLIC" = true ]; then
+  echo "  • Visibility: PUBLIC"
+fi
 echo ""
-echo "Next steps:"
-echo "  1. Make the repo public:  gh repo edit $REPO --visibility public"
-echo "  2. Verify protections:    gh api repos/$REPO/branches/main/protection | jq '.'"
+echo "Verify protections: gh api repos/$REPO/branches/main/protection | jq '.'"
