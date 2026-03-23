@@ -32,7 +32,7 @@
     "geist": "^1.7.0",
     "prettier": "^3.8.1",
     "typescript": "^5.7",
-    "typescript-eslint": "^8.57.0",
+    "typescript-eslint": "^8.57.2",
     "vite": "^6",
     "vitest": "^3"
   }
