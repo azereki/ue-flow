@@ -97,7 +97,7 @@ echo "▸ Hardening repository settings..."
 gh api --method PATCH "repos/$REPO" \
   --input - <<'EOF'
 {
-  "has_wiki": false,
+  "has_wiki": true,
   "allow_squash_merge": true,
   "allow_merge_commit": false,
   "allow_rebase_merge": true,
